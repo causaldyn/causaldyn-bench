@@ -31,5 +31,12 @@ Without the `trees` extra the tree baselines are simply omitted; the hybrid/caus
 ## Status
 
 v0.0.1 scaffold: all five tracks run on the synthetic CHC systems (a damped oscillator with hidden cubic
-physics for A/B/E, a confounded linear system for C, the CHC oracle-regret tasks for D). Real-data tasks
-are next — the top targets are **BOPTEST** (HVAC control) and an **adaptive-CV-compute** benchmark.
+physics for A/B/E, a confounded linear system for C, the CHC oracle-regret tasks for D). A **BOPTEST**
+(HVAC control) client + control episode ship in `causaldyn_bench.boptest`, gated on a running BOPTEST
+service (`BOPTEST_URL`); wiring a CHC hybrid-MPC controller into it, plus an **adaptive-CV-compute**
+benchmark, are next.
+
+```python
+from causaldyn_bench.boptest import BOPTestClient, baseline_controller, run_episode
+kpis = run_episode(BOPTestClient("http://127.0.0.1:5000"), baseline_controller())  # needs a live service
+```
