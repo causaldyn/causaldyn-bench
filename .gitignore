@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# uv / venv
+.venv/
+
+# tooling caches
+.ruff_cache/
+.pytest_cache/
+
+# datasets / artifacts (never commit data)
+data/
+*.npz
+outputs/
+
+# editors / OS
+.vscode/
+.idea/
+.DS_Store

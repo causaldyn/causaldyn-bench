@@ -1,0 +1,41 @@
+[project]
+name = "causaldyn-bench"
+version = "0.0.1"
+description = "A 5-track benchmark for causal, constrained, dynamical decision-making: predictions and decisions, not just RMSE."
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+license = { text = "MIT" }
+authors = [{ name = "Ilia Gradina", email = "ilia.gradina@gmail.com" }]
+dependencies = [
+    "causal-hybrid-control",
+    "numpy>=1.26",
+    "pandas>=2.0",
+]
+
+[project.optional-dependencies]
+trees = ["causal-hybrid-control[trees]"]  # tree baselines for Track A/B
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[tool.uv.sources]
+causal-hybrid-control = { path = "../causal-hybrid-control", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/causaldyn_bench"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
