@@ -49,6 +49,34 @@ uv sync --extra trees --group notebooks
 uv run --group notebooks jupyter lab   # notebooks/leaderboard.ipynb
 ```
 
+## Running BOPTEST — the real Track-D HVAC target (Fedora / Podman)
+
+Track D can run against a live **BOPTEST-Service** via `causaldyn_bench.boptest`. Current BOPTEST deploys
+as a web-service; on Fedora it runs under **Podman** (no Docker needed):
+
+```bash
+# one-time tooling (podman ships with Fedora; add the compose front-end, no sudo)
+uv tool install podman-compose               # or: sudo dnf install -y podman-compose
+
+# clone + bring up the service (first build is ~4 GB, ~15-30 min)
+git clone https://github.com/ibpsa/project1-boptest.git
+cd project1-boptest
+podman-compose up web worker provision       # REST API at http://127.0.0.1:8000
+curl http://127.0.0.1:8000/version           # sanity-check once it is up
+```
+
+Then point the client at it (from this repo):
+
+```bash
+BOPTEST_URL=http://127.0.0.1:8000 uv run pytest tests/test_boptest.py   # the live episode test runs
+BOPTEST_URL=http://127.0.0.1:8000 uv run python -c \
+  "from causaldyn_bench.boptest import boptest_track; print(boptest_track())"   # baseline KPIs
+```
+
+Shut down with `podman-compose down`. Test cases include `bestest_hydronic_heat_pump` (default),
+`bestest_air`, `singlezone_commercial_hydronic`, and others. Wiring a CHC hybrid-MPC controller
+(RC-thermal + learned residual, MPC under comfort constraints) into this is the next step.
+
 ## Status
 
 v0.0.1 scaffold: all five tracks run on the synthetic CHC systems (a damped oscillator with hidden cubic
