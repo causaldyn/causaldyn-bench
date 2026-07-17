@@ -17,6 +17,13 @@ trees = ["causal-hybrid-control[trees]"]  # tree baselines for Track A/B
 
 [dependency-groups]
 dev = ["pytest>=8", "ruff>=0.6"]
+notebooks = [
+    "jupyterlab>=4.0",
+    "nbconvert>=7",
+    "ipykernel>=6",
+    "jupytext>=1.16",
+    "matplotlib>=3.8",
+]
 
 [tool.uv.sources]
 causal-hybrid-control = { path = "../causal-hybrid-control", editable = true }
@@ -32,6 +39,7 @@ packages = ["src/causaldyn_bench"]
 line-length = 100
 target-version = "py312"
 src = ["src", "tests"]
+extend-exclude = ["notebooks"]  # notebook sources carry cell magics / non-import layout
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]

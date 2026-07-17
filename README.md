@@ -41,6 +41,14 @@ A committed snapshot lives in [`results/leaderboard.md`](results/leaderboard.md)
 ~18× over the tree and ~14× over the DLM, causal wins C ~800× over naive, causal-CHC is near-oracle on
 D while predictive blows up, and CHC-MPC matches the oracle on the adaptive-CV task (myopic loses).
 
+For the visual version — leaderboard bar charts + the "prediction ≠ decision" figure — see the executed
+notebook [`notebooks/leaderboard.ipynb`](notebooks/leaderboard.ipynb) (renders on GitHub), or run it:
+
+```bash
+uv sync --extra trees --group notebooks
+uv run --group notebooks jupyter lab   # notebooks/leaderboard.ipynb
+```
+
 ## Status
 
 v0.0.1 scaffold: all five tracks run on the synthetic CHC systems (a damped oscillator with hidden cubic
