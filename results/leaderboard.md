@@ -48,10 +48,18 @@
 | 2 | myopic | 166.0176 |
 | 3 | uniform | 330.3924 |
 
+## D-interference  (metric: regret, lower is better)
+
+| rank | method | value |
+|---|---|---|
+| 1 | equilibrium-CHC **(best)** | 0.0000 |
+| 2 | no-incentive | 1.1451 |
+| 3 | naive-uplift | 1.9274 |
+
 ## E-systems  (metric: solve_ms, lower is better)
 
 | rank | method | value |
 |---|---|---|
-| 1 | known-only **(best)** | 12.3143 |
-| 2 | hybrid-CHC | 19.4235 |
+| 1 | known-only **(best)** | 10.8198 |
+| 2 | hybrid-CHC | 21.8986 |
 

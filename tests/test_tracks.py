@@ -1,6 +1,7 @@
 """Smoke tests for the five tracks (small budgets; full run_all is a deliberate heavier call)."""
 
 from causaldyn_bench.adaptive_cv import AdaptiveCVTask
+from causaldyn_bench.interference import ZoneIncentiveGame
 from causaldyn_bench.leaderboard import format_leaderboard, save_results, to_markdown
 from causaldyn_bench.tracks import (
     TrackResult,
@@ -43,6 +44,13 @@ def test_adaptive_cv_mpc_beats_priority_blind_myopic() -> None:
         results["CHC-MPC"].value < results["myopic"].value
     )  # planning beats load-proportional myopic
     assert results["CHC-MPC"].value <= results["uniform"].value + 1e-6
+
+
+def test_interference_naive_uplift_loses_to_equilibrium_aware() -> None:
+    results = {r.method: r for r in ZoneIncentiveGame(n_zones=6).run(steps=200)}
+    # under interference the SUTVA-naive uplift over-allocates and is even worse than doing nothing:
+    assert results["equilibrium-CHC"].value < results["naive-uplift"].value
+    assert results["naive-uplift"].value > results["no-incentive"].value
 
 
 def test_track_d_control_and_leaderboard_render() -> None:

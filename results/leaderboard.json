@@ -161,17 +161,38 @@
     "lower_is_better": true
   },
   {
+    "track": "D-interference",
+    "method": "no-incentive",
+    "metric": "regret",
+    "value": 1.1451420783996582,
+    "lower_is_better": true
+  },
+  {
+    "track": "D-interference",
+    "method": "naive-uplift",
+    "metric": "regret",
+    "value": 1.9274230003356934,
+    "lower_is_better": true
+  },
+  {
+    "track": "D-interference",
+    "method": "equilibrium-CHC",
+    "metric": "regret",
+    "value": 0.0,
+    "lower_is_better": true
+  },
+  {
     "track": "E-systems",
     "method": "known-only",
     "metric": "solve_ms",
-    "value": 12.314299994613975,
+    "value": 10.819777991855517,
     "lower_is_better": true
   },
   {
     "track": "E-systems",
     "method": "hybrid-CHC",
     "metric": "solve_ms",
-    "value": 19.423456004005857,
+    "value": 21.898633014643565,
     "lower_is_better": true
   }
 ]

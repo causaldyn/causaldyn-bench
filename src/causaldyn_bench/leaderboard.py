@@ -8,6 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 from causaldyn_bench.adaptive_cv import track_adaptive_cv
+from causaldyn_bench.interference import track_interference
 from causaldyn_bench.tracks import (
     TrackResult,
     fit_dynamics_models,
@@ -28,6 +29,7 @@ def run_all(seed: int = 0, steps: int = 1500) -> list[TrackResult]:
         *track_c_effect(seed),
         *track_d_control(),
         *track_adaptive_cv(),
+        *track_interference(),
         *track_e_systems(models),
     ]
 
