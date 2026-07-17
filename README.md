@@ -27,12 +27,19 @@ budget. Track A is expected to go to the trees; the value is Tracks B–D.
 ## Run
 
 ```bash
-uv sync --extra trees          # tree baselines for Tracks A/B (optional)
-uv run python -m causaldyn_bench
-uv run pytest                  # smoke tests
+uv sync --extra trees                   # tree baselines for Tracks A/B (optional)
+uv run python -m causaldyn_bench         # print the leaderboard
+uv run python -m causaldyn_bench --save  # also write results/leaderboard.{md,json}
+uv run pytest                            # smoke tests
 ```
 
 Without the `trees` extra the tree baselines are simply omitted; the hybrid/causal methods still run.
+On Tracks A/B the dynamics competitors are **known-only** (true physics), **dlm** (data-driven linear /
+state-space), **tree-surrogate** (LightGBM), and **hybrid-CHC** (physics + learned residual).
+
+A committed snapshot lives in [`results/leaderboard.md`](results/leaderboard.md): hybrid wins B-rollout
+~18× over the tree and ~14× over the DLM, causal wins C ~800× over naive, causal-CHC is near-oracle on
+D while predictive blows up, and CHC-MPC matches the oracle on the adaptive-CV task (myopic loses).
 
 ## Status
 

@@ -1,8 +1,9 @@
 """Smoke tests for the five tracks (small budgets; full run_all is a deliberate heavier call)."""
 
 from causaldyn_bench.adaptive_cv import AdaptiveCVTask
-from causaldyn_bench.leaderboard import format_leaderboard
+from causaldyn_bench.leaderboard import format_leaderboard, save_results, to_markdown
 from causaldyn_bench.tracks import (
+    TrackResult,
     fit_dynamics_models,
     track_a_onestep,
     track_c_effect,
@@ -20,9 +21,20 @@ def test_track_c_effect_ranks_causal_above_naive() -> None:
 def test_dynamics_tracks_run_on_a_small_budget() -> None:
     models = fit_dynamics_models(steps=50, n=400)
     a_methods = {r.method for r in track_a_onestep(models)}
-    assert a_methods >= {"known-only", "hybrid-CHC"}
+    assert a_methods >= {"known-only", "hybrid-CHC", "dlm"}  # DLM baseline is always present
     latencies = track_e_systems(models, steps=5)
     assert all(r.value > 0.0 for r in latencies)  # a positive solve time
+
+
+def test_save_results_writes_a_snapshot(tmp_path) -> None:
+    rows = [
+        TrackResult("A-onestep", "m1", "rmse", 0.1),
+        TrackResult("A-onestep", "m2", "rmse", 0.2),
+    ]
+    assert "# causaldyn-bench leaderboard" in to_markdown(rows)
+    out = save_results(rows, out_dir=str(tmp_path / "results"))
+    assert (out / "leaderboard.md").exists()
+    assert (out / "leaderboard.json").exists()
 
 
 def test_adaptive_cv_mpc_beats_priority_blind_myopic() -> None:

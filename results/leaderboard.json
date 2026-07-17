@@ -1,0 +1,177 @@
+[
+  {
+    "track": "A-onestep",
+    "method": "known-only",
+    "metric": "rmse",
+    "value": 0.07009708998465476,
+    "lower_is_better": true
+  },
+  {
+    "track": "A-onestep",
+    "method": "hybrid-CHC",
+    "metric": "rmse",
+    "value": 0.001652705002113296,
+    "lower_is_better": true
+  },
+  {
+    "track": "A-onestep",
+    "method": "dlm",
+    "metric": "rmse",
+    "value": 0.04468201731066905,
+    "lower_is_better": true
+  },
+  {
+    "track": "A-onestep",
+    "method": "tree-surrogate",
+    "metric": "rmse",
+    "value": 0.03345178297288591,
+    "lower_is_better": true
+  },
+  {
+    "track": "B-rollout",
+    "method": "known-only",
+    "metric": "rmse",
+    "value": 0.46759846806526184,
+    "lower_is_better": true
+  },
+  {
+    "track": "B-rollout",
+    "method": "hybrid-CHC",
+    "metric": "rmse",
+    "value": 0.026026764884591103,
+    "lower_is_better": true
+  },
+  {
+    "track": "B-rollout",
+    "method": "dlm",
+    "metric": "rmse",
+    "value": 0.35630271784023776,
+    "lower_is_better": true
+  },
+  {
+    "track": "B-rollout",
+    "method": "tree-surrogate",
+    "metric": "rmse",
+    "value": 0.4652357847136507,
+    "lower_is_better": true
+  },
+  {
+    "track": "C-effect",
+    "method": "naive",
+    "metric": "ate_error",
+    "value": 1.199846476316452,
+    "lower_is_better": true
+  },
+  {
+    "track": "C-effect",
+    "method": "backdoor-CHC",
+    "metric": "ate_error",
+    "value": 0.0014638900756835938,
+    "lower_is_better": true
+  },
+  {
+    "track": "C-effect",
+    "method": "double-ml-CHC",
+    "metric": "ate_error",
+    "value": 0.0014612674713134766,
+    "lower_is_better": true
+  },
+  {
+    "track": "D-control",
+    "method": "pricing/oracle",
+    "metric": "regret",
+    "value": 0.0,
+    "lower_is_better": true
+  },
+  {
+    "track": "D-control",
+    "method": "pricing/causal-CHC",
+    "metric": "regret",
+    "value": -0.0025281906127929688,
+    "lower_is_better": true
+  },
+  {
+    "track": "D-control",
+    "method": "pricing/predictive",
+    "metric": "regret",
+    "value": 13735.492685317993,
+    "lower_is_better": true
+  },
+  {
+    "track": "D-control",
+    "method": "inventory/oracle",
+    "metric": "regret",
+    "value": 0.0,
+    "lower_is_better": true
+  },
+  {
+    "track": "D-control",
+    "method": "inventory/causal-CHC",
+    "metric": "regret",
+    "value": 5.4836273193359375e-06,
+    "lower_is_better": true
+  },
+  {
+    "track": "D-control",
+    "method": "inventory/predictive",
+    "metric": "regret",
+    "value": 1.0976861715316772,
+    "lower_is_better": true
+  },
+  {
+    "track": "D-control",
+    "method": "support-shift/oracle",
+    "metric": "regret",
+    "value": 0.0,
+    "lower_is_better": true
+  },
+  {
+    "track": "D-control",
+    "method": "support-shift/pessimistic",
+    "metric": "regret",
+    "value": 2.417774200439453,
+    "lower_is_better": true
+  },
+  {
+    "track": "D-control",
+    "method": "support-shift/greedy",
+    "metric": "regret",
+    "value": 5.5573883056640625,
+    "lower_is_better": true
+  },
+  {
+    "track": "D-adaptive-cv",
+    "method": "uniform",
+    "metric": "regret",
+    "value": 330.39239501953125,
+    "lower_is_better": true
+  },
+  {
+    "track": "D-adaptive-cv",
+    "method": "myopic",
+    "metric": "regret",
+    "value": 166.01763916015625,
+    "lower_is_better": true
+  },
+  {
+    "track": "D-adaptive-cv",
+    "method": "CHC-MPC",
+    "metric": "regret",
+    "value": 0.0,
+    "lower_is_better": true
+  },
+  {
+    "track": "E-systems",
+    "method": "known-only",
+    "metric": "solve_ms",
+    "value": 12.314299994613975,
+    "lower_is_better": true
+  },
+  {
+    "track": "E-systems",
+    "method": "hybrid-CHC",
+    "metric": "solve_ms",
+    "value": 19.423456004005857,
+    "lower_is_better": true
+  }
+]

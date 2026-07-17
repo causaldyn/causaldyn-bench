@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pandas as pd
 
 from causaldyn_bench.adaptive_cv import track_adaptive_cv
@@ -59,3 +62,31 @@ def format_leaderboard(results: list[TrackResult]) -> str:
             mark = "  <-- best" if i == 0 else ""
             lines.append(f"  {row['method']:<28}{row['value']:>12.4f}{mark}")
     return "\n".join(lines)
+
+
+def to_markdown(results: list[TrackResult]) -> str:
+    """Render the leaderboard as grouped markdown tables (a committable results snapshot)."""
+    frame = to_frame(results)
+    lines = ["# causaldyn-bench leaderboard", ""]
+    for track in frame["track"].unique():
+        sub = frame[frame["track"] == track]
+        ascending = bool(sub["lower_is_better"].iloc[0])
+        sub = sub.sort_values("value", ascending=ascending)
+        direction = "lower" if ascending else "higher"
+        lines += [f"## {track}  (metric: {sub['metric'].iloc[0]}, {direction} is better)", ""]
+        lines += ["| rank | method | value |", "|---|---|---|"]
+        for i, (_, row) in enumerate(sub.iterrows()):
+            best = " **(best)**" if i == 0 else ""
+            lines.append(f"| {i + 1} | {row['method']}{best} | {row['value']:.4f} |")
+        lines.append("")
+    return "\n".join(lines) + "\n"
+
+
+def save_results(results: list[TrackResult], out_dir: str = "results") -> Path:
+    """Write leaderboard.md and leaderboard.json to ``out_dir`` (the committable snapshot)."""
+    out = Path(out_dir)
+    out.mkdir(exist_ok=True)
+    (out / "leaderboard.md").write_text(to_markdown(results))
+    rows = to_frame(results).to_dict(orient="records")
+    (out / "leaderboard.json").write_text(json.dumps(rows, indent=2) + "\n")
+    return out

@@ -34,6 +34,8 @@ from chc import (
 )
 from chc.benchmark import InventoryTask, PricingTask, SupportShiftTask
 
+from causaldyn_bench.baselines import LinearFitDynamics
+
 DT = 0.05
 
 
@@ -74,6 +76,7 @@ def fit_dynamics_models(seed: int = 0, steps: int = 1500, n: int = 2000) -> dict
         DT,
         steps=steps,
     )
+    dlm = LinearFitDynamics().fit(np.asarray(xs), np.asarray(us), np.asarray(x_next))
     tree = None
     try:
         from chc.surrogate import GradientBoostedDynamics
@@ -81,7 +84,14 @@ def fit_dynamics_models(seed: int = 0, steps: int = 1500, n: int = 2000) -> dict
         tree = GradientBoostedDynamics().fit(np.asarray(xs), np.asarray(us), np.asarray(x_next))
     except ImportError:
         pass
-    return {"plant": plant, "known_only": known_only, "hybrid": hybrid, "tree": tree, "data": data}
+    return {
+        "plant": plant,
+        "known_only": known_only,
+        "hybrid": hybrid,
+        "dlm": dlm,
+        "tree": tree,
+        "data": data,
+    }
 
 
 def track_a_onestep(models: dict[str, Any]) -> list[TrackResult]:
@@ -101,6 +111,9 @@ def track_a_onestep(models: dict[str, Any]) -> list[TrackResult]:
             float(one_step_mse(models["hybrid"], xs, us, x_next, DT)) ** 0.5,
         ),
     ]
+    dlm_pred = models["dlm"].predict(np.asarray(xs), np.asarray(us))
+    dlm_rmse = float(np.sqrt(np.mean((dlm_pred - np.asarray(x_next)) ** 2)))
+    out.append(TrackResult("A-onestep", "dlm", "rmse", dlm_rmse))
     if models["tree"] is not None:
         pred = models["tree"].predict(np.asarray(xs), np.asarray(us))
         rmse = float(np.sqrt(np.mean((pred - np.asarray(x_next)) ** 2)))
@@ -122,17 +135,24 @@ def track_b_rollout(
         pred = jax.vmap(lambda x0, u: rollout(model, x0, u, DT))(x0s, u_seq)
         return float(jnp.sqrt(jnp.mean((pred - truth) ** 2)))
 
+    def np_rollout_rmse(model: Any) -> float:
+        errs = [
+            np.mean(
+                (model.rollout(np.asarray(x0s[i]), np.asarray(u_seq[i])) - np.asarray(truth[i]))
+                ** 2
+            )
+            for i in range(n_eval)
+        ]
+        return float(np.sqrt(np.mean(errs)))
+
     out = [
         TrackResult("B-rollout", "known-only", "rmse", jax_rmse(models["known_only"])),
         TrackResult("B-rollout", "hybrid-CHC", "rmse", jax_rmse(models["hybrid"])),
+        TrackResult("B-rollout", "dlm", "rmse", np_rollout_rmse(models["dlm"])),
     ]
     if models["tree"] is not None:
-        errs = []
-        for i in range(n_eval):
-            pred = models["tree"].rollout(np.asarray(x0s[i]), np.asarray(u_seq[i]))
-            errs.append(np.mean((pred - np.asarray(truth[i])) ** 2))
         out.append(
-            TrackResult("B-rollout", "tree-surrogate", "rmse", float(np.sqrt(np.mean(errs))))
+            TrackResult("B-rollout", "tree-surrogate", "rmse", np_rollout_rmse(models["tree"]))
         )
     return out
 
