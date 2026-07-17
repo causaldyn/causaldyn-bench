@@ -15,10 +15,14 @@ from causaldyn_bench.boptest import (
     run_episode,
 )
 from causaldyn_bench.boptest_chc import (
+    LOWER_SETP,
     U_ACT,
     U_HP,
+    UPPER_SETP,
     _make_mpc_solver,
     mpc_controller,
+    mpc_step,
+    naive_step,
 )
 
 _URL = os.environ.get("BOPTEST_URL")
@@ -41,6 +45,17 @@ def test_mpc_controller_emits_a_bounded_heatpump_overwrite() -> None:
 
 def test_mpc_controller_no_overwrite_without_measurements() -> None:
     assert mpc_controller(_MODEL)({}) == {}
+
+
+def test_mpc_step_plans_against_the_comfort_forecast() -> None:
+    forecast = {LOWER_SETP: [294.15] * 17, UPPER_SETP: [297.15] * 17}  # horizon 16 needs 17 points
+    action = mpc_step(_MODEL)({"reaTZon_y": 289.0}, forecast)
+    assert action[U_ACT] == 1 and 0.0 <= action[U_HP] <= 1.0
+
+
+def test_naive_step_ignores_the_forecast() -> None:
+    action = naive_step(_MODEL)({"reaTZon_y": 289.0, "reaTSetHea_y": 294.15}, {})
+    assert action[U_ACT] == 1 and 0.0 <= action[U_HP] <= 1.0
 
 
 def test_is_available_false_for_unreachable_service() -> None:

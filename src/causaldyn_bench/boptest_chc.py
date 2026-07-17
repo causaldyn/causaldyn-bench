@@ -8,6 +8,7 @@ Requires a running BOPTEST-Service; the first controller-in-the-loop step toward
 
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
 from typing import Any
 
 import jax
@@ -20,6 +21,9 @@ from causaldyn_bench.boptest import (
     baseline_controller,
     run_episode,
 )
+
+# A step function maps (measurements, comfort-bound forecast) to a BOPTEST overwrite dict.
+StepFn = Callable[[Mapping[str, float], Mapping[str, list[float]]], Mapping[str, float]]
 
 T_ZONE = "reaTZon_y"  # zone operative temperature (K)
 T_SET_HEAT = "reaTSetHea_y"  # heating setpoint (K)
@@ -86,6 +90,7 @@ def chc_controller(coef: np.ndarray, offset: float = 0.5):
 
 
 LOWER_SETP = "LowerSetp[1]"  # forecast of the lower comfort bound (what `tdis` is scored against)
+UPPER_SETP = "UpperSetp[1]"  # forecast of the upper comfort bound (for plotting the comfort band)
 
 
 def _make_mpc_solver(
@@ -169,6 +174,58 @@ def run_mpc_episode(
         return client.kpi(testid)
     finally:
         client.stop(testid)
+
+
+def naive_step(coef: np.ndarray) -> StepFn:
+    """Wrap the certainty-equivalent controller as a forecast-ignoring :data:`StepFn`."""
+    controller = chc_controller(coef)
+    return lambda measurements, _forecast: controller(measurements)
+
+
+def mpc_step(coef: np.ndarray, horizon: int = 16, **solver: Any) -> StepFn:
+    """A forecast-driven comfort-MPC :data:`StepFn`: plan against the comfort-bound look-ahead."""
+    solve = _make_mpc_solver(coef, **solver)
+
+    def step(
+        measurements: Mapping[str, float], forecast: Mapping[str, list[float]]
+    ) -> dict[str, Any]:
+        setpoints = jnp.asarray(forecast[LOWER_SETP][1 : horizon + 1])
+        return {U_HP: solve(measurements[T_ZONE], setpoints), U_ACT: 1}
+
+    return step
+
+
+def trace_episode(
+    client: BOPTestClient,
+    testcase: str,
+    step_fn: StepFn,
+    horizon: int = 16,
+    step_s: float = 1800.0,
+    horizon_steps: int = 48,
+) -> dict[str, list[float]]:
+    """Run ``step_fn`` in the loop, recording the per-step trajectory for the comfort plot.
+
+    Returns parallel series ``hour``/``tzon``/``lower``/``upper``/``action`` (temps in Celsius): the
+    zone temperature against the time-varying comfort band, plus the applied modulation. Both bounds
+    are fetched every step -- the band for the plot, the look-ahead for the controller.
+    """
+    testid = client.select(testcase)
+    trace: dict[str, list[float]] = {k: [] for k in ("hour", "tzon", "lower", "upper", "action")}
+    try:
+        client.set_step(testid, step_s)
+        measurements = client.initialize(testid, 0.0, 0.0)
+        for i in range(horizon_steps):
+            forecast = client.forecast(testid, [LOWER_SETP, UPPER_SETP], horizon * step_s, step_s)
+            action = step_fn(measurements, forecast)
+            trace["hour"].append(i * step_s / 3600.0)
+            trace["tzon"].append(measurements[T_ZONE] - 273.15)
+            trace["lower"].append(forecast[LOWER_SETP][0] - 273.15)
+            trace["upper"].append(forecast[UPPER_SETP][0] - 273.15)
+            trace["action"].append(float(action.get(U_HP, 0.0)))
+            measurements = client.advance(testid, action)
+    finally:
+        client.stop(testid)
+    return trace
 
 
 def compare_controllers(
