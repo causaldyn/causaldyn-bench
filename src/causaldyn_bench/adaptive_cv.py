@@ -18,19 +18,9 @@ from dataclasses import dataclass
 import jax
 import jax.numpy as jnp
 import optax
+from chc.games import project_simplex
 
 from causaldyn_bench.tracks import TrackResult
-
-
-def _project_simplex(v: jax.Array, z: float) -> jax.Array:
-    """Euclidean projection of ``v`` onto ``{u >= 0, sum u = z}`` (Duchi et al. 2008)."""
-    n = v.shape[0]
-    sorted_v = jnp.sort(v)[::-1]
-    cssv = jnp.cumsum(sorted_v) - z
-    ind = jnp.arange(n) + 1
-    rho = jnp.count_nonzero(sorted_v - cssv / ind > 0)
-    theta = cssv[rho - 1] / rho
-    return jnp.maximum(v - theta, 0.0)
 
 
 @dataclass(frozen=True)
@@ -115,7 +105,7 @@ class AdaptiveCVTask:
         alloc = jnp.full((self.horizon, self.n_streams), self.budget / self.n_streams)
         value_and_grad = jax.jit(jax.value_and_grad(self._cost_of_open_loop))
         cost_of = jax.jit(self._cost_of_open_loop)
-        project = jax.vmap(lambda row: _project_simplex(row, self.budget))
+        project = jax.vmap(lambda row: project_simplex(row, self.budget))
         optimizer = optax.adam(lr)
         opt_state = optimizer.init(alloc)
         best_alloc, best_cost = alloc, float(cost_of(alloc))

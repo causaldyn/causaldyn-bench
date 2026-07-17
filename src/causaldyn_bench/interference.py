@@ -15,9 +15,8 @@ from dataclasses import dataclass
 
 import jax
 import jax.numpy as jnp
-import optax
+from chc.games import softmax_congestion_equilibrium, stackelberg_allocation
 
-from causaldyn_bench.adaptive_cv import _project_simplex
 from causaldyn_bench.tracks import TrackResult
 
 
@@ -42,15 +41,11 @@ class ZoneIncentiveGame:
         return demand, attract
 
     def equilibrium(self, u: jax.Array, iters: int = 120) -> jax.Array:
-        """Follower equilibrium: softmax congestion fixed point of the drivers given ``u``."""
+        """Follower equilibrium via ``chc.games`` (softmax congestion fixed point) given ``u``."""
         _, attract = self._demand_attract()
-
-        def body(_: int, x: jax.Array) -> jax.Array:
-            value = self.beta * (attract + u - self.congestion * x / self.driver_mass)
-            return 0.5 * x + 0.5 * self.driver_mass * jax.nn.softmax(value)
-
-        x0 = jnp.full(self.n_zones, self.driver_mass / self.n_zones)
-        return jax.lax.fori_loop(0, iters, body, x0)
+        return softmax_congestion_equilibrium(
+            attract, u, self.congestion, self.driver_mass, self.beta, iters
+        )
 
     def completions(self, u: jax.Array) -> jax.Array:
         """Total completed rides = sum of min(demand, drivers) over zones at the equilibrium."""
@@ -69,21 +64,9 @@ class ZoneIncentiveGame:
         weights = jnp.maximum(grads, 0.0)
         return self.budget * weights / (jnp.sum(weights) + 1e-9)
 
-    def optimal_allocation(self, steps: int = 400, lr: float = 0.05) -> jax.Array:
-        """Equilibrium-aware allocation: gradient ascent on completions through the equilibrium."""
-        u = jnp.full(self.n_zones, self.budget / self.n_zones)
-        grad_fn = jax.jit(jax.grad(lambda u: -self.completions(u)))
-        value_fn = jax.jit(self.completions)
-        optimizer = optax.adam(lr)
-        state = optimizer.init(u)
-        best_u, best_val = u, float(value_fn(u))
-        for _ in range(steps):
-            updates, state = optimizer.update(grad_fn(u), state)
-            u = _project_simplex(optax.apply_updates(u, updates), self.budget)
-            val = float(value_fn(u))
-            if val > best_val:
-                best_u, best_val = u, val
-        return best_u
+    def optimal_allocation(self, steps: int = 400) -> jax.Array:
+        """Equilibrium-aware allocation: bilevel ascent on completions through chc.games."""
+        return stackelberg_allocation(self.completions, self.n_zones, self.budget, steps=steps)
 
     def run(self, steps: int = 400) -> list[TrackResult]:
         """Score no-incentive / naive / equilibrium-CHC by realised-completions regret."""
