@@ -40,11 +40,18 @@ def _request(
     url: str, method: str, payload: Mapping[str, Any] | None = None, timeout: float = 60.0
 ) -> Any:
     data = json.dumps(payload).encode() if payload is not None else None
-    req = urllib.request.Request(
-        url, data=data, method=method, headers={"Content-Type": "application/json"}
-    )
+    # only advertise a JSON body when we actually send one -- BOPTEST's Node server does JSON.parse on
+    # any application/json request and 500s on an empty body (e.g. the no-payload POST /select).
+    headers = {"Content-Type": "application/json"} if data is not None else {}
+    req = urllib.request.Request(url, data=data, method=method, headers=headers)
     with urllib.request.urlopen(req, timeout=timeout) as resp:  # JSON REST API at a fixed base URL
-        return _unwrap(json.loads(resp.read().decode()))
+        body = resp.read().decode()
+    if not body.strip():
+        return None
+    try:
+        return _unwrap(json.loads(body))
+    except json.JSONDecodeError:
+        return body  # e.g. /stop returns a plain-text confirmation, not JSON
 
 
 @dataclass
