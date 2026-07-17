@@ -70,10 +70,25 @@
 | 1 | chc-discovery-adjusted **(best)** | 0.0010 |
 | 2 | naive-unadjusted | 1.2276 |
 
+## G-effect  (metric: irf_error, lower is better)
+
+| rank | method | value |
+|---|---|---|
+| 1 | structured-toeplitz **(best)** | 0.0145 |
+| 2 | local-projections | 0.0315 |
+| 3 | naive-static | 0.6000 |
+
+## G-payoff  (metric: track_error, lower is better)
+
+| rank | method | value |
+|---|---|---|
+| 1 | chc-irf **(best)** | 0.0326 |
+| 2 | one-step | 1.0049 |
+
 ## E-systems  (metric: solve_ms, lower is better)
 
 | rank | method | value |
 |---|---|---|
-| 1 | known-only **(best)** | 10.9196 |
-| 2 | hybrid-CHC | 19.3016 |
+| 1 | known-only **(best)** | 11.0463 |
+| 2 | hybrid-CHC | 18.9068 |
 

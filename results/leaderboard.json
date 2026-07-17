@@ -210,17 +210,52 @@
     "lower_is_better": true
   },
   {
+    "track": "G-effect",
+    "method": "naive-static",
+    "metric": "irf_error",
+    "value": 0.6,
+    "lower_is_better": true
+  },
+  {
+    "track": "G-effect",
+    "method": "local-projections",
+    "metric": "irf_error",
+    "value": 0.031474177012443524,
+    "lower_is_better": true
+  },
+  {
+    "track": "G-effect",
+    "method": "structured-toeplitz",
+    "metric": "irf_error",
+    "value": 0.014468854224400543,
+    "lower_is_better": true
+  },
+  {
+    "track": "G-payoff",
+    "method": "one-step",
+    "metric": "track_error",
+    "value": 1.0048710437706818,
+    "lower_is_better": true
+  },
+  {
+    "track": "G-payoff",
+    "method": "chc-irf",
+    "metric": "track_error",
+    "value": 0.03257076643008183,
+    "lower_is_better": true
+  },
+  {
     "track": "E-systems",
     "method": "known-only",
     "metric": "solve_ms",
-    "value": 10.919555992586538,
+    "value": 11.046286002965644,
     "lower_is_better": true
   },
   {
     "track": "E-systems",
     "method": "hybrid-CHC",
     "metric": "solve_ms",
-    "value": 19.30159199400805,
+    "value": 18.906837998656556,
     "lower_is_better": true
   }
 ]

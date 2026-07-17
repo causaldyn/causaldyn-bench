@@ -8,6 +8,7 @@ the causal hybrid controller wins the decision tracks. Built on ``chc``.
 from __future__ import annotations
 
 from causaldyn_bench.adaptive_cv import AdaptiveCVTask, track_adaptive_cv
+from causaldyn_bench.dynamic_effect import track_dynamic_effect
 from causaldyn_bench.interference import (
     ZoneIncentiveGame,
     interference_report,
@@ -50,6 +51,7 @@ __all__ = [
     "track_b_rollout",
     "track_c_effect",
     "track_d_control",
+    "track_dynamic_effect",
     "track_e_systems",
     "track_interference",
     "track_structure",
