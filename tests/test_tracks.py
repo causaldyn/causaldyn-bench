@@ -1,5 +1,6 @@
 """Smoke tests for the five tracks (small budgets; full run_all is a deliberate heavier call)."""
 
+from causaldyn_bench.adaptive_cv import AdaptiveCVTask
 from causaldyn_bench.leaderboard import format_leaderboard
 from causaldyn_bench.tracks import (
     fit_dynamics_models,
@@ -22,6 +23,14 @@ def test_dynamics_tracks_run_on_a_small_budget() -> None:
     assert a_methods >= {"known-only", "hybrid-CHC"}
     latencies = track_e_systems(models, steps=5)
     assert all(r.value > 0.0 for r in latencies)  # a positive solve time
+
+
+def test_adaptive_cv_mpc_beats_priority_blind_myopic() -> None:
+    results = {r.method: r for r in AdaptiveCVTask(horizon=14).run(mpc_steps=150)}
+    assert (
+        results["CHC-MPC"].value < results["myopic"].value
+    )  # planning beats load-proportional myopic
+    assert results["CHC-MPC"].value <= results["uniform"].value + 1e-6
 
 
 def test_track_d_control_and_leaderboard_render() -> None:

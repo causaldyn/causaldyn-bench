@@ -7,6 +7,7 @@ the causal hybrid controller wins the decision tracks. Built on ``chc``.
 
 from __future__ import annotations
 
+from causaldyn_bench.adaptive_cv import AdaptiveCVTask, track_adaptive_cv
 from causaldyn_bench.leaderboard import format_leaderboard, run_all, to_frame
 from causaldyn_bench.tracks import (
     TrackResult,
@@ -21,6 +22,7 @@ from causaldyn_bench.tracks import (
 __version__ = "0.0.1"
 
 __all__ = [
+    "AdaptiveCVTask",
     "TrackResult",
     "__version__",
     "fit_dynamics_models",
@@ -28,6 +30,7 @@ __all__ = [
     "run_all",
     "to_frame",
     "track_a_onestep",
+    "track_adaptive_cv",
     "track_b_rollout",
     "track_c_effect",
     "track_d_control",

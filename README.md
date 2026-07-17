@@ -15,6 +15,12 @@ closed-loop decision. Built on [`causal-hybrid-control`](../causal-hybrid-contro
 | **D** control | `u_t = π(x_t)` under constraints | regret vs oracle | causal hybrid controller |
 | **E** systems | control-solve latency | ms | (a compiled runtime, later) |
 
+Track D bundles the CHC oracle-regret tasks (pricing / inventory / support-shift) **and** an
+**adaptive-CV-compute** task (`adaptive_cv`): split a shared GPU budget across video streams under
+known, bursty arrivals and heterogeneous priorities. A priority-blind, load-proportional myopic split
+crowds out critical streams; the constrained CHC-MPC plans over the known dynamics and matches the
+oracle. First numbers — CHC-MPC regret `0.0`, myopic `166`, uniform `330`.
+
 Design rule: to be honest about the win, **never** claim "best model" — claim the decision under a stated
 budget. Track A is expected to go to the trees; the value is Tracks B–D.
 
@@ -31,10 +37,10 @@ Without the `trees` extra the tree baselines are simply omitted; the hybrid/caus
 ## Status
 
 v0.0.1 scaffold: all five tracks run on the synthetic CHC systems (a damped oscillator with hidden cubic
-physics for A/B/E, a confounded linear system for C, the CHC oracle-regret tasks for D). A **BOPTEST**
-(HVAC control) client + control episode ship in `causaldyn_bench.boptest`, gated on a running BOPTEST
-service (`BOPTEST_URL`); wiring a CHC hybrid-MPC controller into it, plus an **adaptive-CV-compute**
-benchmark, are next.
+physics for A/B/E, a confounded linear system for C, the CHC oracle-regret tasks plus the
+**adaptive-CV-compute** task for D). A **BOPTEST** (HVAC control) client + control episode ship in
+`causaldyn_bench.boptest`, gated on a running BOPTEST service (`BOPTEST_URL`); wiring a CHC hybrid-MPC
+controller into BOPTEST is next.
 
 ```python
 from causaldyn_bench.boptest import BOPTestClient, baseline_controller, run_episode
