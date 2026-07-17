@@ -7,8 +7,8 @@ discomfort, cost, emissions, peak power, computational time); the top real-data 
 The current BOPTEST deploys as **BOPTEST-Service** (a local web-service, default
 ``http://127.0.0.1:8000``), so there is no live test here -- bring it up (repo README; on Fedora:
 ``podman-compose up web worker provision``) and point ``BOPTEST_URL`` at it. Its REST API is
-**testid-based**: select a test case to get a ``testid``, then drive that test; responses are wrapped
-as ``{status, message, payload}``. The client uses only the stdlib. Control inputs follow BOPTEST's
+**testid-based**: select a test case to get a ``testid``, then drive that test. Responses wrap as
+``{status, message, payload}``. The client uses only the stdlib. Control inputs follow BOPTEST's
 overwrite convention: for a point ``p`` send ``{"p_u": value, "p_activate": 1}``; ``{}`` = baseline.
 """
 
