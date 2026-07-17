@@ -182,17 +182,45 @@
     "lower_is_better": true
   },
   {
+    "track": "F-structure",
+    "method": "naive-correlation",
+    "metric": "edge_f1",
+    "value": 0.2745098039215686,
+    "lower_is_better": false
+  },
+  {
+    "track": "F-structure",
+    "method": "chc-discovery",
+    "metric": "edge_f1",
+    "value": 0.9333333333333333,
+    "lower_is_better": false
+  },
+  {
+    "track": "F-payoff",
+    "method": "naive-unadjusted",
+    "metric": "ate_error",
+    "value": 1.227646455168724,
+    "lower_is_better": true
+  },
+  {
+    "track": "F-payoff",
+    "method": "chc-discovery-adjusted",
+    "metric": "ate_error",
+    "value": 0.0010315179824829102,
+    "lower_is_better": true
+  },
+  {
     "track": "E-systems",
     "method": "known-only",
     "metric": "solve_ms",
-    "value": 10.819777991855517,
+    "value": 10.919555992586538,
     "lower_is_better": true
   },
   {
     "track": "E-systems",
     "method": "hybrid-CHC",
     "metric": "solve_ms",
-    "value": 21.898633014643565,
+    "value": 19.30159199400805,
     "lower_is_better": true
   }
 ]

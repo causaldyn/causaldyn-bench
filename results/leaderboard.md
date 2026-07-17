@@ -56,10 +56,24 @@
 | 2 | no-incentive | 1.1451 |
 | 3 | naive-uplift | 1.9274 |
 
+## F-structure  (metric: edge_f1, higher is better)
+
+| rank | method | value |
+|---|---|---|
+| 1 | chc-discovery **(best)** | 0.9333 |
+| 2 | naive-correlation | 0.2745 |
+
+## F-payoff  (metric: ate_error, lower is better)
+
+| rank | method | value |
+|---|---|---|
+| 1 | chc-discovery-adjusted **(best)** | 0.0010 |
+| 2 | naive-unadjusted | 1.2276 |
+
 ## E-systems  (metric: solve_ms, lower is better)
 
 | rank | method | value |
 |---|---|---|
-| 1 | known-only **(best)** | 10.8198 |
-| 2 | hybrid-CHC | 21.8986 |
+| 1 | known-only **(best)** | 10.9196 |
+| 2 | hybrid-CHC | 19.3016 |
 

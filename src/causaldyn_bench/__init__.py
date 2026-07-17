@@ -20,6 +20,7 @@ from causaldyn_bench.leaderboard import (
     to_frame,
     to_markdown,
 )
+from causaldyn_bench.structure import track_structure
 from causaldyn_bench.tracks import (
     TrackResult,
     fit_dynamics_models,
@@ -51,4 +52,5 @@ __all__ = [
     "track_d_control",
     "track_e_systems",
     "track_interference",
+    "track_structure",
 ]
