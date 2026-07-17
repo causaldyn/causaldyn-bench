@@ -5,6 +5,7 @@ import os
 import pytest
 
 from causaldyn_bench.boptest import (
+    DEFAULT_TESTCASE,
     BOPTestClient,
     baseline_controller,
     boptest_track,
@@ -24,13 +25,15 @@ def test_baseline_controller_hands_back_to_emulator() -> None:
 
 
 def test_boptest_track_raises_without_a_service() -> None:
-    with pytest.raises(RuntimeError, match="no BOPTEST service"):
+    with pytest.raises(RuntimeError, match="no BOPTEST-Service"):
         boptest_track("http://127.0.0.1:1")
 
 
-@pytest.mark.skipif(not _URL, reason="set BOPTEST_URL to a running BOPTEST service")
+@pytest.mark.skipif(not _URL, reason="set BOPTEST_URL to a running BOPTEST-Service")
 def test_live_baseline_episode_returns_standard_kpis() -> None:
     if not is_available(_URL):
         pytest.skip("BOPTEST_URL is set but the service is unreachable")
-    kpis = run_episode(BOPTestClient(_URL), baseline_controller(), horizon_steps=6)
+    kpis = run_episode(
+        BOPTestClient(_URL), DEFAULT_TESTCASE, baseline_controller(), horizon_steps=6
+    )
     assert any(key in kpis for key in ("tdis_tot", "ener_tot", "cost_tot"))

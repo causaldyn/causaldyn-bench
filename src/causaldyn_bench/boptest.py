@@ -1,13 +1,15 @@
-"""BOPTEST integration: a thin REST client + a control episode, gated on a running BOPTEST service.
+"""BOPTEST-Service client + control episode, gated on a running BOPTEST deployment.
 
 BOPTEST (https://ibpsa.github.io/project1-boptest/) is *the* standard framework for building/HVAC
 control benchmarking -- realistic emulators, weather scenarios, and standard KPIs (energy, thermal
 discomfort, cost, emissions, peak power, computational time); the top real-data target for Track D.
 
-It runs as an external service (Docker; default ``http://127.0.0.1:5000``), so there is no live test
-here -- point ``BOPTEST_URL`` at a running instance to exercise it. The client uses only the stdlib
-(``urllib``), so it adds no dependency. Control inputs follow BOPTEST's overwrite convention: for a
-control point ``p`` send ``{"p_u": value, "p_activate": 1}``; an empty dict uses the baseline.
+The current BOPTEST deploys as **BOPTEST-Service** (a local web-service, default
+``http://127.0.0.1:8000``), so there is no live test here -- bring it up (repo README; on Fedora:
+``podman-compose up web worker provision``) and point ``BOPTEST_URL`` at it. Its REST API is
+**testid-based**: select a test case to get a ``testid``, then drive that test; responses are wrapped
+as ``{status, message, payload}``. The client uses only the stdlib. Control inputs follow BOPTEST's
+overwrite convention: for a point ``p`` send ``{"p_u": value, "p_activate": 1}``; ``{}`` = baseline.
 """
 
 from __future__ import annotations
@@ -20,14 +22,15 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
-DEFAULT_URL = os.environ.get("BOPTEST_URL", "http://127.0.0.1:5000")
+DEFAULT_URL = os.environ.get("BOPTEST_URL", "http://127.0.0.1:8000")
+DEFAULT_TESTCASE = "bestest_hydronic_heat_pump"
 
 # A controller maps measurements to BOPTEST control inputs (empty dict = use the baseline).
 Controller = Callable[[Mapping[str, float]], Mapping[str, float]]
 
 
 def _unwrap(parsed: Any) -> Any:
-    """Recent BOPTEST wraps responses as ``{status, message, payload}``; older returns the value."""
+    """BOPTEST-Service wraps responses as ``{status, message, payload}``; return the payload."""
     if isinstance(parsed, dict) and "payload" in parsed and {"status", "message"} & parsed.keys():
         return parsed["payload"]
     return parsed
@@ -46,40 +49,46 @@ def _request(
 
 @dataclass
 class BOPTestClient:
-    """Minimal client for the BOPTEST REST API (one test case per instance)."""
+    """Minimal client for the BOPTEST-Service REST API (testid-based; one test per ``testid``)."""
 
     base_url: str = DEFAULT_URL
 
-    def name(self) -> Any:
-        return _request(f"{self.base_url}/name", "GET")
+    def version(self) -> Any:
+        return _request(f"{self.base_url}/version", "GET")
 
-    def measurements(self) -> Any:
-        return _request(f"{self.base_url}/measurements", "GET")
+    def testcases(self) -> Any:
+        return _request(f"{self.base_url}/testcases", "GET")
 
-    def inputs(self) -> Any:
-        return _request(f"{self.base_url}/inputs", "GET")
+    def select(self, testcase: str) -> str:
+        """Select a test case and return its ``testid`` (required by every test-scoped call)."""
+        payload = _request(f"{self.base_url}/testcases/{testcase}/select", "POST")
+        return payload["testid"]
 
-    def set_step(self, step_s: float) -> Any:
-        return _request(f"{self.base_url}/step", "PUT", {"step": step_s})
+    def set_step(self, testid: str, step_s: float) -> Any:
+        return _request(f"{self.base_url}/step/{testid}", "PUT", {"step": step_s})
 
-    def initialize(self, start_time: float, warmup_period: float) -> Any:
+    def initialize(self, testid: str, start_time: float, warmup_period: float) -> Any:
         payload = {"start_time": start_time, "warmup_period": warmup_period}
-        return _request(f"{self.base_url}/initialize", "PUT", payload)
+        return _request(f"{self.base_url}/initialize/{testid}", "PUT", payload)
 
-    def advance(self, u: Mapping[str, float]) -> Any:
-        return _request(f"{self.base_url}/advance", "POST", dict(u))
+    def advance(self, testid: str, u: Mapping[str, float]) -> Any:
+        return _request(f"{self.base_url}/advance/{testid}", "POST", dict(u))
 
-    def scenario(self, **kwargs: Any) -> Any:
-        return _request(f"{self.base_url}/scenario", "PUT", kwargs)
+    def inputs(self, testid: str) -> Any:
+        return _request(f"{self.base_url}/inputs/{testid}", "GET")
 
-    def kpi(self) -> Any:
-        return _request(f"{self.base_url}/kpi", "GET")
+    def kpi(self, testid: str) -> Any:
+        return _request(f"{self.base_url}/kpi/{testid}", "GET")
+
+    def stop(self, testid: str) -> Any:
+        """Stop the test and free its worker (best practice after each episode)."""
+        return _request(f"{self.base_url}/stop/{testid}", "PUT")
 
 
 def is_available(base_url: str = DEFAULT_URL, timeout: float = 3.0) -> bool:
-    """True iff a BOPTEST service answers ``GET /name`` at ``base_url`` within ``timeout``."""
+    """True iff a BOPTEST-Service answers ``GET /version`` at ``base_url`` within ``timeout``."""
     try:
-        _request(f"{base_url}/name", "GET", timeout=timeout)
+        _request(f"{base_url}/version", "GET", timeout=timeout)
     except (urllib.error.URLError, TimeoutError, ConnectionError, json.JSONDecodeError):
         return False
     return True
@@ -96,6 +105,7 @@ def baseline_controller() -> Controller:
 
 def run_episode(
     client: BOPTestClient,
+    testcase: str,
     controller: Controller,
     *,
     start_time: float = 0.0,
@@ -103,33 +113,42 @@ def run_episode(
     step_s: float = 3600.0,
     horizon_steps: int = 24,
 ) -> dict[str, float]:
-    """Step ``controller`` through one episode and return the BOPTEST KPI dict."""
-    client.set_step(step_s)
-    measurements = client.initialize(start_time, warmup_period)
-    for _ in range(horizon_steps):
-        measurements = client.advance(controller(measurements))
-    return client.kpi()
+    """Select ``testcase``, step ``controller`` through one episode, and return the BOPTEST KPIs."""
+    testid = client.select(testcase)
+    try:
+        client.set_step(testid, step_s)
+        measurements = client.initialize(testid, start_time, warmup_period)
+        for _ in range(horizon_steps):
+            measurements = client.advance(testid, controller(measurements))
+        return client.kpi(testid)
+    finally:
+        client.stop(testid)  # free the worker even if the episode raises
 
 
 def boptest_track(
-    base_url: str = DEFAULT_URL, controllers: Mapping[str, Controller] | None = None, **episode: Any
+    base_url: str = DEFAULT_URL,
+    testcase: str = DEFAULT_TESTCASE,
+    controllers: Mapping[str, Controller] | None = None,
+    **episode: Any,
 ) -> list[Any]:
     """Run controllers on a live BOPTEST case and return KPIs as ``TrackResult`` rows (Track D).
 
-    Requires a BOPTEST service; raises ``RuntimeError`` otherwise. ``controllers`` defaults to the
+    Requires a reachable service; raises ``RuntimeError`` otherwise. ``controllers`` defaults to the
     built-in baseline; add a CHC hybrid-MPC controller once a residual is identified on-line.
     """
     from causaldyn_bench.tracks import TrackResult
 
     if not is_available(base_url):
         raise RuntimeError(
-            f"no BOPTEST service at {base_url}; set BOPTEST_URL to a running instance"
+            f"no BOPTEST-Service at {base_url}; set BOPTEST_URL to a running instance"
         )
     controllers = controllers or {"baseline": baseline_controller()}
     results: list[Any] = []
     for method, controller in controllers.items():
-        kpis = run_episode(BOPTestClient(base_url), controller, **episode)
+        kpis = run_episode(BOPTestClient(base_url), testcase, controller, **episode)
         for kpi_name, value in kpis.items():
             if isinstance(value, (int, float)):
-                results.append(TrackResult("D-boptest", method, kpi_name, float(value)))
+                results.append(
+                    TrackResult("D-boptest", f"{testcase}/{method}", kpi_name, float(value))
+                )
     return results
