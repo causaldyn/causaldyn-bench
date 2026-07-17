@@ -2,6 +2,8 @@
 
 import os
 
+import jax.numpy as jnp
+import numpy as np
 import pytest
 
 from causaldyn_bench.boptest import (
@@ -12,8 +14,33 @@ from causaldyn_bench.boptest import (
     is_available,
     run_episode,
 )
+from causaldyn_bench.boptest_chc import (
+    U_ACT,
+    U_HP,
+    _make_mpc_solver,
+    mpc_controller,
+)
 
 _URL = os.environ.get("BOPTEST_URL")
+# The identified stable model (a, b, d) for T_next = a*T + b*u + d; steady state spans ~14.6-26.8 C,
+# so a 21 C comfort bound is reachable and the solver's response is not clamped to a boundary.
+_MODEL = np.array([0.98, 0.2435, 5.756])
+
+
+def test_mpc_solver_heats_harder_when_colder() -> None:
+    solve = _make_mpc_solver(_MODEL)
+    setpoints = jnp.full(16, 294.15)  # comfort lower bound 21 C over the horizon
+    cold, warm = solve(289.0, setpoints), solve(298.0, setpoints)
+    assert 0.0 <= warm < cold <= 1.0  # far below setpoint -> full heat; already warm -> back off
+
+
+def test_mpc_controller_emits_a_bounded_heatpump_overwrite() -> None:
+    action = mpc_controller(_MODEL)({"reaTZon_y": 289.0, "reaTSetHea_y": 294.15})
+    assert action[U_ACT] == 1 and 0.0 <= action[U_HP] <= 1.0
+
+
+def test_mpc_controller_no_overwrite_without_measurements() -> None:
+    assert mpc_controller(_MODEL)({}) == {}
 
 
 def test_is_available_false_for_unreachable_service() -> None:
