@@ -74,18 +74,20 @@ BOPTEST_URL=http://127.0.0.1:8000 uv run python -c \
 ```
 
 Shut down with `podman-compose down`. Test cases include `bestest_hydronic_heat_pump` (default),
-`bestest_air`, `singlezone_commercial_hydronic`, and others. Wiring a CHC hybrid-MPC controller
-(RC-thermal + learned residual, MPC under comfort constraints) into this is the next step.
+`bestest_air`, `singlezone_commercial_hydronic`, and others. The CHC hybrid-MPC controller
+(RC-thermal + learned residual, MPC under comfort constraints) is wired in via
+`causaldyn_bench.boptest_chc` — see the results below.
 
 ## Status
 
 v0.0.1 scaffold: all five tracks run on the synthetic CHC systems (a damped oscillator with hidden cubic
 physics for A/B/E, a confounded linear system for C, the CHC oracle-regret tasks plus the
 **adaptive-CV-compute** task for D). A **BOPTEST** (HVAC control) client + control episode ship in
-`causaldyn_bench.boptest`, gated on a running BOPTEST service (`BOPTEST_URL`); wiring a CHC hybrid-MPC
-controller into BOPTEST is next.
+`causaldyn_bench.boptest`, gated on a running BOPTEST service (`BOPTEST_URL`). The CHC identification +
+forecast-MPC (`causaldyn_bench.boptest_chc`) is **validated live** on `bestest_hydronic_heat_pump`: it
+beats the tuned built-in baseline on *every* KPI at once — a clean Pareto win (see `results/boptest.md`).
 
 ```python
 from causaldyn_bench.boptest import BOPTestClient, baseline_controller, run_episode
-kpis = run_episode(BOPTestClient("http://127.0.0.1:5000"), baseline_controller())  # needs a live service
+kpis = run_episode(BOPTestClient("http://127.0.0.1:8000"), baseline_controller())  # needs a live service
 ```
