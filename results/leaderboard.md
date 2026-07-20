@@ -56,6 +56,14 @@
 | 2 | no-incentive | 1.1451 |
 | 3 | naive-uplift | 1.9274 |
 
+## H-marketplace  (metric: regret, lower is better)
+
+| rank | method | value |
+|---|---|---|
+| 1 | equilibrium-CHC **(best)** | -0.0191 |
+| 2 | predictive-MOPO | 3.1730 |
+| 3 | naive-causal | 3.4252 |
+
 ## F-structure  (metric: edge_f1, higher is better)
 
 | rank | method | value |
@@ -89,6 +97,6 @@
 
 | rank | method | value |
 |---|---|---|
-| 1 | known-only **(best)** | 11.0463 |
-| 2 | hybrid-CHC | 18.9068 |
+| 1 | known-only **(best)** | 10.9109 |
+| 2 | hybrid-CHC | 19.2161 |
 

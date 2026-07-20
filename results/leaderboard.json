@@ -182,6 +182,27 @@
     "lower_is_better": true
   },
   {
+    "track": "H-marketplace",
+    "method": "predictive-MOPO",
+    "metric": "regret",
+    "value": 3.1730222702026367,
+    "lower_is_better": true
+  },
+  {
+    "track": "H-marketplace",
+    "method": "naive-causal",
+    "metric": "regret",
+    "value": 3.4251747131347656,
+    "lower_is_better": true
+  },
+  {
+    "track": "H-marketplace",
+    "method": "equilibrium-CHC",
+    "metric": "regret",
+    "value": -0.019140243530273438,
+    "lower_is_better": true
+  },
+  {
     "track": "F-structure",
     "method": "naive-correlation",
     "metric": "edge_f1",
@@ -248,14 +269,14 @@
     "track": "E-systems",
     "method": "known-only",
     "metric": "solve_ms",
-    "value": 11.046286002965644,
+    "value": 10.910942015470937,
     "lower_is_better": true
   },
   {
     "track": "E-systems",
     "method": "hybrid-CHC",
     "metric": "solve_ms",
-    "value": 18.906837998656556,
+    "value": 19.21607501571998,
     "lower_is_better": true
   }
 ]
