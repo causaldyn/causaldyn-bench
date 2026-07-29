@@ -44,9 +44,7 @@ uv run pytest                            # smoke tests
 ```
 
 This repo depends on `causal-hybrid-control` through a sibling **path**, so it expects the two checked
-out next to each other. CI therefore lints and format-checks only — a runner has no sibling to resolve
-against while that repo is private, and a test job would be red for a reason that has nothing to do
-with the benchmark.
+out next to each other. CI reproduces that layout with two checkouts and runs the full suite.
 
 Without the `trees` extra the tree baselines are simply omitted; the hybrid/causal methods still run.
 On Tracks A/B the dynamics competitors are **known-only** (true physics), **dlm** (data-driven linear /
