@@ -3,7 +3,8 @@
 A benchmark for **causal, constrained, dynamical decision-making** — it scores *predictions and
 decisions*, not just one-step error. The point is to measure methods on the axis each deserves, so a
 gradient-boosted tree can win one-step prediction while a causal, constrained controller wins the
-closed-loop decision. Built on [`causal-hybrid-control`](../causal-hybrid-control).
+closed-loop decision. Built on
+[`causal-hybrid-control`](https://github.com/causaldyn/causal-hybrid-control).
 
 ## The tracks
 
