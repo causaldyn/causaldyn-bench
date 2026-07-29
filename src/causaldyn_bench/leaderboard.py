@@ -11,6 +11,7 @@ from causaldyn_bench.adaptive_cv import track_adaptive_cv
 from causaldyn_bench.dynamic_effect import track_dynamic_effect
 from causaldyn_bench.interference import track_interference
 from causaldyn_bench.marketplace import track_marketplace
+from causaldyn_bench.sensitivity import track_sensitivity
 from causaldyn_bench.structure import track_structure
 from causaldyn_bench.tracks import (
     TrackResult,
@@ -34,6 +35,7 @@ def run_all(seed: int = 0, steps: int = 1500) -> list[TrackResult]:
         *track_adaptive_cv(),
         *track_interference(),
         *track_marketplace(seed),
+        *track_sensitivity(seed),
         *track_structure(seed),
         *track_dynamic_effect(seed),
         *track_e_systems(models),

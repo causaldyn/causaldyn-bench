@@ -60,9 +60,18 @@
 
 | rank | method | value |
 |---|---|---|
-| 1 | equilibrium-CHC **(best)** | -0.0191 |
-| 2 | predictive-MOPO | 3.1730 |
-| 3 | naive-causal | 3.4252 |
+| 1 | equilibrium-CHC **(best)** | 0.0483 |
+| 2 | predictive-MOPO | 3.2322 |
+| 3 | naive-causal | 3.4844 |
+
+## I-sensitivity  (metric: worst-case closed-loop cost, lower is better)
+
+| rank | method | value |
+|---|---|---|
+| 1 | robust-CHC (Gamma=2.5) **(best)** | 4.9241 |
+| 2 | robust-CHC (Gamma=6.0, over) | 6.7738 |
+| 3 | robust-CHC (Gamma=1.3, under) | 14.7709 |
+| 4 | certainty-equivalence | 18.9691 |
 
 ## F-structure  (metric: edge_f1, higher is better)
 
@@ -97,6 +106,6 @@
 
 | rank | method | value |
 |---|---|---|
-| 1 | known-only **(best)** | 10.9109 |
-| 2 | hybrid-CHC | 19.2161 |
+| 1 | known-only **(best)** | 11.2947 |
+| 2 | hybrid-CHC | 20.6197 |
 

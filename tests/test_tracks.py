@@ -58,3 +58,14 @@ def test_track_d_control_and_leaderboard_render() -> None:
     assert any(r.method.startswith("pricing/") for r in results)
     text = format_leaderboard(results)
     assert "D-control" in text
+
+
+def test_track_i_scores_the_assumption_and_pessimism_is_not_free() -> None:
+    from causaldyn_bench.sensitivity import track_sensitivity
+
+    scores = {r.method: r.value for r in track_sensitivity(n_steps=20)}
+    ce = scores["certainty-equivalence"]
+    calibrated = scores["robust-CHC (Gamma=2.5)"]
+    assert calibrated < ce  # hedging the identification radius bounds the downside
+    assert scores["robust-CHC (Gamma=1.3, under)"] > calibrated  # too little hedge leaves cost
+    assert scores["robust-CHC (Gamma=6.0, over)"] > calibrated  # too much hedge costs a premium

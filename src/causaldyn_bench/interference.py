@@ -40,12 +40,16 @@ class ZoneIncentiveGame:
         attract = 1.5 * demand + 0.3 * jax.random.normal(k[1], (self.n_zones,))
         return demand, attract
 
-    def equilibrium(self, u: jax.Array, iters: int = 120) -> jax.Array:
-        """Follower equilibrium via ``chc.games`` (softmax congestion fixed point) given ``u``."""
+    def equilibrium(self, u: jax.Array) -> jax.Array:
+        """Follower equilibrium via ``chc.games`` (softmax congestion fixed point) given ``u``.
+
+        ``beta*congestion = 5 < 6``, so the map is certified contracting
+        (``chc.games.congestion_contraction_certificate``) and the solve converges.
+        """
         _, attract = self._demand_attract()
         return softmax_congestion_equilibrium(
-            attract, u, self.congestion, self.driver_mass, self.beta, iters
-        )
+            attract, u, self.congestion, self.driver_mass, self.beta
+        ).x
 
     def completions(self, u: jax.Array) -> jax.Array:
         """Total completed rides = sum of min(demand, drivers) over zones at the equilibrium."""

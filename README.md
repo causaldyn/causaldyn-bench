@@ -5,7 +5,7 @@ decisions*, not just one-step error. The point is to measure methods on the axis
 gradient-boosted tree can win one-step prediction while a causal, constrained controller wins the
 closed-loop decision. Built on [`causal-hybrid-control`](../causal-hybrid-control).
 
-## The five tracks
+## The tracks
 
 | track | question | metric | expected winner |
 |---|---|---|---|
@@ -14,6 +14,15 @@ closed-loop decision. Built on [`causal-hybrid-control`](../causal-hybrid-contro
 | **C** counterfactual | `x_{t+1}(do(u))` under confounding | \|effect − truth\| | causal / Double ML |
 | **D** control | `u_t = π(x_t)` under constraints | regret vs oracle | causal hybrid controller |
 | **E** systems | control-solve latency | ms | (a compiled runtime, later) |
+| **F** structure | which lagged parents drive the target, under confounding + autocorrelation | F1 / control payoff | discovery-informed residual |
+| **G** dynamic effect | the impulse response `∂x_{t+h}/∂u_t`, not just `h = 1` | IRF error / control payoff | structured (Levinson) IRF |
+| **H** marketplace | offline incentive allocation when SUTVA fails through a shared equilibrium | regret vs equilibrium-aware oracle | de-confounded + equilibrium-aware |
+| **I** sensitivity | control when **no adjustment set exists** — the assumed `Γ` is the only lever | worst-case closed-loop cost | a *calibrated* `Γ`, not the largest one |
+
+Track I is the odd one out on purpose: it scores a **modelling assumption**, not a method. The
+confounder is absent from the log, so nothing can be estimated better; the board carries a
+deliberately under-assumed and a deliberately over-assumed `Γ` beside the calibrated one, and the
+score is non-monotone in `Γ`. "More pessimism is better" is a claim this track exists to refute.
 
 Track D bundles the CHC oracle-regret tasks (pricing / inventory / support-shift) **and** an
 **adaptive-CV-compute** task (`adaptive_cv`): split a shared GPU budget across video streams under
