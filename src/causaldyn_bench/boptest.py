@@ -84,9 +84,7 @@ class BOPTestClient:
     def inputs(self, testid: str) -> Any:
         return _request(f"{self.base_url}/inputs/{testid}", "GET")
 
-    def forecast(
-        self, testid: str, point_names: list[str], horizon: float, interval: float
-    ) -> Any:
+    def forecast(self, testid: str, point_names: list[str], horizon: float, interval: float) -> Any:
         """Return a boundary-condition forecast (weather, comfort bounds, occupancy) over a horizon.
 
         Needed for anticipatory control: the comfort band (``LowerSetp[1]``) ramps up before

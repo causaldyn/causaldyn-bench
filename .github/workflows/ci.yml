@@ -1,0 +1,30 @@
+name: ci
+
+# Lint and format only, deliberately. The test job is missing because it cannot pass yet:
+# `[tool.uv.sources]` resolves `causal-hybrid-control` from a sibling **path**, and that repository is
+# private, so a runner has nothing to resolve it against. Adding a test job before that is settled
+# would only add a red badge. Three ways to unblock, all decisions rather than code -- a
+# `CHC_REPO_TOKEN` secret plus a second `actions/checkout` into `../causal-hybrid-control`, making the
+# library repo public, or publishing it to an index the runner can reach. Ruff needs none of them: it
+# reads source, it does not import it, so this half runs today.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      # pinned to the version the lockfile's dev group resolves to, so CI and a local
+      # `uv run ruff` cannot disagree about what counts as formatted
+      - name: Lint
+        run: uvx ruff@0.15.22 check .
+      - name: Format check
+        run: uvx ruff@0.15.22 format --check .
