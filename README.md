@@ -19,6 +19,7 @@ closed-loop decision. Built on
 | **G** dynamic effect | the impulse response `∂x_{t+h}/∂u_t`, not just `h = 1` | IRF error / control payoff | structured (Levinson) IRF |
 | **H** marketplace | offline incentive allocation when SUTVA fails through a shared equilibrium | regret vs equilibrium-aware oracle | de-confounded + equilibrium-aware |
 | **I** sensitivity | control when **no adjustment set exists** — the assumed `Γ` is the only lever | worst-case closed-loop cost | a *calibrated* `Γ`, not the largest one |
+| **D-causal** identification | the control channel of a *real* emulator, logged by a weather-compensated controller | \|8h step response − randomised reference\| | orthogonal (de-confounded) fit |
 
 Track I is the odd one out on purpose: it scores a **modelling assumption**, not a method. The
 confounder is absent from the log, so nothing can be estimated better; the board carries a
@@ -91,6 +92,103 @@ Shut down with `podman-compose down`. Test cases include `bestest_hydronic_heat_
 (RC-thermal + learned residual, MPC under comfort constraints) is wired in via
 `causaldyn_bench.boptest_chc` — see the results below.
 
+Two operational notes, both learned the hard way. The `mc` bucket-init container exits non-zero on a
+second bring-up (the bucket already exists), which blocks `podman start` of anything that depends on
+it — `podman-compose down && podman-compose up -d` is the reliable cycle. And the worker runs **one
+test at a time**: a client killed with `SIGTERM` skips its `finally: client.stop(testid)`, leaks the
+registration in redis, and every later `select` then blocks until the leak is cleared
+(`redis-cli KEYS 'tests:*'`). Run long sweeps detached, not under a timeout that kills them.
+
+### Track D-causal — does de-confounding the control channel pay on a real emulator?
+
+`causaldyn_bench.boptest_causal` asks the question the existing harness cannot. `boptest_chc`
+identifies its thermal model from a **randomised** exploration episode: a clean experiment, and the
+one thing production HVAC data never is. Real logs come from a controller, and every sensible
+controller is weather-compensated, so the logged action is a function of the outdoor temperature —
+which is also what drives the zone. Regress the temperature rate on `(1, T, u)` and the outdoor term
+lands in the error term.
+
+The experiment is a 2×2 over {outdoor-reset, randomised PRBS} × {adjust for weather, don't}, so both
+directions are falsifiable rather than only the flattering one: adjustment must repair the
+confounded arm **and** must leave the randomised arm alone. If it "helped" the randomised arm too,
+the estimator would be distorting rather than de-confounding.
+
+```bash
+# JAX_ENABLE_X64=1 is the recipe the recorded numbers were produced under, not a requirement:
+# float32 and float64 agree on the channel to 0.6%, two orders of magnitude inside the effect.
+JAX_ENABLE_X64=1 BOPTEST_URL=http://127.0.0.1:8000 uv run python -c \
+  "from causaldyn_bench.boptest_causal import track_boptest_causal as t; print(t())"
+```
+
+Three things this track deliberately does not claim:
+
+- **No ground-truth channel exists** on an emulator. The reference is identification *by design* —
+  the randomised log, fitted without adjustment — not a known number.
+- **The steady-state gain `−b/a` is not identified** from a 5–20 day window at 30-minute resolution;
+  `b₀` and the pole are collinear over that span. The reported quantity is the finite-horizon
+  8-hour step response, which the data does pin down.
+- **Closed-loop KPIs cannot rank models at a single operating point.** Which way a channel error
+  moves the controller is a property of the cost, not of the error: under BOPTEST's
+  comfort-dominated objective an *attenuated* channel makes the controller over-actuate, so the bias
+  acts as an unintended safety margin that buys comfort and pays energy. `run_pareto` sweeps the
+  requested margin and compares frontiers instead.
+
+Identification also needs **overlap**. A perfectly deterministic reset policy makes the action an
+exact function of the covariates, the orthogonal moment has no regressor left, and nothing is
+identified at any sample size. `overlap_report` measures the surviving share and
+`run_overlap_ablation` drives the exploration noise to zero to show the collapse — the assumption
+gets a falsifiable curve, not a sentence.
+
+**Physics-off ablation** (`run_structure_ablation`). Against the structured arms sits a black box: an
+MLP for `dT/dt` given `(T, z, u)`, trained on the same log, planning through the *same* MPC — the two
+arms differ in the model and in nothing else, because the solver takes any `PlantModel` and reads
+only its `rate`. It is not a straw man: the confounder is inside its conditioning set, it can fit
+nonlinearities the affine model cannot, and it gets far more fitting compute than a closed-form fit.
+
+The point of it is what identification benchmarks usually miss. On the synthetic fixture the black
+box's held-out one-step error is **indistinguishable** from the structured causal fit — 4.20e-4
+against 4.13e-4, under half a seed standard deviation, both on the 4.0e-4 noise floor — while its
+control authority carries **2.6× the RMSE** (0.047 against 0.018 about a truth of 1.200) and a 3.4%
+bias against 0.07%. Two models that agree on every forecast they will ever be scored on disagree
+measurably on the one number a controller consumes. *Held-out predictive accuracy does not rank
+causal models*, so a dynamics leaderboard reported in rollout error cannot see this failure at all.
+The other side is tested too: omitting the confounder entirely — the `naive` affine arm — attenuates
+the authority to 14% of truth **and** costs 19× the held-out error, and prediction *does* catch that.
+
+The reported estimand is the **authority** `∂(dT/dt)/∂u` at the operating point, not the affine
+`b₀`. `b₀` is that channel extrapolated to 0 °C, some 21 K outside anything a heated building
+visits; reading it off a nonlinear model measures the extrapolation, and on the emulator it returned
++38.7 for a plant whose structured fit says +1.25.
+
+On the emulator the black box's failure changes shape rather than merely growing. Over 5 seeds its
+**mean** 8-hour step response is the closest of any arm to the randomised reference — 0.027 K against
+the de-confounded fit's 0.144 K — while its **per-seed** deviation is twice as large, 1.406 K against
+0.699 K, because its errors change sign across seeds and cancel in the mean. Closed loop it is
+bimodal: the comfort floor on three seeds, 14.2 and 25.7 K·h on the other two, a seed-to-seed spread
+**337×** the structured arm's. A leaderboard that averages over seeds before reporting would rank it
+first. The sharpest pair in the ablation is two of its own seeds with held-out one-step errors of
+0.04724 and 0.04730 — the closest any two runs come — and closed-loop discomfort of 25.657 against
+7.321 K·h.
+
+**Measured result** (5 seeds, 20-day identification episodes, `results/boptest_causal.md`): logged by
+a weather-compensated controller the naive fit understates the heat pump's 8-hour authority by
+**50.6%**; de-confounding recovers it to within **0.144 K** of the randomised reference, a 15.6×
+reduction, and moves the randomised arm by **0.002 K**. Closed loop, the de-confounded arm has both
+the best mean discomfort (7.295 K·h against 7.866) and a **48× tighter** seed-to-seed spread (s.e.
+0.011 against 0.514), at 0.2% more energy and roughly half the actuator saturation.
+
+The confounded arm's failure is sharper than attenuation: its fitted channel `+2.989 − 0.1321·T`
+changes **sign at 22.62 °C**, inside the occupied comfort band, so above that temperature the model
+believes the heat pump cools the room and pins the command at zero. The de-confounded channel crosses
+at 25.82 °C, outside the band.
+
+An earlier version of this paragraph reported the opposite closed-loop ordering. That was an artefact
+of the planner's constant step size, which sat 75–284× past its stability limit — and because the
+limit scales with the authority a model *believes* it has, the shared constant punished exactly the
+arms that identified the channel best. Equal compute is not an equal iteration count; it is an
+optimiser that does not depend on the scale of the model being compared. See §7 of
+`results/boptest_causal.md`.
+
 ## Status
 
 v0.0.1 scaffold: all five tracks run on the synthetic CHC systems (a damped oscillator with hidden cubic
@@ -99,6 +197,9 @@ physics for A/B/E, a confounded linear system for C, the CHC oracle-regret tasks
 `causaldyn_bench.boptest`, gated on a running BOPTEST service (`BOPTEST_URL`). The CHC identification +
 forecast-MPC (`causaldyn_bench.boptest_chc`) is **validated live** on `bestest_hydronic_heat_pump`: it
 beats the tuned built-in baseline on *every* KPI at once — a clean Pareto win (see `results/boptest.md`).
+**Track D-causal** (`causaldyn_bench.boptest_causal`) adds the falsifiable 2×2 that the randomised-only
+harness could not ask, plus a physics-off black-box arm planning through the identical MPC —
+`results/boptest_causal.md`.
 
 ```python
 from causaldyn_bench.boptest import BOPTestClient, baseline_controller, run_episode
