@@ -59,30 +59,44 @@ class BOPTestClient:
     """Minimal client for the BOPTEST-Service REST API (testid-based; one test per ``testid``)."""
 
     base_url: str = DEFAULT_URL
+    timeout: float = 60.0
+    """Seconds to wait on any single call.
+
+    A per-client field rather than a module constant because the adequate value is a property of
+    the *case* being simulated, not of the API: a step that returns in 30 ms from a cold start can
+    stall far longer deep into a heating season when the solver struggles, and a caller that has to
+    monkey-patch a module constant to survive that will instead lose the whole run.
+    """
 
     def version(self) -> Any:
-        return _request(f"{self.base_url}/version", "GET")
+        return _request(f"{self.base_url}/version", "GET", timeout=self.timeout)
 
     def testcases(self) -> Any:
-        return _request(f"{self.base_url}/testcases", "GET")
+        return _request(f"{self.base_url}/testcases", "GET", timeout=self.timeout)
 
     def select(self, testcase: str) -> str:
         """Select a test case and return its ``testid`` (required by every test-scoped call)."""
-        payload = _request(f"{self.base_url}/testcases/{testcase}/select", "POST")
+        payload = _request(
+            f"{self.base_url}/testcases/{testcase}/select", "POST", timeout=self.timeout
+        )
         return payload["testid"]
 
     def set_step(self, testid: str, step_s: float) -> Any:
-        return _request(f"{self.base_url}/step/{testid}", "PUT", {"step": step_s})
+        return _request(
+            f"{self.base_url}/step/{testid}", "PUT", {"step": step_s}, timeout=self.timeout
+        )
 
     def initialize(self, testid: str, start_time: float, warmup_period: float) -> Any:
         payload = {"start_time": start_time, "warmup_period": warmup_period}
-        return _request(f"{self.base_url}/initialize/{testid}", "PUT", payload)
+        return _request(
+            f"{self.base_url}/initialize/{testid}", "PUT", payload, timeout=self.timeout
+        )
 
     def advance(self, testid: str, u: Mapping[str, float]) -> Any:
-        return _request(f"{self.base_url}/advance/{testid}", "POST", dict(u))
+        return _request(f"{self.base_url}/advance/{testid}", "POST", dict(u), timeout=self.timeout)
 
     def inputs(self, testid: str) -> Any:
-        return _request(f"{self.base_url}/inputs/{testid}", "GET")
+        return _request(f"{self.base_url}/inputs/{testid}", "GET", timeout=self.timeout)
 
     def forecast(self, testid: str, point_names: list[str], horizon: float, interval: float) -> Any:
         """Return a boundary-condition forecast (weather, comfort bounds, occupancy) over a horizon.
@@ -91,14 +105,14 @@ class BOPTestClient:
         occupancy, so an MPC must see the forecast to pre-heat rather than track the night setback.
         """
         payload = {"point_names": point_names, "horizon": horizon, "interval": interval}
-        return _request(f"{self.base_url}/forecast/{testid}", "PUT", payload)
+        return _request(f"{self.base_url}/forecast/{testid}", "PUT", payload, timeout=self.timeout)
 
     def kpi(self, testid: str) -> Any:
-        return _request(f"{self.base_url}/kpi/{testid}", "GET")
+        return _request(f"{self.base_url}/kpi/{testid}", "GET", timeout=self.timeout)
 
     def stop(self, testid: str) -> Any:
         """Stop the test and free its worker (best practice after each episode)."""
-        return _request(f"{self.base_url}/stop/{testid}", "PUT")
+        return _request(f"{self.base_url}/stop/{testid}", "PUT", timeout=self.timeout)
 
 
 def is_available(base_url: str = DEFAULT_URL, timeout: float = 3.0) -> bool:
