@@ -14,9 +14,16 @@ dependencies = [
 
 [project.optional-dependencies]
 trees = ["causal-hybrid-control[trees]"]  # tree baselines for Track A/B
+gym = [
+    "gymnasium>=1.0",
+]
 
 [dependency-groups]
-dev = ["pytest>=8", "ruff>=0.6"]
+dev = [
+    "gymnasium>=1.0",
+    "pytest>=8",
+    "ruff>=0.6",
+]
 notebooks = [
     "jupyterlab>=4.0",
     "nbconvert>=7",

@@ -20,6 +20,7 @@ closed-loop decision. Built on
 | **H** marketplace | offline incentive allocation when SUTVA fails through a shared equilibrium | regret vs equilibrium-aware oracle | de-confounded + equilibrium-aware |
 | **I** sensitivity | control when **no adjustment set exists** — the assumed `Γ` is the only lever | worst-case closed-loop cost | a *calibrated* `Γ`, not the largest one |
 | **D-causal** identification | the control channel of a *real* emulator, logged by a weather-compensated controller | \|8h step response − randomised reference\| | orthogonal (de-confounded) fit |
+| **J** identification, non-building | the control channel of a *third-party* plant whose answer is known exactly (`Pendulum-v1`) | \|fitted gain − 3.0\| | orthogonal (de-confounded) fit |
 
 Track I is the odd one out on purpose: it scores a **modelling assumption**, not a method. The
 confounder is absent from the log, so nothing can be estimated better; the board carries a
@@ -38,7 +39,7 @@ budget. Track A is expected to go to the trees; the value is Tracks B–D.
 ## Run
 
 ```bash
-uv sync --extra trees                   # tree baselines for Tracks A/B (optional)
+uv sync --extra trees --extra gym        # tree baselines for A/B, Gymnasium for Track J (optional)
 uv run python -m causaldyn_bench         # print the leaderboard
 uv run python -m causaldyn_bench --save  # also write results/leaderboard.{md,json}
 uv run pytest                            # smoke tests
@@ -202,6 +203,15 @@ beats the tuned built-in baseline on *every* KPI at once — a clean Pareto win 
 **Track D-causal** (`causaldyn_bench.boptest_causal`) adds the falsifiable 2×2 that the randomised-only
 harness could not ask, plus a physics-off black-box arm planning through the identical MPC —
 `results/boptest_causal.md`.
+
+**Track J** (`causaldyn_bench.pendulum_causal`, needs the `gym` extra) re-asks that 2×2 on a plant
+that is **not a building** and whose answer is known exactly: Gymnasium's `Pendulum-v1`, whose
+`step` fixes the control channel at `3/(m l²) = 3.0`. Adjustment recovers it to seven digits from a
+log where the unadjusted fit returns `−1.053 ± 0.025` — the **sign backwards on all five seeds** —
+and closes the loop within 3.1% of an oracle that the confounded controller misses by a factor of
+4800 while saturating the actuator on every step. Held-out one-step error ranks all of it backwards.
+Reproducing the seven digits needs `JAX_ENABLE_X64=1`; at JAX's default float32 the recovery is exact
+to six. See `results/pendulum_causal.md`.
 
 ```python
 from causaldyn_bench.boptest import BOPTestClient, baseline_controller, run_episode
