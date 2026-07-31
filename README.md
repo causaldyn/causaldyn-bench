@@ -114,8 +114,10 @@ confounded arm **and** must leave the randomised arm alone. If it "helped" the r
 the estimator would be distorting rather than de-confounding.
 
 ```bash
-# JAX_ENABLE_X64=1 is the recipe the recorded numbers were produced under, not a requirement:
-# float32 and float64 agree on the channel to 0.6%, two orders of magnitude inside the effect.
+# JAX_ENABLE_X64=1 is required, not cosmetic. float32 and float64 agree on the *affine* channel to
+# 0.6% -- two orders of magnitude inside the effect -- but 3000 Adam steps compound rounding into
+# the derivative of the fitted surface, and the physics-off arm's decay moves by 10x and changes
+# sign. An earlier float32 run is what produced the retracted numbers in results/ SS6.
 JAX_ENABLE_X64=1 BOPTEST_URL=http://127.0.0.1:8000 uv run python -c \
   "from causaldyn_bench.boptest_causal import track_boptest_causal as t; print(t())"
 ```
@@ -157,25 +159,25 @@ the authority to 14% of truth **and** costs 19× the held-out error, and predict
 
 The reported estimand is the **authority** `∂(dT/dt)/∂u` at the operating point, not the affine
 `b₀`. `b₀` is that channel extrapolated to 0 °C, some 21 K outside anything a heated building
-visits; reading it off a nonlinear model measures the extrapolation, and on the emulator it returned
-+38.7 for a plant whose structured fit says +1.25.
+visits; reading it off a nonlinear model measures the extrapolation, and on the emulator it came back
+between −0.045 and +0.254 for a plant whose structured fit says +1.25 — a factor of 31, while the two
+arms' *authorities* differ by 1.5×.
 
-On the emulator the black box's failure changes shape rather than merely growing. Over 5 seeds its
-**mean** 8-hour step response is the closest of any arm to the randomised reference — 0.027 K against
-the de-confounded fit's 0.144 K — while its **per-seed** deviation is twice as large, 1.406 K against
-0.699 K, because its errors change sign across seeds and cancel in the mean. Closed loop it is
-bimodal: the comfort floor on three seeds, 14.2 and 25.7 K·h on the other two, a seed-to-seed spread
-**337×** the structured arm's. A leaderboard that averages over seeds before reporting would rank it
-first. The sharpest pair in the ablation is two of its own seeds with held-out one-step errors of
-0.04724 and 0.04730 — the closest any two runs come — and closed-loop discomfort of 25.657 against
-7.321 K·h.
+On the emulator the black box's failure is blunter than on the fixture. Read at the action the log
+sat at, its fitted decay is **positive on three of five seeds**: those models assert a zone that
+warms away from its own equilibrium, the stability check refuses them offline, and the arm has no
+closed-loop mean left to report. Of the two seeds that do plan, one reaches the comfort floor and the
+other spends 2.2× the de-confounded arm's discomfort. Sharper still, *within* the black-box arm
+prediction is ordered against plannability: of its five fits the **best** one-step predictor
+(held-out 0.0301, against 0.0971 for the worst) is one of the three that gets refused.
 
 **Measured result** (5 seeds, 20-day identification episodes, `results/boptest_causal.md`): logged by
 a weather-compensated controller the naive fit understates the heat pump's 8-hour authority by
-**50.6%**; de-confounding recovers it to within **0.144 K** of the randomised reference, a 15.6×
-reduction, and moves the randomised arm by **0.002 K**. Closed loop, the de-confounded arm has both
-the best mean discomfort (7.295 K·h against 7.866) and a **48× tighter** seed-to-seed spread (s.e.
-0.011 against 0.514), at 0.2% more energy and roughly half the actuator saturation.
+**54.8%**; de-confounding recovers it to within **0.211 K** of the randomised reference, an 11.5×
+reduction, and moves the randomised arm by **0.068 K** — 1.5% of the level — while cutting that arm's
+spread by 2.3×. Closed loop, the de-confounded arm has both the best mean discomfort (7.295 K·h
+against 7.892) and a **51× tighter** seed-to-seed spread (s.e. 0.011 against 0.539), at 0.2% more
+energy and roughly half the actuator saturation.
 
 The confounded arm's failure is sharper than attenuation: its fitted channel `+2.989 − 0.1321·T`
 changes **sign at 22.62 °C**, inside the occupied comfort band, so above that temperature the model

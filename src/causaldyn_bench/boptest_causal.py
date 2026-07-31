@@ -65,10 +65,11 @@ comfort floor. The drift-dominates hypothesis is *untested* here, not confirmed.
 
 What the sweep does establish, because it varies the channel deliberately rather than watching it
 vary: shrinking the believed gain correlates -0.54 with the 8-hour rise and +0.49 with actuator
-saturation over its twenty episodes. One standard error of shrink moves the mean by 0.08%, well
-inside a standard error; past that the spread explodes from +-0.011 to +-3.498 K.h. Channel
-pessimism on this plant is indistinguishable from nothing until it is catastrophic, which is a worse
-property than a smooth trade-off. See :func:`run_pessimism_sweep` and ``results/boptest_causal.md``.
+saturation over its twenty episodes. Zero shrink is the best setting on the mean and on the spread
+at once: one standard error costs 0.9% of the mean, and past that the spread explodes from +-0.011
+to +-5.036 K.h. Channel pessimism on this plant is indistinguishable from nothing until it is
+catastrophic, which is a worse property than a smooth trade-off. See :func:`run_pessimism_sweep` and
+``results/boptest_causal.md``.
 
 Alongside the 2x2 sits the **physics-off** arm (:class:`NeuralFit`, :func:`run_structure_ablation`):
 an MLP for the rate given the same ``(T, z, u)``, planning through the same MPC, differing from the
@@ -78,16 +79,23 @@ matches the structured causal fit's one-step forecast to under half a seed stand
 4.20e-4 against 4.13e-4, both on the 4.0e-4 noise floor -- while its control authority carries 2.6x
 the RMSE (0.047 against 0.018 about a truth of 1.200) and a 3.4% bias against 0.07%. A dynamics
 benchmark scored in rollout error is blind to that gap by construction, which is why this track
-scores the channel. On the emulator the failure changes shape rather than merely growing: over 5
-seeds the black box's *mean* 8-hour step response is the closest of any arm to the randomised
-reference (0.027 K against the de-confounded fit's 0.144 K) while its *per-seed* deviation is twice
-as large (1.406 K against 0.699 K), because its errors change sign and cancel in the mean. Its
-closed loop is bimodal, with a seed-to-seed spread 337x the structured arm's. A leaderboard that
-averages over seeds before reporting would rank it first. The headline claim survives in a sharper
-form there: held-out error does penalise the black box on this plant (2.13x), and still orders the
-arms differently from identification -- the two rankings agree on the winner and swap the other two,
-because prediction calls the confounded affine fit second-best where the channel calls it worst. See
+scores the channel. On the emulator the failure is blunter than on the fixture: read at the action
+the log sat at, the black box's fitted decay is *positive* on three of five seeds, so
+:class:`RunawayDriftError` refuses those three plans offline and the arm has no closed-loop mean to
+report. Of the two that plan, one reaches the comfort floor and the other spends 2.2x the
+de-confounded arm's discomfort. Held-out error does penalise the black box on this plant (2.2x) and
+still orders the arms differently from identification -- the two rankings agree on the winner and
+swap the other two, because prediction calls the confounded affine fit second-best where the channel
+calls it worst. Sharper still, *within* the black-box arm the ordering inverts: the best one-step
+predictor of its five fits is one of the three the stability check refuses. See
 ``results/boptest_causal.md`` §6.
+
+That section previously reported the opposite -- a black box unbiased in the mean and noisy per seed
+-- and the retraction is worth carrying here because of how it was caught. Those numbers were
+float32. The affine arms do not notice the precision (an accidental x32 run agreed with x64 to five
+digits), so the flag looked optional; 3000 Adam steps do notice, because rounding compounds into the
+*derivative* of the fitted surface. Pin ``JAX_ENABLE_X64=1`` before comparing anything to the
+recorded numbers -- for this arm it is a requirement, not a recipe.
 
 Scope limits worth stating before the numbers:
 
@@ -178,15 +186,39 @@ class PlantModel(Protocol):
         The comparable estimand. An affine fit's ``b0`` is *not*: it is the intercept of
         ``b0 + b1 T`` at ``T = 0``, some 21 K outside anything a heated building ever visits, so
         reading it off a nonlinear model extrapolates a local slope across the whole extrapolation
-        and returns nonsense. Measured on the emulator, the black box's implied ``b0`` came out at
-        +38.7 against the structured fit's +1.25 while their *authorities* differed by far less --
-        the gap was the extrapolation, not the model.
+        and returns nonsense. Measured on the emulator over five seeds, the black box's implied
+        ``b0`` came out between -0.045 and +0.254 -- a channel that does essentially nothing --
+        against the structured fit's +1.25, a factor of 31, while their authorities at 21 C differ
+        by 1.5x. The gap is the extrapolation, not the model.
+        """
+        ...
+
+    @property
+    def action_mean(self) -> float:
+        """The action the log actually sat at, in the harness's action units.
+
+        Carried because every *derivative* below has to be read somewhere, and ``0`` is not a
+        defensible somewhere: it is ``off`` on a modulating heat pump and a setpoint of 0 C on the
+        two cases whose actuator is a setpoint in ``[15, 25]``.
         """
         ...
 
     @property
     def pole(self) -> float:
-        """``d(rate)/dT`` -- negative on a building that returns to ambient on its own."""
+        """``d(rate)/dT`` at :attr:`action_mean` -- negative on a building that returns to ambient.
+
+        Read at the operating action rather than at ``u = 0`` because for a channel that depends on
+        the state the two differ by a change of *units*, not of plant. See :meth:`ThermalFit.decay`.
+        """
+        ...
+
+    def decay(self, action: float | None = None) -> float:
+        """``d(rate)/dT`` at ``action``; :attr:`pole` is this at :attr:`action_mean`.
+
+        On the protocol rather than on the affine fit alone so that the stability of a *plan* is
+        scored by one definition for both arms, the way :func:`finite_difference_step_response`
+        already scores the step response.
+        """
         ...
 
     def rate(self, temp: Array, covariate: Array, action: Array) -> Array:
@@ -455,6 +487,7 @@ class ThermalFit:
     identified: bool
     adjusted: bool
     policy: str
+    action_mean: float  # the log's operating point; every derivative below is read there
     action_residual_variance: float
     nuisance_r2_action: float
     channel_error: float | None
@@ -463,6 +496,35 @@ class ThermalFit:
         bias, pole = self.drift
         exogenous = jnp.dot(jnp.asarray(self.weather_drift), covariate)
         return pole * temp + bias + exogenous + (self.channel[0] + self.channel[1] * temp) * action
+
+    def decay(self, action: float | None = None) -> float:
+        """``d(rate)/dT`` at ``action``, defaulting to the log's own operating point.
+
+        A bilinear fit has no single pole. ``drift[1]`` is the decay at ``action = 0``, and that is
+        a property of the *units the actuator reports in* rather than of the building. Under an
+        affine change of actuator coordinates ``u = alpha v + beta`` the model class is closed and
+        the coefficients map as ``a -> a + beta b1``, ``b0 -> alpha b0``, ``b1 -> alpha b1``
+        (Maxima, closure residual 0), so ``a`` alone is not comparable across actuators while
+        ``a + b1 u`` at a fixed physical actuator position is invariant.
+
+        Measured on the emulator, reading it at ``0`` instead of here is the whole of the "runaway
+        building" this harness reported for two of its three cases:
+
+        ==========  =========  ============  ===========
+        case        ``lo``     ``drift[1]``  ``decay()``
+        ==========  =========  ============  ===========
+        heat_pump   0.0        -0.034        -0.042
+        hydronic    15.0 C     **+6.420**    -1.397
+        air         15.0 C     **+5.878**    -0.512
+        ==========  =========  ============  ===========
+
+        Refitting the same logs on the action expressed as a fraction of travel reproduces
+        ``decay()`` to four decimals (-1.3970 and -0.5120) while ``drift[1]`` moves to +0.75 and
+        +1.16, which is the invariance above, measured rather than assumed. All three buildings are
+        stable; only the two whose actuator is a setpoint in ``[15, 25] C`` had a reported pole 15 K
+        outside the range the actuator can reach.
+        """
+        return self.drift[1] + self.channel[1] * (self.action_mean if action is None else action)
 
     def step_response(self, hours: float = 8.0, dt: float = 0.5, temp: float = 21.0) -> float:
         """Open-loop Kelvin gained over ``hours`` from a unit step in the action, at ``temp``.
@@ -474,7 +536,7 @@ class ThermalFit:
         thermal time constant to a plant that has at least two. The finite-horizon step response
         over the MPC's own look-ahead *is* identifiable here, and is what the controller acts on.
         """
-        pole, gain = self.drift[1], self.channel[0] + self.channel[1] * temp
+        pole, gain = self.decay(), self.channel[0] + self.channel[1] * temp
         state = 0.0
         for _ in range(max(round(hours / dt), 1)):
             state = state + dt * (pole * state + gain)
@@ -485,12 +547,21 @@ class ThermalFit:
 
     @property
     def pole(self) -> float:
-        return self.drift[1]
+        return self.decay()
 
     @property
     def stable(self) -> bool:
         """Whether the fitted drift decays. An unstable fit is reported, never silently repaired."""
-        return self.drift[1] < 0.0
+        return self.decay() < 0.0
+
+    def stable_over(self, lo: float, hi: float) -> bool:
+        """Whether the drift decays at *every* action the controller may command.
+
+        The condition an MPC needs, and stronger than :attr:`stable`, which only reads the log's
+        operating point. ``decay`` is affine in the action, so the box maximum is at an endpoint --
+        exact, not sampled.
+        """
+        return max(self.decay(lo), self.decay(hi)) < 0.0
 
     def pessimistic(self, shrink: float) -> ThermalFit:
         """Reduce the believed channel gain ``b0`` by ``shrink``: plan against a *weaker* plant.
@@ -506,9 +577,9 @@ class ThermalFit:
         ``channel_error`` is the root-mean diagonal of the estimator's sandwich over the *whole*
         channel matrix, so it mixes ``b0`` with ``b1``, whose natural scale is smaller by a factor
         of the operating temperature. Using it as a 1-sigma radius on ``b0`` was measured here and
-        over-states the radius by **9.3x**: ``channel_error`` came out ~0.51, while one seed-to-seed
+        over-states the radius by **6.9x**: ``channel_error`` came out ~0.51, while one seed-to-seed
         standard error of the quantity the controller actually uses -- the 8-hour step response,
-        0.385 K over five seeds, at 7.06 K of rise per unit ``b0`` -- is a shrink of only 0.055. At
+        0.487 K over five seeds, at 6.64 K of rise per unit ``b0`` -- is a shrink of only 0.073. At
         ``shrink = channel_error`` the channel went negative and the controller gave up entirely:
         discomfort 76 -> 1475 K.h, energy to zero, saturated at a bound every single step.
 
@@ -562,6 +633,7 @@ def fit_thermal(log: LoggedEpisode, *, adjusted: bool, folds: int = 2, ridge: fl
         identified=fit.identified,
         adjusted=adjusted,
         policy=log.policy,
+        action_mean=float(np.mean(np.asarray(log.action))),
         action_residual_variance=fit.action_residual_variance,
         nuisance_r2_action=fit.nuisance_r2_action,
         channel_error=fit.channel_error,
@@ -602,7 +674,10 @@ def finite_difference_step_response(
     but the definition.
     """
     covariate = jnp.zeros(3)  # the log's own mean: standardised covariates are centred
-    base, origin = jnp.asarray(0.0), jnp.asarray(temp)
+    # Both derivatives are read at the log's operating action, not at zero. Zero is "off" on a
+    # modulating actuator but a setpoint of 0 C on the two setpoint cases, where the affine fit's
+    # decay differs between the two points by 6.4 K/h -- a change of units, not of building.
+    base, origin = jnp.asarray(model.action_mean), jnp.asarray(temp)
     authority = model.rate(origin, covariate, base + 1.0) - model.rate(origin, covariate, base)
     state = 0.0
     for _ in range(max(int(hours / dt), 1)):
@@ -652,6 +727,7 @@ class NeuralFit(eqx.Module):
     zone_mean: float = eqx.field(static=True)
     zone_scale: float = eqx.field(static=True)
     policy: str = eqx.field(static=True)
+    action_mean: float = eqx.field(static=True)
     train_mse: float = eqx.field(static=True)
 
     def rate(self, temp: Array, covariate: Array, action: Array) -> Array:
@@ -670,12 +746,16 @@ class NeuralFit(eqx.Module):
     @property
     def pole(self) -> float:
         """``d(rate)/dT`` at the operating point -- the black box's analogue of a thermal pole."""
-        grad = jax.grad(lambda t: self.rate(t, jnp.zeros(3), jnp.asarray(0.0)))
+        return self.decay()
+
+    def decay(self, action: float | None = None) -> float:
+        at = self.action_mean if action is None else action
+        grad = jax.grad(lambda t: self.rate(t, jnp.zeros(3), jnp.asarray(at)))
         return float(grad(jnp.asarray(self.zone_mean)))
 
     def authority(self, temp: float = 21.0) -> float:
         gradient = jax.grad(lambda u, t: self.rate(t, jnp.zeros(3), u))
-        return float(gradient(jnp.asarray(0.0), jnp.asarray(temp)))
+        return float(gradient(jnp.asarray(self.action_mean), jnp.asarray(temp)))
 
 
 def fit_neural(
@@ -690,14 +770,19 @@ def fit_neural(
     """Fit :class:`NeuralFit` by Adam on the one-step rate of every row it is given.
 
     The default box is small because it was **swept, not chosen**: 12 fits on one 768-row emulator
-    head, width 8-64, depth 1-3, 1000-12000 Adam steps, two inits each. The smallest box won on
-    every axis. Held-out MSE rises monotonically with compute -- 0.043 at 1000 steps, 0.065 at
-    3000, 0.144 at 12000 -- and the *derivatives* rot faster than the fit does: at 12000 steps the
-    implied thermal pole came back at -10.1 and +3.6 on two inits, and one 8-hour step response at
-    **-7.7 K**, a model asserting that heating cools the room. Even at the default the init alone
-    moves the authority by 1.4x. So this is the kindest configuration found for this plant at this
-    sample size, which is the point: the physics-off arm has to lose from its structure, not from a
-    hyper-parameter. A longer log would justify a bigger box, and callers who want one pass it.
+    head, width 8 and 64, depth 1 and 3, 1000/3000/12000 Adam steps, two inits each, all in
+    float64. The small box wins at every step count -- held-out MSE 0.026 / 0.039 / 0.072 against
+    the big box's 0.069 / 0.099 / 0.083 -- and for the small box the error rises monotonically with
+    compute. The *derivatives* rot faster than the fit does: at width 64 and depth 3, two inits of
+    the *same* configuration return fitted decays of **-7.99 and +1.12**, a factor of nine apart and
+    of opposite sign, so they disagree about whether the building is stable at all, while their
+    held-out errors differ by 4%. Even at the default the init alone moves the authority by 1.2x.
+    So this is the kindest configuration found for this plant at this sample size, which is the
+    point: the physics-off arm has to lose from its structure, not from a hyper-parameter. A longer
+    log would justify a bigger box, and callers who want one pass it.
+
+    Every number above is float64. The previous version of this sweep was not, and the difference
+    was not cosmetic -- see ``results/boptest_causal.md`` §8, defect 7.
 
     No internal train/test split, deliberately. :func:`fit_thermal` has none either, so a split
     hidden inside one of them would fit the two arms on different data and then score them on the
@@ -750,6 +835,7 @@ def fit_neural(
         zone_mean=centre,
         zone_scale=scale,
         policy=log.policy,
+        action_mean=float(np.mean(np.asarray(log.action))),
         train_mse=float(loss),
     )
 
@@ -817,6 +903,16 @@ def _mpc_solver(
     differ in the model and in nothing else -- same horizon, same objective, same iteration count,
     same projection. Everything below this line is shared by construction rather than by review.
 
+    **The effort term is in fractions of actuator travel, not in actuator units.** ``(action - lo)``
+    alone means something different per case: the heat pump modulates on [0, 1] while the two
+    setpoint cases command Celsius on [15, 25], so the same ``w_comfort`` would price effort 100x
+    higher against comfort there -- an energy-first controller on one case and a comfort-first
+    controller on another, reported in the same table as though the objective were held fixed.
+    Dividing by the span makes ``w_comfort`` mean one thing across cases; it is exactly a no-op on
+    the heat pump, whose span is 1.0, so the recorded numbers are unaffected. Third instance of the
+    same defect in this module, after the constant step size below and the unstandardised nuisance
+    ridge upstream: a constant whose meaning silently depends on the scale of its input.
+
     **The step size has to come from the model, not from a constant.** This solver previously took a
     fixed ``lr``, and that quietly decided the benchmark. The comfort term's curvature scales with
     ``w_comfort * (dt * authority)**2``, so the largest stable step ``2/L`` is a function of the
@@ -847,6 +943,7 @@ def _mpc_solver(
     exact for the affine arms and unavailable for the black box, i.e. a different optimiser per arm.
     """
     lo, hi = case.action_lo, case.action_hi
+    span = hi - lo
 
     def rollout(actions: Array, bounds: Array, covariates: Array, temp0: Array, hinged: bool):
         def step(temp: Array, triple: tuple[Array, Array, Array]) -> tuple[Array, Array]:
@@ -854,7 +951,8 @@ def _mpc_solver(
             nxt = temp + dt * fit.rate(temp, covariate, action)
             gap = bound + margin - nxt
             shortfall = jnp.maximum(gap, 0.0) if hinged else gap
-            return nxt, w_comfort * shortfall**2 + (action - lo) ** 2
+            effort = (action - lo) / span
+            return nxt, w_comfort * shortfall**2 + effort**2
 
         _, costs = jax.lax.scan(step, temp0, (actions, bounds, covariates))
         return jnp.sum(costs)
@@ -885,6 +983,56 @@ def _mpc_solver(
     return solve
 
 
+class RunawayDriftError(RuntimeError):
+    """A fitted plant whose drift does not decay, so no horizon planned on it means anything.
+
+    An MPC integrates ``dT/dt = a*T + ...`` over its horizon. With ``a >= 0`` the homogeneous
+    solution never decays, the predicted trajectory is set by the extrapolation rather than by the
+    plant, and the optimum is an artefact.
+
+    The decay is read at :attr:`PlantModel.action_mean`, and the first version of this check read it
+    at ``a = drift[1]`` instead, which is the decay at ``action = 0``. That fired on both
+    setpoint-actuated cases -- ``+1.9`` to ``+8.4`` across every policy and both arms -- and every
+    one of those was a **false positive**: ``drift[1]`` shifts by ``beta * b1`` under an affine
+    change of actuator coordinates, and those two cases report their action as a setpoint in
+    ``[15, 25] C``, so ``beta = 15`` and the shift is 4.7 to 5.7 K/h of pure units. Refitting the
+    same logs on fraction-of-travel returns the same :meth:`ThermalFit.decay` to four decimals and
+    a ``drift[1]`` of ``+0.75`` and ``+1.16``. All three buildings decay: ``-0.042``, ``-1.397``,
+    ``-0.512``. A refusal keyed on a quantity that a change of units can flip is not a safety check.
+
+    Checked in :func:`run_control_episode` rather than in :func:`_mpc_solver`, because that is where
+    the blast radius is: the solver would merely return a bad number, while the episode spends real
+    emulator time and -- measured -- emits commands extreme enough to stall BOPTEST's own solver
+    past the client timeout, leaving an orphaned worker child behind. Raised rather than clamped:
+    clamping the pole to a small negative number would fabricate a stable plant the data never
+    supported and report KPIs for it, and silently wrong is the worse failure.
+
+    Scanned over the actuator box rather than read at the operating point, because the operating
+    point is where the *log* sat and the horizon is planned wherever the optimiser wants to go. The
+    hydronic fit is the case in point: it decays at -1.40 where it was logged and crosses zero at a
+    setpoint of 17.0 C, well inside ``[15, 25]``, so a plan that reaches for the low end of the box
+    is extrapolating against a growing model while the operating-point reading says it is fine. For
+    an affine ``decay`` the box maximum is at an endpoint and the grid is exact; for the black-box
+    arm it is a check and not a proof, which is the price of scoring both arms by one definition.
+
+    Caught by the two sweeps that vary the *model* -- :func:`run_case` and
+    :func:`run_structure_ablation` -- because there one runaway arm should not abort the arms beside
+    it, and "identified but unplannable" is a result to record. Left to propagate out of the two
+    that vary a *knob* on a single model, :func:`run_pareto` and :func:`run_pessimism_sweep`:
+    neither the requested margin nor a channel shrink touches the drift, so a runaway there fails
+    identically at every setting and the honest report is one exception, not six identical rows.
+    """
+
+    def __init__(self, testcase: str, pole: float, rise: float) -> None:
+        super().__init__(
+            f"{testcase}: fitted decay {pole:+.4f} at the log's operating action does not decay "
+            f"(8h step response {rise:.3e} K); refusing to plan a horizon on it"
+        )
+        self.testcase = testcase
+        self.pole = pole
+        self.rise = rise
+
+
 def run_control_episode(
     client: BOPTestClient,
     case: BoptestCase,
@@ -905,7 +1053,14 @@ def run_control_episode(
     actuator is saturated the command is set by the box, not by the fitted channel, so a better
     channel cannot pay there. Without it, a closed-loop null result is unreadable -- it could mean
     identification does not matter, or it could mean this operating point never let it matter.
+
+    Raises :class:`RunawayDriftError` rather than planning against a fit whose drift is unstable;
+    see that class for why it is checked here and not in the solver.
     """
+    span = case.action_hi - case.action_lo
+    worst = max(fit.decay(case.action_lo + span * i / 8.0) for i in range(9))
+    if worst >= 0.0:
+        raise RunawayDriftError(case.testcase, worst, fit.step_response())
     dt = step_s / 3600.0
     solve = _mpc_solver(fit, case, dt, w_comfort=w_comfort, margin=margin, iterations=iterations)
     testid = client.select(case.testcase)
@@ -1056,11 +1211,15 @@ def run_case(
             name = f"{policy}-{'adjusted' if adjusted else 'naive'}"
             fit = fit_thermal(logs[policy], adjusted=adjusted)
             fits.setdefault(name, []).append(fit)
-            arms.setdefault(name, []).append(
-                run_control_episode(
+            # An arm can be identified and still be unplannable, which is a result rather than an
+            # error: recorded per arm so one runaway fit does not abort the other three.
+            try:
+                kpis = run_control_episode(
                     client, case, fit, logs[policy], steps=control_steps, step_s=step_s, **control
                 )
-            )
+            except RunawayDriftError as unplannable:
+                kpis = {"unplannable": 1.0, "pole": unplannable.pole, "rise_8h": unplannable.rise}
+            arms.setdefault(name, []).append(kpis)
     return {
         "case": case_name,
         "testcase": case.testcase,
@@ -1111,9 +1270,12 @@ def run_structure_ablation(
         }
         scores = predictive_comparison(log, seed=seed)
         for name, model in models.items():
-            kpis = run_control_episode(
-                client, case, model, log, steps=control_steps, step_s=step_s, **control
-            )
+            try:
+                kpis = run_control_episode(
+                    client, case, model, log, steps=control_steps, step_s=step_s, **control
+                )
+            except RunawayDriftError as unplannable:
+                kpis = {"unplannable": 1.0, "pole": unplannable.pole, "rise_8h": unplannable.rise}
             row = {
                 "seed": seed,
                 "arm": name,
@@ -1248,7 +1410,7 @@ def run_pessimism_sweep(
     base_url: str = DEFAULT_URL,
     case_name: str = "heat_pump",
     *,
-    shrinks: tuple[float, ...] = (0.0, 0.055, 0.109, 0.164),
+    shrinks: tuple[float, ...] = (0.0, 0.0733, 0.1466, 0.2199),
     seeds: tuple[int, ...] = (0, 1, 2, 3, 4),
     id_steps: int = 960,
     control_steps: int = 336,
@@ -1266,10 +1428,15 @@ def run_pessimism_sweep(
     estimate. Removing bias is necessary and not sufficient; the radius has to be spent.
 
     The default grid is 0, 1, 2 and 3 *measured* standard errors of the quantity the controller
-    uses: the 8-hour step response varies by 0.385 K across the five logging seeds, and the fit
-    gives 7.06 K of rise per unit ``b0``, so one standard error is a shrink of 0.055. It is
-    emphatically **not** ``channel_error``, which over-states that by 9.3x on this plant -- see
+    uses: the 8-hour step response varies by 0.487 K across the five logging seeds, and the fit
+    gives 6.64 K of rise per unit ``b0``, so one standard error is a shrink of 0.073. It is
+    emphatically **not** ``channel_error``, which over-states that by 6.9x on this plant -- see
     :meth:`ThermalFit.pessimistic` for the measurement that ruled it out.
+
+    Measured on this plant the answer is that **zero is the best setting on the grid**, on the mean
+    and on the spread at once -- see ``results/boptest_causal.md`` §5. The sweep is kept because a
+    null result at a *correctly scaled* radius is the thing worth reporting; an earlier version read
+    the radius as 0.055 and called one standard error a marginal improvement.
     """
     if not is_available(base_url):
         raise RuntimeError(

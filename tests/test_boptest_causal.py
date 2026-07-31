@@ -5,6 +5,7 @@ harness rather than the building: unit conversion, the two-stage fit, the drift'
 the overlap accounting that decides whether anything is identified at all.
 """
 
+import dataclasses
 import itertools
 import os
 import re
@@ -19,6 +20,7 @@ from causaldyn_bench.boptest_causal import (
     HEAT_PUMP,
     BOPTestClient,
     LoggedEpisode,
+    RunawayDriftError,
     ThermalFit,
     _mpc_solver,
     finite_difference_step_response,
@@ -27,6 +29,7 @@ from causaldyn_bench.boptest_causal import (
     log_episode,
     overlap_report,
     predictive_comparison,
+    run_control_episode,
     track_boptest_causal,
 )
 
@@ -103,6 +106,53 @@ def test_the_drift_recovers_a_stable_pole_only_with_the_weather_term() -> None:
     assert abs(fit.weather_drift[0]) > 0.05  # the outdoor column is load-bearing, not decoration
 
 
+def test_the_reported_pole_survives_a_change_of_actuator_units() -> None:
+    """``drift[1]`` is the decay at ``action = 0``, which is a choice of units, not of building.
+
+    Maxima gives the exact law for this model class under ``u = alpha v + beta``: it is closed, and
+    ``a -> a + beta b1``, ``b0 -> alpha b0``, ``b1 -> alpha b1`` (closure residual 0). So refitting
+    the same log with the action re-expressed on a ``[15, 25]`` scale -- what the two setpoint
+    BOPTEST cases report -- must move ``drift[1]`` by exactly ``-(lo/span) b1`` and must leave
+    :meth:`ThermalFit.decay` alone. Measured here: ``drift[1]`` moves 0.0113 while ``decay`` agrees
+    to 2.6e-7, a separation of four orders, and the emulator reproduces the same invariance at
+    ``-1.3969`` against ``-1.3970`` on hydronic.
+
+    The tolerances are not symmetric on purpose. ``decay`` is invariant algebraically and is held to
+    it; ``b1`` scales only up to the nuisance ridge, which leaks 0.15% of the shift because the
+    penalty sees a column whose scale the substitution changed.
+    """
+    log = _synthetic_log(weather_gain=0.05)
+    lo, span = 15.0, 10.0
+    native = fit_thermal(log, adjusted=True)
+    rescaled = fit_thermal(dataclasses.replace(log, action=log.action * span + lo), adjusted=True)
+
+    assert rescaled.drift[1] - native.drift[1] == pytest.approx(
+        -(lo / span) * native.channel[1], abs=1e-4
+    )
+    assert rescaled.channel[1] == pytest.approx(native.channel[1] / span, rel=2e-3)
+    assert rescaled.authority() * span == pytest.approx(native.authority(), rel=1e-3)
+    assert rescaled.decay() == pytest.approx(native.decay(), abs=1e-5)
+    assert abs(rescaled.drift[1] - native.drift[1]) > 100 * abs(rescaled.decay() - native.decay())
+
+
+def test_a_setpoint_actuator_reports_a_runaway_pole_for_a_decaying_building() -> None:
+    """The emulator's hydronic fit, as algebra: the sign flip needs no estimator to reproduce.
+
+    Coefficients as fitted on 960 half-hour rows of ``bestest_hydronic``. The building decays at
+    -1.40/h at the setpoint it actually held, and the same fit reports +6.42/h at a setpoint of
+    0 C -- 15 K below anything the actuator can command. Pinned because the first version of
+    :class:`RunawayDriftError` refused this fit, and every such refusal was a false positive.
+    """
+    fit = dataclasses.replace(_plant(0.0), drift=(0.0, 6.4197), channel=(9.2965, -0.3779))
+    hydronic = dataclasses.replace(fit, action_mean=20.685)
+
+    assert hydronic.drift[1] > 0.0
+    assert hydronic.decay() == pytest.approx(-1.397, abs=1e-3)
+    assert hydronic.stable
+    assert not hydronic.stable_over(15.0, 16.0)  # the low end of the box does not decay
+    assert hydronic.stable_over(20.0, 25.0)
+
+
 def test_step_response_is_reported_where_the_dc_gain_is_not_identified() -> None:
     """A near-unit-root fit must not turn into a giant steady-state gain via the reported metric."""
     unstable = ThermalFit(
@@ -113,6 +163,7 @@ def test_step_response_is_reported_where_the_dc_gain_is_not_identified() -> None
         identified=False,
         adjusted=False,
         policy="prbs",
+        action_mean=0.5,
         action_residual_variance=0.02,
         nuisance_r2_action=0.0,
         channel_error=None,
@@ -252,6 +303,7 @@ def test_the_affine_authority_is_the_channel_at_the_operating_point_not_its_inte
         identified=True,
         adjusted=True,
         policy="reset",
+        action_mean=0.5,
         action_residual_variance=0.02,
         nuisance_r2_action=0.85,
         channel_error=0.1,
@@ -270,6 +322,7 @@ def _plant(authority: float, pole: float = -0.05) -> ThermalFit:
         identified=True,
         adjusted=True,
         policy="reset",
+        action_mean=0.5,
         action_residual_variance=0.02,
         nuisance_r2_action=0.0,
         channel_error=0.0,
@@ -327,6 +380,62 @@ def test_the_commanded_action_stops_moving_once_the_budget_is_spent() -> None:
             for budget in (600, 3000)
         ]
         assert commanded[0] == pytest.approx(commanded[1], abs=0.02), (authority, commanded)
+
+
+def test_the_plan_does_not_depend_on_the_units_the_actuator_reports_in() -> None:
+    """Reparametrising the actuator must move the command and nothing else.
+
+    The heat pump modulates on ``[0, 1]``; the two setpoint cases command Celsius on ``[15, 25]``.
+    An effort term written as ``(action - lo)**2`` is therefore 100x larger on those cases for the
+    same fraction of travel, so one ``w_comfort`` would buy an energy-first controller on one case
+    and a comfort-first controller on another while the table claims a fixed objective.
+
+    The check maps the plant through the same affine change of variable as the actuator -- the
+    channel divides by the span and the displaced intercept moves into the drift -- so the two
+    problems are the same problem in different units and the commands must agree to the map.
+    Measured against the unnormalised effort term the two disagree by 0.037 / 0.009 / 0.012 of
+    actuator travel at authority 0.2 / 0.5 / 1.0 -- an order above the tolerance, and an
+    under-statement of what the setpoint cases would have carried, because this operating point
+    sits near the low bound where the effort term has least leverage.
+    """
+    lo, span = 15.0, 10.0
+    rescaled_case = dataclasses.replace(HEAT_PUMP, action_lo=lo, action_hi=lo + span)
+    bounds, covariates = jnp.full(16, 21.0), jnp.zeros((16, 3))
+    for authority in (0.2, 0.5, 1.0):
+        native = _plant(authority)
+        rescaled = dataclasses.replace(
+            native,
+            drift=(native.drift[0] - native.channel[0] * lo / span, native.drift[1]),
+            channel=(native.channel[0] / span, native.channel[1]),
+        )
+        kwargs = {"w_comfort": 800.0, "margin": 1.5, "iterations": 600}
+        commanded = _mpc_solver(native, HEAT_PUMP, 0.5, **kwargs)(23.0, bounds, covariates)
+        in_setpoint_units = _mpc_solver(rescaled, rescaled_case, 0.5, **kwargs)(
+            23.0, bounds, covariates
+        )
+        assert (in_setpoint_units - lo) / span == pytest.approx(commanded, abs=2e-3), (
+            authority,
+            commanded,
+            in_setpoint_units,
+        )
+
+
+@pytest.mark.parametrize("pole", [0.0, 1.8807, 8.3633])
+def test_a_runaway_fit_is_refused_before_the_emulator_is_touched(pole: float) -> None:
+    """A horizon planned on a non-decaying drift is an artefact, and an expensive one.
+
+    The client points at a closed port, so the only way this raises ``RunawayDriftError`` instead of
+    a connection error is if the check runs *before* ``select``. That ordering is the point: on the
+    two setpoint-actuated cases the fitted pole came back between ``+1.9`` and ``+8.4`` on every
+    policy and both arms, and the resulting commands stalled BOPTEST's own solver past the client
+    timeout -- an hour of emulator time and an orphaned worker child for a number that could not
+    have meant anything. ``0.0`` is in the grid because marginal stability is already unusable: the
+    homogeneous solution stops decaying at exactly zero, not somewhere past it.
+    """
+    fit = _plant(0.5, pole=pole)
+    log = _synthetic_log(weather_gain=0.05, n=64)
+    with pytest.raises(RunawayDriftError, match="does not decay"):
+        run_control_episode(BOPTestClient("http://127.0.0.1:1"), HEAT_PUMP, fit, log, steps=1)
 
 
 def test_the_track_refuses_to_run_without_an_emulator_rather_than_scoring_nothing() -> None:
