@@ -27,15 +27,15 @@ jobs:
       run:
         working-directory: causaldyn-bench
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: causaldyn-bench
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: causaldyn/causal-hybrid-control
           path: causal-hybrid-control
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9
         with:
           python-version: "3.12"
       - name: Sync dependencies
@@ -51,15 +51,15 @@ jobs:
       run:
         working-directory: causaldyn-bench
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: causaldyn-bench
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: causaldyn/causal-hybrid-control
           path: causal-hybrid-control
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9
         with:
           python-version: "3.12"
       - name: Sync dependencies
@@ -73,15 +73,15 @@ jobs:
       run:
         working-directory: causaldyn-bench
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: causaldyn-bench
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: causaldyn/causal-hybrid-control
           path: causal-hybrid-control
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v9
         with:
           python-version: "3.12"
       - name: Sync dependencies
