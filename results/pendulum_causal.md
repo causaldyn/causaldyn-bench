@@ -267,10 +267,18 @@ The test suite is run at both. Because CI's ordinary job uses JAX's default floa
 that state exactness carry two bounds: `1e-06` on the channel and `1e-12` on the oracle's step at
 float64, relaxed to a measured float32 noise floor (`1.7e-06`, `1.3e-05` relative between the two
 channel rows, and `2.2e-07` on the step) otherwise. The seven-digit figure this section reports is
-therefore not checked by the ordinary job — a second CI job, `test-x64`, re-runs this track alone
-under `JAX_ENABLE_X64=1` and gates it. It is scoped to this track because Track H's
-`chc_realised_lift` does not survive float64, which is an open defect of that track rather than of
-this one.
+therefore not checked by the ordinary job — a second CI job, `test-x64`, re-runs the whole suite
+under `JAX_ENABLE_X64=1` and gates it.
+
+Running the suite at both precisions turned up something worth stating separately, because it is not
+a precision effect and it is easy to mistake for one: **a `seed` identifies a synthetic dataset only
+at a fixed dtype.** `jax.random` spends a different number of threefry bits per element for a float64
+output than for a float32 one, so `JAX_ENABLE_X64=1` draws a *different* Monte-Carlo instance rather
+than a higher-precision copy of the same one. On Track H every coordinate of the market's `demand`
+moves by O(1) and the oracle's headroom falls from 2.42 to 1.06 — which is why that track's
+assertions are now shares of the oracle lift rather than absolute lifts. Track J is immune by
+construction: `Pendulum-v1`'s constants are the environment's, not a draw's, and the wind is drawn by
+`numpy` at float64 regardless.
 
 ## 8. What this track does not claim
 

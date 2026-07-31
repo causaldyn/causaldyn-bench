@@ -6,11 +6,14 @@ name: ci
 # version from this repo's lockfile, so CI and a local run cannot disagree about what counts as
 # formatted.
 #
-# `test` runs at JAX's default float32. Track J's claim is *exact* recovery of a known control channel,
-# which is a float64 claim -- at float32 its assertions relax to a noise floor -- so `test-x64` re-runs
-# that one file under `JAX_ENABLE_X64=1`, where the tight bounds apply. The x64 run is scoped to that
-# file rather than the suite because `tests/test_marketplace.py` does not survive float64: Track H's
-# `chc_realised_lift` falls from above 2.0 to 1.061, which is a separate open defect.
+# `test` runs at JAX's default float32; `test-x64` re-runs the same suite under `JAX_ENABLE_X64=1`.
+# Two independent things make the second job worth its minutes. Track J's claim is *exact* recovery of
+# a known control channel, which is a float64 claim -- at float32 its assertions relax to a measured
+# noise floor, so only this job gates the seven digits. And a `seed` identifies a synthetic dataset
+# only at a fixed dtype: `jax.random` spends a different number of threefry bits per element for a
+# float64 output than for a float32 one, so x64 draws a *different* Monte-Carlo instance rather than a
+# rounder copy of the same one. An assertion that survives both jobs is an assertion about an
+# estimator; one that does not was reading a property of a particular draw.
 
 on:
   push:
@@ -83,7 +86,7 @@ jobs:
           python-version: "3.12"
       - name: Sync dependencies
         run: uv sync --group dev
-      - name: Track J at float64
-        run: uv run pytest tests/test_pendulum_causal.py -q
+      - name: Tests at float64
+        run: uv run pytest
         env:
           JAX_ENABLE_X64: "1"
