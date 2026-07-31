@@ -634,15 +634,113 @@ is not derived from anything here.
    *reproducibility* failure the other six could hide behind: five of the seven are caught by asking
    "in what units", and this one is only caught by re-running.
 
-## 9. What this track does not claim
+## 9. Certificate off against certificate on — the audit separates the arms, the filter almost never acts
+
+The closed half of the CHC spine, run on the emulator: every MPC solve is wrapped in a
+`chc.plan.CausalPlan` and priced by `chc.plan.certify_safety`, and the certificate-on arms additionally
+pass the applied command through `chc.barrier.robust_safety_filter`. `run_certificate_ablation`, one
+confounded 20-day log per seed with both fits taken off it, 7-day control episodes, two seeds:
+
+```bash
+JAX_ENABLE_X64=1 uv run python -c "
+from causaldyn_bench.boptest_causal import run_certificate_ablation
+for row in run_certificate_ablation(seed=1): print(row)"
+```
+
+**Wiring, and the three choices in it.** The barrier is `h(T) = T − c` with `c` the comfort bound in
+force *now*, held fixed across the horizon; `‖∇h‖ = 1`, so the identification radius enters as Δ
+exactly rather than inflated by an augmented state. The bound BOPTEST forecasts is a two-level step
+function — 21 °C occupied, 15 °C setback, ten ±6 K jumps a week — and a barrier that tracked it would
+demand 12 K/h of the zone at every transition, twenty times this heat pump's full authority; freezing
+it is the standard CBF treatment of a moving safe set, and anticipating the next bound is the MPC's
+job. The MPC's 1.5 K margin is deliberately *not* in the barrier: the certificate is about the bound
+`tdis_tot` is billed against, not about the planner's conservatism dial. And Δ is §5's calibrated
+0.073 K/h per unit of modulation — one measured standard error of `b₀`, not the estimator's
+`channel_error`, which over-states it by 6.9×. At a unit gap that is Γ = 1.1575.
+
+`causal_plan` is not the planner. It minimises a `QuadraticCost` by projected gradient, and this
+harness plans against a hinge on a forecast comfort bound; swapping the objective would move every
+number in §4 and turn the ablation into "is a different controller better". `certify_safety` prices a
+*finished* plan by design, which is exactly what the MPC hands it.
+
+**The certificate-off arm is the un-audited loop, measured rather than asserted.** The audit is
+read-only by construction, and a live check confirms it: two six-step episodes, one with `audit=None`
+and one with `SafetyAudit(enforce=False)`, agree on every KPI to every digit — only `wall_s` and
+BOPTEST's `time_rat` move, because a `certify_safety` trace per step is not free.
+
+### What the audit reads, without executing anything
+
+Certificate-off rows; the on rows differ only through the single step of the next table.
+
+| seed | arm | channel | crosses zero at | authority at 21 °C | steps with no Γ\* | certified horizon | uncertified applied step |
+|---:|---|---|---:|---:|---:|---:|---:|
+| 0 | adjusted | `+1.2582 − 0.0265·T` | 47.4 °C | **+0.701** | **7.44%** | 90.7% | 4.76% |
+| 1 | adjusted | `+2.5257 − 0.0978·T` | 25.8 °C | +0.471 | 7.74% | 90.8% | 5.36% |
+| 0 | naive | `+1.5391 − 0.0538·T` | 28.6 °C | +0.409 | 15.18% | 89.5% | 5.36% |
+| 1 | naive | `+2.9880 − 0.1321·T` | **22.6 °C** | **+0.214** | **21.73%** | 86.9% | 5.95% |
+
+"No Γ\*" is §40's genuinely empty case: the deficit exceeds `u_max · |channel|`, so nothing certifies
+*even at exact identification*. The share is **monotone in the authority the model believes** —
+0.701 / 0.471 / 0.409 / 0.214 K/h per unit against 7.4 / 7.7 / 15.2 / 21.7% — and within each seed the
+confounded arm believes less, by 1.7× on seed 0 and 2.2× on seed 1. So the audit separates the arms
+**offline, from the plan alone**, at 2.0× and 2.8× the uncertifiable share. It does *not* order the
+four fits by where their channel crosses zero, which was the mechanism this ablation was written to
+look for; the crossing matters through the authority it destroys, not on its own. Seed 1's confounded
+fit is the case where the two coincide — it crosses at 22.62 °C, within 0.2 K of where this MPC targets
+(`bound + margin` = 22.5), so its believed authority collapses exactly where the controller lives, and
+that arm is both the least certifiable and the one pinned at an actuator bound 98.8% of the time.
+
+### What enforcement changes: one command in 336, in all eight episodes
+
+| seed | arm | `tdis_tot` off → on | `ener_tot` off → on | `sat` off → on | commands moved |
+|---:|---|---|---|---|---:|
+| 0 | adjusted | 7.2764 → **7.1415** (−1.85%) | 2.1742 → 2.1764 (+0.10%) | 0.295 → 0.295 | 1 / 336 |
+| 0 | naive | 7.3212 → **7.1415** (−2.45%) | 2.2099 → 2.2156 (+0.26%) | 0.420 → 0.414 | 1 / 336 |
+| 1 | adjusted | 7.2774 → **7.1415** (−1.87%) | 2.2206 → 2.2192 (−0.06%) | 0.417 → 0.420 | 1 / 336 |
+| 1 | naive | 7.3212 → **7.1415** (−2.45%) | 1.9374 → 1.9371 (−0.01%) | 0.988 → 0.982 | 1 / 336 |
+
+**The filter is nearly inert, and the reason is not that the certificate is slack.** On seed 0's
+de-confounded arm the certificate refuses the applied step 16 times, and **15 of those 16 steps were
+already at full modulation**. With `w_comfort = 800` against an effort weight of 1, a comfort MPC
+saturates wherever the zone is below its bound, so the barrier and the objective want the same thing
+and there is nothing left to clip. On this plant the certificate can only change a command where the
+*objective*, not the actuator, left the margin unspent. That is a property of a comfort-dominated cost,
+not of certificates, and it is the honest reason the enforcement column is this thin.
+
+**The one step it does move is a discretisation the planner cannot see.** Traced on one episode
+(seed 0, de-confounded, audit only) and inferred for the other seven from the identical `1 / 336` and
+a mean `|Δu|` of exactly 1.0: it is **step 14**, the last occupied half-hour before the night setback.
+Every episode starts from the same `initialize(0, 0)`, so the schedule is shared. The MPC's forecast
+window is `slice(1, 17)`, so
+its first *scored* time is `t + Δt` and every bound it sees is already 15 °C: it commands **0**. The
+barrier's floor is the bound in force at `t`, 21 °C, and the zone sits 0.397 K below it, so the
+guaranteed derivative is −0.520 against a required +0.397, Γ\* is undefined, and the filter raises the
+command to 1. A receding-horizon planner cannot score the constraint active at `t` — no action taken at
+`t` changes the temperature at `t` — while a control-barrier condition constrains the *rate leaving*
+`t`, which the action does control. The two are asking different questions, and this is the step where
+the difference is load-bearing.
+
+**`7.321` was not the floor.** §4 reads that number as one the setpoint schedule builds in and no
+command can avoid. All four certificate-on arms land on **7.1415** K·h — to seven digits, from four
+different trajectories with saturation shares from 0.295 to 0.982 — so the floor of *this* schedule is
+7.1415, and 7.321 was the floor of controllers that miss the pre-setback step. The 2.5% that separates
+them is one half-hour of heating per week.
+
+**Do not over-read the gain.** BOPTEST bills `tdis_tot` against the same comfort bound the barrier is
+built on, so here the safety constraint and the scored objective coincide; a certificate that helps a
+KPI it is aligned with is not evidence that certificates pay in general. What generalises is the
+diagnostic — the uncertifiable share is computed from the plan and the fit, before any command is
+issued, and it separates a confounded model from a de-confounded one by 2–3× on a real plant.
+
+## 10. What this track does not claim
 
 - No ground-truth channel; the reference is a randomised design, not a known number.
 - No steady-state gain (§1).
 - **The closed-loop win is small in absolute terms and floor-limited.** De-confounding takes
   discomfort from 7.892 to 7.295 K·h with a 51× tighter spread, and it is the only arm whose margin
-  behaves like a conservatism dial (§4) — but `7.321` is a floor this case's setpoint schedule builds
-  in, so the headroom being competed for is under 8% of the metric. A plant with more room to lose
-  would test the claim harder than this one does.
+  behaves like a conservatism dial (§4) — but the setpoint schedule builds a floor in at `7.1415`
+  (§9 corrects the `7.321` §4 reads as one), so the headroom being competed for is under 8% of the
+  metric. A plant with more room to lose would test the claim harder than this one does.
 - **No win from channel pessimism** (§5), and no supported explanation for why. The earlier version
   attributed it to the drift being the dominant error, on correlations that turn out to be computed
   against 0.045 K·h of variation at the floor. That hypothesis is now untested rather than confirmed.
@@ -663,7 +761,7 @@ is not derived from anything here.
   only at a *pinned precision* (§8, defect 7).
 - **Only `bestest_hydronic_heat_pump` has been run closed-loop.** The other two cases have been
   logged and fitted (§7) and their fits are stable at the operating point, but no MPC episode has
-  completed on either, so every closed-loop number in §4–§6 is from the one case.
+  completed on either, so every closed-loop number in §4–§6 and §9 is from the one case.
 - **§7 identifies the artefact, not the plant.** Knowing that `λ(ū)` is −1.40 on hydronic says the
   fit decays where it was logged; it does not say the affine class is adequate there. Both setpoint
   cases actuate behind a local PI loop, where control-affinity is a local approximation, and the fit

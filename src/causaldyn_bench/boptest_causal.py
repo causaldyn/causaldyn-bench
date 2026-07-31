@@ -884,6 +884,21 @@ def predictive_comparison(log: LoggedEpisode, *, seed: int = 0) -> dict[str, flo
     return {name: holdout_mse(fit, log) for name, fit in arms.items()}
 
 
+@dataclass(frozen=True)
+class HorizonPlan:
+    """One MPC solve: the commanded sequence and the trajectory the *fitted model* predicts for it.
+
+    The rollout is carried out of the solver rather than recomputed beside it. A certificate has to
+    audit the plan against the same integration the planner optimised through, and a second Euler
+    loop written elsewhere in this module would be a second definition of the plan that nothing
+    keeps in step -- the failure mode of defects 2, 5 and 6 in the results doc, one more time.
+    """
+
+    actions: Array  # (horizon,) in the harness's action units
+    states: Array  # (horizon + 1,) Celsius, starting at the measured temperature
+    task_cost: float  # the objective the solver actually reached, comfort hinge plus effort
+
+
 def _mpc_solver(
     fit: PlantModel,
     case: BoptestCase,
@@ -941,32 +956,38 @@ def _mpc_solver(
     Rejected: Barzilai-Borwein, which stalled the black-box arm at its initialisation (the curvature
     pair ``s'y`` collapses where the hinge is inactive); and a box-QP solver, which would have been
     exact for the affine arms and unavailable for the black box, i.e. a different optimiser per arm.
+
+    ``solve`` returns the **whole** horizon plan, not the action the loop applies. Receding horizon
+    still executes only the first entry, but :func:`certify_safety` prices a finished plan, and a
+    certificate read off the first step alone would be a one-step check rather than an audit.
     """
     lo, hi = case.action_lo, case.action_hi
     span = hi - lo
 
     def rollout(actions: Array, bounds: Array, covariates: Array, temp0: Array, hinged: bool):
-        def step(temp: Array, triple: tuple[Array, Array, Array]) -> tuple[Array, Array]:
+        def step(
+            temp: Array, triple: tuple[Array, Array, Array]
+        ) -> tuple[Array, tuple[Array, Array]]:
             action, bound, covariate = triple
             nxt = temp + dt * fit.rate(temp, covariate, action)
             gap = bound + margin - nxt
             shortfall = jnp.maximum(gap, 0.0) if hinged else gap
             effort = (action - lo) / span
-            return nxt, w_comfort * shortfall**2 + effort**2
+            return nxt, (nxt, w_comfort * shortfall**2 + effort**2)
 
-        _, costs = jax.lax.scan(step, temp0, (actions, bounds, covariates))
-        return jnp.sum(costs)
+        _, (states, costs) = jax.lax.scan(step, temp0, (actions, bounds, covariates))
+        return states, jnp.sum(costs)
 
     def cost(actions: Array, bounds: Array, covariates: Array, temp0: Array) -> Array:
-        return rollout(actions, bounds, covariates, temp0, hinged=True)
+        return rollout(actions, bounds, covariates, temp0, hinged=True)[1]
 
     def dense(actions: Array, bounds: Array, covariates: Array, temp0: Array) -> Array:
-        return rollout(actions, bounds, covariates, temp0, hinged=False)
+        return rollout(actions, bounds, covariates, temp0, hinged=False)[1]
 
     grad = jax.jit(jax.grad(cost))
     curvature = jax.jit(jax.hessian(dense))
 
-    def solve(temp0: float, bounds: Array, covariates: Array) -> float:
+    def solve(temp0: float, bounds: Array, covariates: Array) -> HorizonPlan:
         start = jnp.full(bounds.shape[0], 0.5 * (lo + hi))
         origin = jnp.asarray(temp0)
         largest = jnp.linalg.eigvalsh(curvature(start, bounds, covariates, origin))[-1]
@@ -978,7 +999,12 @@ def _mpc_solver(
             nxt_momentum = 0.5 * (1.0 + math.sqrt(1.0 + 4.0 * momentum * momentum))
             lookahead = moved + ((momentum - 1.0) / nxt_momentum) * (moved - actions)
             actions, momentum = moved, nxt_momentum
-        return float(actions[0])
+        reached, spent = rollout(actions, bounds, covariates, origin, hinged=True)
+        return HorizonPlan(
+            actions=actions,
+            states=jnp.concatenate([origin[None], reached]),
+            task_cost=float(spent),
+        )
 
     return solve
 
@@ -1033,6 +1059,186 @@ class RunawayDriftError(RuntimeError):
         self.rise = rise
 
 
+@dataclass(frozen=True)
+class SafetyAudit:
+    """Price the MPC's plan against a partially identified channel, and optionally act on the price.
+
+    Three operations share the word "safety" in :mod:`chc.plan` -- *plan* (``causal_plan``),
+    *audit* (``certify_safety``), *filter* (``robust_safety_filter``) -- and only the last changes
+    an action. This carries the two a closed loop can use, and :attr:`enforce` is exactly the switch
+    between them: ``False`` runs the audit and records what it found, ``True`` additionally clips
+    the applied command into the certified interval. Both arms of the ablation therefore carry the
+    same diagnostics and differ only in whether anything reads them, which is what makes them
+    comparable -- and it makes the read-only claim checkable rather than asserted, since the
+    ``False`` arm must reproduce an un-audited episode command for command.
+
+    ``causal_plan`` is deliberately **not** the planner. It minimises a
+    :class:`chc.plan.QuadraticCost` by projected gradient, while this harness plans against a hinge
+    on a forecast comfort bound, which is not a quadratic in the state; swapping the objective would
+    move every closed-loop number in ``results/boptest_causal.md`` and turn the ablation into "is a
+    different controller better". ``certify_safety`` prices a *finished* plan by design, so the
+    MPC's horizon is wrapped in a :class:`chc.plan.CausalPlan` and audited as it stands.
+
+    Attributes:
+        radius: the operator-norm radius on the control channel, in ``b0``'s units of K/h per unit
+            of actuator travel. The default is the one number §5 of the results doc could defend:
+            one *measured* standard error of the 8-hour step response across five seeds (0.487 K) at
+            6.64 K of rise per unit of ``b0``. The estimator's own ``channel_error`` is **not**
+            usable here -- it is a root-mean diagonal over the whole channel matrix, so it mixes
+            ``b0`` with ``b1`` and overstates this radius by 6.9x.
+        alpha: the class-K gain in ``h_dot >= -alpha*h``, per hour. It is what lets the zone coast
+            down through the night rather than being held at the occupied bound: at a 15 C setback
+            bound and an 18 C zone the barrier permits ``3*alpha`` K/h of cooling, an order more
+            than this building does.
+        enforce: whether :func:`chc.barrier.robust_safety_filter` may move the applied command.
+    """
+
+    radius: float = 0.073
+    alpha: float = 1.0
+    enforce: bool = False
+
+    def __post_init__(self) -> None:
+        if not 0.0 <= self.radius < 1.0:
+            raise ValueError(f"radius must lie in [0, 1) at a unit gap, got {self.radius}")
+        if self.alpha <= 0.0:
+            raise ValueError(f"class-K gain must be positive, got {self.alpha}")
+
+    @property
+    def gamma(self) -> float:
+        """The MSM sensitivity level that realises :attr:`radius` at a unit gap.
+
+        ``certify_safety`` takes ``(gamma, cvar_gap)`` and uses them only through
+        ``Delta = (G-1)/(G+1)*gap``, so the pair is a convention rather than two facts. Fixing the
+        gap at 1 makes ``Delta`` the radius itself in the channel's own units and makes the
+        certificate's ``gamma_star`` invertible by the same formula -- the threshold radius a step
+        tolerates is ``(G*-1)/(G*+1)`` K/h per unit of travel, with no second convention to carry.
+        """
+        return (1.0 + self.radius) / (1.0 - self.radius)
+
+
+@dataclass(frozen=True)
+class StepAudit:
+    """§40 priced on one MPC solve, and the command the filter would allow instead."""
+
+    margin: float  # h(T) now: how far the zone sits above the bound it is audited against
+    guaranteed: float  # worst-case barrier derivative at the step the plan applies
+    required: float  # -alpha*h(T); certification is exactly `guaranteed >= required`
+    certified: bool  # ...so this is that comparison, reported rather than left implicit
+    horizon_share: float  # certified leading prefix of the plan, as a share of its length
+    gamma_star: float  # weakest step's sensitivity ceiling; nan where no Gamma certifies it
+    nominal: float  # what the MPC asked for
+    filtered: float  # what the filter would allow, clipped into the actuator box
+
+
+def _horizon_dynamics(fit: PlantModel, covariates: Array, dt: float):
+    """The fitted plant as a :class:`chc.dynamics.Dynamics`, with the forecast indexed by time.
+
+    ``certify_safety`` evaluates the model at ``t = dt*k`` along the plan, and this plant genuinely
+    is time-varying: the boundary conditions enter the drift as regressors, and step ``k`` of the
+    horizon sees forecast row ``k`` -- the same pairing the planner's scan uses. Recovering ``k``
+    from ``t`` is exact on the grid the certificate builds, so this is the adapter and not an
+    approximation of one; the clip only binds if a caller audits past the forecast it planned on.
+    """
+    last = covariates.shape[0] - 1
+
+    def field(t: float | Array, x: Array, u: Array) -> Array:
+        index = jnp.clip(jnp.round(jnp.asarray(t) / dt).astype(jnp.int32), 0, last)
+        return jnp.atleast_1d(fit.rate(x[0], covariates[index], u[0]))
+
+    return field
+
+
+def _audit_plan(
+    fit: PlantModel,
+    case: BoptestCase,
+    plan: HorizonPlan,
+    covariates: Array,
+    floor: float,
+    dt: float,
+    audit: SafetyAudit,
+) -> StepAudit:
+    """Wrap the MPC's horizon in a :class:`chc.plan.CausalPlan` and price it against §40.
+
+    The barrier is ``h(T) = T - floor`` with ``floor`` the comfort bound in force **now**, held
+    fixed across the horizon. BOPTEST's bound is a two-level step function -- 21 C occupied, 15 C
+    setback, ten +-6 K jumps a week at half-hour resolution -- so a barrier that tracked it would
+    demand 12 K/h of the zone at every transition, twenty times this heat pump's full authority, and
+    the audit would be reporting the setback schedule rather than the channel. Freezing it is the
+    standard CBF treatment of a moving safe set; it keeps ``||grad h|| = 1``, so the radius is
+    ``Delta`` exactly rather than the ``sqrt(2)*Delta`` an augmented state would charge for a
+    coordinate that carries no actuator; and it is the constraint the filter acts on, since
+    enforcement only ever touches the first step, where "now" is unambiguous. Anticipating the
+    *next* bound is the MPC's job, and the MPC does see the forecast.
+
+    The planner's ``margin`` is deliberately absent. The certificate is about BOPTEST's comfort
+    bound -- the line ``tdis_tot`` is billed against -- while the margin is the planner's
+    conservatism dial, and folding one into the other would make the certificate a function of a
+    knob that ``run_pareto`` sweeps.
+
+    ``drift`` and ``channel`` for the filter are re-read off ``fit`` rather than recovered from
+    the certificate, which reports only their combination. They agree with what ``certify_safety``
+    used by construction, not by coincidence: with ``grad h = 1`` its drift is ``rate(T, z_0, 0)``
+    and its channel the Jacobian of the same call, both at the same point.
+    """
+    from chc.barrier import robust_safety_filter
+    from chc.plan import CausalPlan, certify_safety
+
+    certificate = certify_safety(
+        CausalPlan(
+            actions=plan.actions[:, None],
+            trajectory=plan.states[:, None],
+            task_cost=plan.task_cost,
+            uncertainty_tube=None,
+            certified_horizon=None,
+        ),
+        _horizon_dynamics(fit, covariates, dt),
+        lambda x: x[0] - floor,
+        dt,
+        alpha=audit.alpha,
+        gamma=audit.gamma,
+        cvar_gap=1.0,
+        u_max=case.action_hi,
+    )
+    temp, nominal = jnp.asarray(plan.states[0]), float(plan.actions[0])
+    zero = jnp.zeros(())
+    drift = float(fit.rate(temp, covariates[0], zero))
+    channel = float(jax.grad(lambda u: fit.rate(temp, covariates[0], u))(zero))
+    allowed = robust_safety_filter(
+        nominal, channel, audit.radius, case.action_hi, drift, audit.alpha * (float(temp) - floor)
+    )
+    return StepAudit(
+        margin=float(temp) - floor,
+        guaranteed=float(certificate.guaranteed_derivative[0]),
+        required=float(certificate.required[0]),
+        certified=bool(certificate.planned_certified[0]),
+        horizon_share=certificate.certified_steps / plan.actions.shape[0],
+        gamma_star=certificate.gamma_star,
+        nominal=nominal,
+        # The library's filter models a symmetric box ``|u| <= u_max``; a heat pump modulates on
+        # [0, 1]. Intersecting with the physical box is what makes the returned action executable,
+        # and where the intersection is empty it lands on the feasible endpoint that maximises the
+        # guaranteed margin -- which above the confounded fit's 22.62 C sign flip is the pump off.
+        filtered=float(np.clip(allowed, case.action_lo, case.action_hi)),
+    )
+
+
+def _audit_summary(audits: list[StepAudit]) -> dict[str, float]:
+    """The episode's audit, as the numbers that let two arms of the ablation be compared."""
+    moved = np.asarray([a.filtered - a.nominal for a in audits])
+    ceilings = np.asarray([a.gamma_star for a in audits])
+    undefined = bool(np.all(np.isnan(ceilings)))
+    return {
+        "cert_uncertified": float(np.mean([not a.certified for a in audits])),
+        "cert_slack_mean": float(np.mean([a.guaranteed - a.required for a in audits])),
+        "cert_horizon_share": float(np.mean([a.horizon_share for a in audits])),
+        "cert_below_floor": float(np.mean([a.margin < 0.0 for a in audits])),
+        "cert_gamma_star_median": float("nan") if undefined else float(np.nanmedian(ceilings)),
+        "cert_gamma_star_undefined": float(np.mean(np.isnan(ceilings))),
+        "cert_filter_share": float(np.mean(np.abs(moved) > 1e-9)),
+        "cert_filter_mean_abs": float(np.mean(np.abs(moved))),
+    }
+
+
 def run_control_episode(
     client: BOPTestClient,
     case: BoptestCase,
@@ -1045,6 +1251,7 @@ def run_control_episode(
     w_comfort: float = 800.0,
     margin: float = 1.5,
     iterations: int = 600,
+    audit: SafetyAudit | None = None,
 ) -> dict[str, float]:
     """Run the comfort MPC built on ``fit`` and return BOPTEST's KPIs, wall clock and saturation.
 
@@ -1053,6 +1260,11 @@ def run_control_episode(
     actuator is saturated the command is set by the box, not by the fitted channel, so a better
     channel cannot pay there. Without it, a closed-loop null result is unreadable -- it could mean
     identification does not matter, or it could mean this operating point never let it matter.
+
+    ``audit`` runs the plan -> certificate half of the CHC spine on every solve and adds the
+    ``cert_*`` keys; see :class:`SafetyAudit` for what it prices and when it is allowed to act. It
+    defaults to ``None``, which is not a mode but the *absence* of one: the loop below is then
+    byte-identical to the one every number in ``results/boptest_causal.md`` was measured on.
 
     Raises :class:`RunawayDriftError` rather than planning against a fit whose drift is unstable;
     see that class for why it is checked here and not in the solver.
@@ -1066,6 +1278,7 @@ def run_control_episode(
     testid = client.select(case.testcase)
     started = time.perf_counter()
     clipped = 0
+    audits: list[StepAudit] = []
     try:
         client.set_step(testid, step_s)
         measurements = client.initialize(testid, 0.0, 0.0)
@@ -1084,7 +1297,15 @@ def run_control_episode(
                     ]
                 )
             )
-            action = solve(measurements[case.zone_point] - KELVIN, bounds, covariates)
+            plan = solve(measurements[case.zone_point] - KELVIN, bounds, covariates)
+            action = float(plan.actions[0])
+            if audit is not None:
+                priced = _audit_plan(
+                    fit, case, plan, covariates, float(forecast[LOWER_SETP][0]) - KELVIN, dt, audit
+                )
+                audits.append(priced)
+                if audit.enforce:
+                    action = priced.filtered
             tolerance = 1e-6 * max(case.action_hi - case.action_lo, 1.0)
             clipped += bool(
                 action <= case.action_lo + tolerance or action >= case.action_hi - tolerance
@@ -1095,6 +1316,8 @@ def run_control_episode(
         client.stop(testid)
     kpis["wall_s"] = time.perf_counter() - started
     kpis["at_bound"] = clipped / steps
+    if audits:
+        kpis.update(_audit_summary(audits))
     return kpis
 
 
@@ -1328,6 +1551,83 @@ def run_overlap_ablation(
                 "channel_b0": fit.channel[0],
             }
         )
+    return rows
+
+
+def run_certificate_ablation(
+    base_url: str = DEFAULT_URL,
+    case_name: str = "heat_pump",
+    *,
+    seed: int = 0,
+    id_steps: int = 960,
+    control_steps: int = 336,
+    step_s: float = 1800.0,
+    radius: float = 0.073,
+    alpha: float = 1.0,
+    progress: Callable[[str, dict[str, Any]], None] | None = None,
+    **control: Any,
+) -> list[dict[str, Any]]:
+    """Certificate off against certificate on, on the confounded and the de-confounded fit alike.
+
+    The 2x2 the spine was missing an empirical answer for: ``fit -> plan -> certify -> act``, closed
+    on a real emulator, with the certificate as the only thing that changes between arms.
+
+    Falsifiable in both directions, which is the only reason to run it rather than assert it: the
+    audit should find the confounded fit harder to certify, and one that separated the arms
+    *equally* would be reading something other than the confounding. §40's threshold is undefined
+    exactly where ``deficit > u_max * |channel|``, so what the diagnostic tracks is the authority
+    the model *believes* at the operating point -- and attenuating that authority is what
+    confounding does here. Measured on two seeds in §9 of the results doc, monotone over all four
+    fits.
+
+    Which seed is run matters for the sharpest version of it. On ``seed=1`` the confounded channel
+    ``+2.989 - 0.1321*T`` crosses zero at 22.62 C -- inside the occupied band, and within 0.2 K of
+    where this MPC targets -- so its believed authority collapses exactly where the controller
+    lives; ``seed=0`` crosses at 28.6 C and 47.4 C, both outside it. Both are reported, because a
+    diagnostic that only works on the seed it was designed against is not a diagnostic.
+
+    One confounded 20-day log with both fits taken off it -- the same setup as the
+    ``reset-adjusted`` and ``reset-naive`` rows of §4 -- so the certificate-off arms are comparable
+    to numbers already published rather than to a fresh draw.
+    """
+    case = CASES[case_name]
+    client = BOPTestClient(base_url)
+    log = log_episode(client, case, policy="reset", seed=seed, steps=id_steps, step_s=step_s)
+    rows: list[dict[str, Any]] = []
+    for adjusted in (True, False):
+        fit = fit_thermal(log, adjusted=adjusted)
+        arm = "adjusted" if adjusted else "naive"
+        # Where a bilinear channel changes sign the identified effect can no longer be signed, so
+        # the certified interval is empty at any radius. Reported per arm because it is the
+        # mechanism the ablation is meant to expose, not a derived statistic.
+        flip = -fit.channel[0] / fit.channel[1] if fit.channel[1] < 0.0 else float("inf")
+        for enforce in (False, True):
+            try:
+                kpis = run_control_episode(
+                    client,
+                    case,
+                    fit,
+                    log,
+                    steps=control_steps,
+                    step_s=step_s,
+                    audit=SafetyAudit(radius=radius, alpha=alpha, enforce=enforce),
+                    **control,
+                )
+            except RunawayDriftError as unplannable:
+                kpis = {"unplannable": 1.0, "pole": unplannable.pole, "rise_8h": unplannable.rise}
+            row = {
+                "seed": seed,
+                "arm": arm,
+                "certificate": "on" if enforce else "off",
+                "channel_b0": fit.channel[0],
+                "channel_b1": fit.channel[1],
+                "authority": fit.authority(),
+                "sign_flip_c": flip,
+                **kpis,
+            }
+            rows.append(row)
+            if progress is not None:
+                progress(f"{arm}-{'on' if enforce else 'off'}", row)
     return rows
 
 

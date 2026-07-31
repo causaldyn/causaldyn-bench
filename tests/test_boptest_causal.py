@@ -7,6 +7,7 @@ the overlap accounting that decides whether anything is identified at all.
 
 import dataclasses
 import itertools
+import math
 import os
 import re
 
@@ -19,9 +20,14 @@ from causaldyn_bench.boptest_causal import (
     CASES,
     HEAT_PUMP,
     BOPTestClient,
+    HorizonPlan,
     LoggedEpisode,
     RunawayDriftError,
+    SafetyAudit,
+    StepAudit,
     ThermalFit,
+    _audit_plan,
+    _horizon_dynamics,
     _mpc_solver,
     finite_difference_step_response,
     fit_neural,
@@ -352,7 +358,7 @@ def test_the_commanded_action_falls_as_the_room_starts_warmer(authority: float) 
     )
     bounds, covariates = jnp.full(16, 21.0), jnp.zeros((16, 3))
     grid = (22.2, 22.4, 22.6, 22.8, 23.0, 23.2, 23.4)
-    commanded = [solve(temp, bounds, covariates) for temp in grid]
+    commanded = [float(solve(temp, bounds, covariates).actions[0]) for temp in grid]
     assert all(a >= b - 1e-6 for a, b in itertools.pairwise(commanded)), commanded
 
 
@@ -376,7 +382,7 @@ def test_the_commanded_action_stops_moving_once_the_budget_is_spent() -> None:
         commanded = [
             _mpc_solver(
                 _plant(authority), HEAT_PUMP, 0.5, w_comfort=800.0, margin=1.5, iterations=budget
-            )(23.0, bounds, covariates)
+            )(23.0, bounds, covariates).actions[0]
             for budget in (600, 3000)
         ]
         assert commanded[0] == pytest.approx(commanded[1], abs=0.02), (authority, commanded)
@@ -409,10 +415,12 @@ def test_the_plan_does_not_depend_on_the_units_the_actuator_reports_in() -> None
             channel=(native.channel[0] / span, native.channel[1]),
         )
         kwargs = {"w_comfort": 800.0, "margin": 1.5, "iterations": 600}
-        commanded = _mpc_solver(native, HEAT_PUMP, 0.5, **kwargs)(23.0, bounds, covariates)
+        commanded = _mpc_solver(native, HEAT_PUMP, 0.5, **kwargs)(23.0, bounds, covariates).actions[
+            0
+        ]
         in_setpoint_units = _mpc_solver(rescaled, rescaled_case, 0.5, **kwargs)(
             23.0, bounds, covariates
-        )
+        ).actions[0]
         assert (in_setpoint_units - lo) / span == pytest.approx(commanded, abs=2e-3), (
             authority,
             commanded,
@@ -449,6 +457,179 @@ def test_unknown_policy_is_rejected() -> None:
         log_episode(
             BOPTestClient("http://127.0.0.1:1"), HEAT_PUMP, policy="greedy", seed=0, steps=1
         )
+
+
+def _audited(
+    fit: ThermalFit,
+    temp: float,
+    floor: float,
+    *,
+    w_comfort: float = 800.0,
+    radius: float = 0.073,
+    alpha: float = 1.0,
+) -> tuple[HorizonPlan, StepAudit]:
+    """One MPC solve on flat boundary conditions, plus the §40 price of the plan it returned."""
+    dt = 0.5
+    bounds, covariates = jnp.full(16, floor), jnp.zeros((16, 3))
+    plan = _mpc_solver(fit, HEAT_PUMP, dt, w_comfort=w_comfort, margin=1.5, iterations=600)(
+        temp, bounds, covariates
+    )
+    audit = SafetyAudit(radius=radius, alpha=alpha)
+    return plan, _audit_plan(fit, HEAT_PUMP, plan, covariates, floor, dt, audit)
+
+
+def test_the_planned_trajectory_is_the_one_the_planner_integrated() -> None:
+    """The audit's whole premise: it prices the plan the solver optimised, not a copy of it.
+
+    ``HorizonPlan.states`` is carried out of the solver's own scan rather than recomputed, so this
+    checks the carrying rather than the integrator -- and it is what makes the certificate's drift
+    and channel evaluations land on the same states the comfort hinge was evaluated at.
+    """
+    fit = _plant(0.5)
+    plan, _ = _audited(fit, 20.0, 21.0)
+    covariate = jnp.zeros(3)
+    for k in range(plan.actions.shape[0]):
+        stepped = plan.states[k] + 0.5 * fit.rate(plan.states[k], covariate, plan.actions[k])
+        assert float(plan.states[k + 1]) == pytest.approx(float(stepped), rel=1e-12, abs=1e-12)
+
+
+def test_the_certificate_prices_the_channel_the_fit_reports_at_the_radius_asked_for() -> None:
+    """``guaranteed = drift + channel*u - radius*|u|``, recomputed from the fit alone.
+
+    Three conventions have to be right at once for this to hold and each has a plausible wrong
+    version: the barrier's gradient must be 1 (an augmented state would charge ``sqrt(2)``), the
+    ``(gamma, cvar_gap)`` pair must realise ``radius`` (the natural reading of a unit gap is the
+    other way round), and the ``Dynamics`` adapter must hand ``certify_safety`` the same rate the
+    planner used. Checked against arithmetic that shares none of that code.
+    """
+    fit, radius = _plant(0.5), 0.073
+    plan, priced = _audited(fit, 20.0, 21.0, radius=radius)
+    temp, action = float(plan.states[0]), float(plan.actions[0])
+    covariate = jnp.zeros(3)
+    drift = float(fit.rate(jnp.asarray(temp), covariate, jnp.zeros(())))
+    channel = float(fit.rate(jnp.asarray(temp), covariate, jnp.ones(()))) - drift
+    assert priced.guaranteed == pytest.approx(drift + channel * action - radius * abs(action))
+    assert priced.required == pytest.approx(-(temp - 21.0))
+    assert priced.certified is (priced.guaranteed >= priced.required)
+
+
+def test_the_audit_reads_the_forecast_row_belonging_to_the_step_it_prices() -> None:
+    """A time-varying plant audited against row 0 everywhere would be a silent wrong answer.
+
+    The weather enters the drift as a regressor, so a horizon whose boundary conditions move is the
+    normal case rather than the exotic one -- and an adapter that ignored ``t`` would still return a
+    plausible certificate. Distinct rows are the only way to see the difference.
+    """
+    fit = dataclasses.replace(_plant(0.5), weather_drift=(1.0, 0.0, 0.0))
+    covariates = jnp.arange(16.0).reshape(16, 1) * jnp.asarray([[1.0, 0.0, 0.0]])
+    field = _horizon_dynamics(fit, covariates, 0.5)
+    for k in (0, 7, 15):
+        priced = float(field(0.5 * k, jnp.asarray([21.0]), jnp.asarray([0.3]))[0])
+        expected = float(fit.rate(jnp.asarray(21.0), covariates[k], jnp.asarray(0.3)))
+        assert priced == pytest.approx(expected, rel=1e-12)
+
+
+def test_the_sensitivity_level_and_the_radius_are_one_convention_not_two() -> None:
+    """``gamma`` exists so ``(G-1)/(G+1)`` reads the radius back; illegal radii do not exist."""
+    for radius in (0.0, 0.073, 0.5, 0.9):
+        gamma = SafetyAudit(radius=radius).gamma
+        assert (gamma - 1.0) / (gamma + 1.0) == pytest.approx(radius)
+    with pytest.raises(ValueError, match="radius must lie"):
+        SafetyAudit(radius=1.0)
+    with pytest.raises(ValueError, match="class-K gain"):
+        SafetyAudit(alpha=0.0)
+
+
+def test_the_filter_leaves_a_command_alone_where_the_barrier_has_slack() -> None:
+    """Least-restrictive means exactly this: a certified plan is executed unchanged.
+
+    At 24 C against a 21 C floor the barrier allows 3 K/h of cooling and the building does far less,
+    so every action in the box is admissible and the filter has nothing to clip. A filter that moved
+    the command here would be a controller, not a safety layer.
+    """
+    _, priced = _audited(_plant(0.5), 24.0, 21.0)
+    assert priced.margin == pytest.approx(3.0)
+    assert priced.certified
+    assert priced.filtered == pytest.approx(priced.nominal)
+
+
+def test_the_filter_raises_a_command_a_planner_traded_away_for_effort() -> None:
+    """In deficit the filter clips *up*, to the left endpoint of the admissible interval.
+
+    The planner has to be willing to accept a comfort shortfall for this to have anything to say,
+    which is what the low ``w_comfort`` buys: at the harness default the comfort term outweighs
+    effort by four orders and the command is already saturated whenever the zone is below its bound,
+    so the filter would have nothing to raise. That is itself worth knowing -- on this plant the
+    certificate can only bind where the *objective*, not the actuator, left the margin unspent.
+
+    The endpoint is checked against the closed form ``deficit / (channel - radius)`` rather than by
+    an inequality: "the action went up" would also pass if the filter had saturated, which is a
+    different behaviour with a different energy bill.
+    """
+    fit, radius = _plant(0.5), 0.073
+    plan, priced = _audited(fit, 20.6, 21.0, w_comfort=0.1, radius=radius)
+    # The literal 20.6 is not the state the audit saw: at JAX's default float32 the trajectory holds
+    # 20.600000381, and reading the deficit off the literal instead leaves an 8.9e-07 gap that looks
+    # like a tolerance question and is a "which number is this" question.
+    temp = float(plan.states[0])
+    drift = float(fit.rate(jnp.asarray(temp), jnp.zeros(3), jnp.zeros(())))
+    deficit = (21.0 - temp) - drift  # -alpha*h - drift at alpha = 1
+    assert not priced.certified
+    assert float(plan.actions[0]) == pytest.approx(0.438, abs=1e-3)
+    assert priced.filtered == pytest.approx(deficit / (0.5 - radius))
+
+
+def test_a_channel_the_radius_cannot_sign_switches_the_actuator_off() -> None:
+    """The mechanism the confounded fit is expected to hit, on a plant built to hit it.
+
+    Near where a bilinear channel crosses zero the identified effect is smaller than the radius, so
+    its *sign* is not identified: no action has a guaranteed margin and the admissible interval is
+    empty. The library's filter answers that with the margin-maximising extreme, and intersected
+    with a heat pump's one-sided box that is the pump switched off -- the honest answer, since a
+    model that cannot say whether heating warms the room has no business commanding heat.
+
+    Both temperatures are uncertified and both have a deficit no authority can cover, so what
+    separates them is only whether the channel can be signed at 0.073. Reading one without the other
+    would confuse "the certificate refuses" with "the filter shuts down".
+    """
+    fit = dataclasses.replace(_plant(0.5), channel=(0.5 * 20.5, -0.5))  # channel zero at 20.5 C
+    signed, unsigned = (_audited(fit, temp, 21.0)[1] for temp in (20.3, 20.4))
+
+    assert fit.authority(20.3) == pytest.approx(0.100)  # above the radius: the sign is identified
+    assert fit.authority(20.4) == pytest.approx(0.050)  # below it: the sign is not
+    assert (signed.nominal, unsigned.nominal) == (1.0, 1.0)  # the planner asks for full heat twice
+    assert not signed.certified and not unsigned.certified
+    assert math.isnan(signed.gamma_star) and math.isnan(unsigned.gamma_star)
+    assert signed.filtered == pytest.approx(1.0)  # sign known: push as hard as the box allows
+    assert unsigned.filtered == pytest.approx(0.0)  # sign unknown: stop
+
+
+@pytest.mark.skipif(not _URL, reason="set BOPTEST_URL to a running BOPTEST-Service")
+def test_the_audit_alone_moves_no_command() -> None:
+    """The certificate-off arm has to be the un-audited loop, or the ablation compares three things.
+
+    ``certify_safety`` is read-only by construction, but "by construction" is what a reader has to
+    take on trust; two short live episodes make it a measurement. BOPTEST replays the same weather
+    from the same initialisation and the MPC is deterministic, so identical KPIs are the right bar
+    rather than a tolerance.
+
+    The plant is the synthetic one and the log only supplies the standardiser, because what is under
+    test is the loop and not the estimator -- and two days of emulator, which is all this test can
+    afford, fit a building that grows rather than decays and would be refused before the loop ran.
+    """
+    if not is_available(_URL):
+        pytest.skip("BOPTEST_URL is set but the service is unreachable")
+    client, fit = BOPTestClient(_URL), _plant(0.5)
+    log = _synthetic_log(weather_gain=0.05, n=64)
+    plain = run_control_episode(client, HEAT_PUMP, fit, log, steps=6)
+    audited = run_control_episode(client, HEAT_PUMP, fit, log, steps=6, audit=SafetyAudit())
+    assert "cert_uncertified" in audited and "cert_uncertified" not in plain  # the audit did run
+    # `wall_s` and BOPTEST's `time_rat` measure how long the controller took, and the audit is not
+    # free -- it adds a `certify_safety` trace per step. Every KPI that describes the *building*
+    # matches to every digit, which is the claim.
+    for key, value in plain.items():
+        if key not in ("wall_s", "time_rat"):
+            assert audited[key] == value, key
 
 
 @pytest.mark.skipif(not _URL, reason="set BOPTEST_URL to a running BOPTEST-Service")

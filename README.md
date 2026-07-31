@@ -180,10 +180,18 @@ spread by 2.3×. Closed loop, the de-confounded arm has both the best mean disco
 against 7.892) and a **51× tighter** seed-to-seed spread (s.e. 0.011 against 0.539), at 0.2% more
 energy and roughly half the actuator saturation.
 
-The confounded arm's failure is sharper than attenuation: its fitted channel `+2.989 − 0.1321·T`
-changes **sign at 22.62 °C**, inside the occupied comfort band, so above that temperature the model
-believes the heat pump cools the room and pins the command at zero. The de-confounded channel crosses
-at 25.82 °C, outside the band.
+The confounded arm's failure is sharper than attenuation: on seed 1 its fitted channel
+`+2.989 − 0.1321·T` changes **sign at 22.62 °C**, inside the occupied comfort band, so above that
+temperature the model believes the heat pump cools the room and pins the command at zero. The
+de-confounded channel crosses at 25.82 °C, outside the band.
+
+**The certificate closes the loop, and separates the arms before it acts.** Wrapping every MPC horizon
+in a `chc.plan.CausalPlan` and pricing it with `certify_safety` (§9) says the confounded fit is
+uncertifiable at **any** sensitivity level on 15.2% and 21.7% of control steps, against 7.4% and 7.7%
+for the de-confounded one — a 2–3× separation read off the plan, with nothing executed. Enforcing it
+through `robust_safety_filter` then moves **one command in 336**: where the barrier is in deficit a
+comfort-dominated MPC is already saturated, so the two agree everywhere except the last occupied
+half-hour before the night setback, which the planner's horizon cannot score and the barrier can.
 
 An earlier version of this paragraph reported the opposite closed-loop ordering. That was an artefact
 of the planner's constant step size, which sat 75–284× past its stability limit — and because the
