@@ -228,3 +228,7 @@ kpis = run_episode(
     BOPTestClient("http://127.0.0.1:8000"), baseline_controller()
 )  # needs a live service
 ```
+
+## License
+
+MIT © Ilia Gradina
