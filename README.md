@@ -223,5 +223,8 @@ to six. See `results/pendulum_causal.md`.
 
 ```python
 from causaldyn_bench.boptest import BOPTestClient, baseline_controller, run_episode
-kpis = run_episode(BOPTestClient("http://127.0.0.1:8000"), baseline_controller())  # needs a live service
+
+kpis = run_episode(
+    BOPTestClient("http://127.0.0.1:8000"), baseline_controller()
+)  # needs a live service
 ```

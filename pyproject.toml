@@ -1,15 +1,20 @@
 [project]
 name = "causaldyn-bench"
 version = "0.0.1"
-description = "A 5-track benchmark for causal, constrained, dynamical decision-making: predictions and decisions, not just RMSE."
+description = "A benchmark for causal, constrained, dynamical decision-making: it scores predictions and decisions, not just one-step error."
 readme = "README.md"
-requires-python = ">=3.12,<3.14"
+requires-python = ">=3.11,<3.15"
 license = { text = "MIT" }
 authors = [{ name = "Ilia Gradina", email = "ilia.gradina@gmail.com" }]
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
 dependencies = [
     "causal-hybrid-control",
     "numpy>=1.26",
-    "pandas>=2.0",
 ]
 
 [project.optional-dependencies]
@@ -21,6 +26,11 @@ gym = [
 [dependency-groups]
 dev = [
     "gymnasium>=1.0",
+    # `to_frame` imports its backend by name and nothing else in the package imports either, so both
+    # are development-only: running the tracks, rendering the leaderboard and writing the snapshot
+    # need neither. They are here so the tests can prove the two backends carry the same records.
+    "pandas>=2.0",
+    "polars>=1.0",
     "pytest>=8",
     "ruff>=0.6",
 ]
@@ -30,6 +40,7 @@ notebooks = [
     "ipykernel>=6",
     "jupytext>=1.16",
     "matplotlib>=3.8",
+    "pandas>=2.0",
 ]
 
 [tool.uv.sources]

@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import importlib
 import json
 from pathlib import Path
-
-import pandas as pd
+from typing import Any, Literal
 
 from causaldyn_bench.adaptive_cv import track_adaptive_cv
 from causaldyn_bench.dynamic_effect import track_dynamic_effect
@@ -22,6 +22,8 @@ from causaldyn_bench.tracks import (
     track_d_control,
     track_e_systems,
 )
+
+Backend = Literal["pandas", "polars"]
 
 
 def run_all(seed: int = 0, steps: int = 1500) -> list[TrackResult]:
@@ -42,52 +44,76 @@ def run_all(seed: int = 0, steps: int = 1500) -> list[TrackResult]:
     ]
 
 
-def to_frame(results: list[TrackResult]) -> pd.DataFrame:
-    """Tidy DataFrame of results (one row per method/track)."""
-    return pd.DataFrame(
-        [
-            {
-                "track": r.track,
-                "method": r.method,
-                "metric": r.metric,
-                "value": r.value,
-                "lower_is_better": r.lower_is_better,
-            }
-            for r in results
-        ]
-    )
+def _rows(results: list[TrackResult]) -> list[dict[str, Any]]:
+    """One flat record per result: the tidy shape both frame backends and the JSON snapshot take."""
+    return [
+        {
+            "track": r.track,
+            "method": r.method,
+            "metric": r.metric,
+            "value": r.value,
+            "lower_is_better": r.lower_is_better,
+        }
+        for r in results
+    ]
+
+
+def _by_track(results: list[TrackResult]) -> list[tuple[str, list[TrackResult]]]:
+    """Tracks in first-appearance order, each sorted on the direction its own metric is read in.
+
+    Plain Python rather than a group-by, because the renderers below are the only consumers and a
+    frame here would have to commit to one of the two libraries this module supports: polars'
+    ``unique`` does not preserve order, so the two would not even agree on how tracks are laid out.
+    """
+    grouped: dict[str, list[TrackResult]] = {}
+    for r in results:
+        grouped.setdefault(r.track, []).append(r)
+    return [
+        (track, sorted(rows, key=lambda r: r.value, reverse=not rows[0].lower_is_better))
+        for track, rows in grouped.items()
+    ]
+
+
+def to_frame(results: list[TrackResult], backend: Backend = "pandas") -> Any:
+    """Tidy frame of results (one row per method/track), built with ``backend``.
+
+    The import is lazy and by name because both libraries construct the same way from records:
+    rendering a leaderboard needs neither installed, and asking for polars does not impose it on
+    callers who only wanted markdown.
+    """
+    if backend not in ("pandas", "polars"):
+        msg = f"backend must be 'pandas' or 'polars', got {backend!r}"
+        raise ValueError(msg)
+    try:
+        frames = importlib.import_module(backend)
+    except ImportError as exc:
+        msg = f"to_frame(backend={backend!r}) needs the {backend} package installed"
+        raise ImportError(msg) from exc
+    return frames.DataFrame(_rows(results))
 
 
 def format_leaderboard(results: list[TrackResult]) -> str:
     """Human-readable leaderboard, grouped by track and sorted on each track's own metric."""
-    frame = to_frame(results)
     lines: list[str] = []
-    for track in frame["track"].unique():
-        sub = frame[frame["track"] == track]
-        ascending = bool(sub["lower_is_better"].iloc[0])
-        sub = sub.sort_values("value", ascending=ascending)
-        direction = "lower" if ascending else "higher"
-        lines.append(f"\n[{track}]  (metric: {sub['metric'].iloc[0]}, {direction} is better)")
-        for i, (_, row) in enumerate(sub.iterrows()):
+    for track, rows in _by_track(results):
+        direction = "lower" if rows[0].lower_is_better else "higher"
+        lines.append(f"\n[{track}]  (metric: {rows[0].metric}, {direction} is better)")
+        for i, r in enumerate(rows):
             mark = "  <-- best" if i == 0 else ""
-            lines.append(f"  {row['method']:<28}{row['value']:>12.4f}{mark}")
+            lines.append(f"  {r.method:<28}{r.value:>12.4f}{mark}")
     return "\n".join(lines)
 
 
 def to_markdown(results: list[TrackResult]) -> str:
     """Render the leaderboard as grouped markdown tables (a committable results snapshot)."""
-    frame = to_frame(results)
     lines = ["# causaldyn-bench leaderboard", ""]
-    for track in frame["track"].unique():
-        sub = frame[frame["track"] == track]
-        ascending = bool(sub["lower_is_better"].iloc[0])
-        sub = sub.sort_values("value", ascending=ascending)
-        direction = "lower" if ascending else "higher"
-        lines += [f"## {track}  (metric: {sub['metric'].iloc[0]}, {direction} is better)", ""]
+    for track, rows in _by_track(results):
+        direction = "lower" if rows[0].lower_is_better else "higher"
+        lines += [f"## {track}  (metric: {rows[0].metric}, {direction} is better)", ""]
         lines += ["| rank | method | value |", "|---|---|---|"]
-        for i, (_, row) in enumerate(sub.iterrows()):
+        for i, r in enumerate(rows):
             best = " **(best)**" if i == 0 else ""
-            lines.append(f"| {i + 1} | {row['method']}{best} | {row['value']:.4f} |")
+            lines.append(f"| {i + 1} | {r.method}{best} | {r.value:.4f} |")
         lines.append("")
     return "\n".join(lines) + "\n"
 
@@ -97,6 +123,5 @@ def save_results(results: list[TrackResult], out_dir: str = "results") -> Path:
     out = Path(out_dir)
     out.mkdir(exist_ok=True)
     (out / "leaderboard.md").write_text(to_markdown(results))
-    rows = to_frame(results).to_dict(orient="records")
-    (out / "leaderboard.json").write_text(json.dumps(rows, indent=2) + "\n")
+    (out / "leaderboard.json").write_text(json.dumps(_rows(results), indent=2) + "\n")
     return out

@@ -1,8 +1,10 @@
 """Smoke tests for the five tracks (small budgets; full run_all is a deliberate heavier call)."""
 
+import pytest
+
 from causaldyn_bench.adaptive_cv import AdaptiveCVTask
 from causaldyn_bench.interference import ZoneIncentiveGame
-from causaldyn_bench.leaderboard import format_leaderboard, save_results, to_markdown
+from causaldyn_bench.leaderboard import format_leaderboard, save_results, to_frame, to_markdown
 from causaldyn_bench.tracks import (
     TrackResult,
     fit_dynamics_models,
@@ -36,6 +38,23 @@ def test_save_results_writes_a_snapshot(tmp_path) -> None:
     out = save_results(rows, out_dir=str(tmp_path / "results"))
     assert (out / "leaderboard.md").exists()
     assert (out / "leaderboard.json").exists()
+
+
+@pytest.mark.parametrize("backend", ["pandas", "polars"])
+def test_to_frame_carries_the_same_records_into_either_backend(backend) -> None:
+    rows = [
+        TrackResult("A-onestep", "m1", "rmse", 0.1),
+        TrackResult("C-effect", "m2", "abs-error", 0.2, lower_is_better=False),
+    ]
+    frame = to_frame(rows, backend=backend)
+    assert list(frame.columns) == ["track", "method", "metric", "value", "lower_is_better"]
+    assert [str(v) for v in frame["method"]] == ["m1", "m2"]
+    assert float(frame["value"][0]) == 0.1
+
+
+def test_to_frame_rejects_an_unknown_backend() -> None:
+    with pytest.raises(ValueError, match="got 'duckdb'"):
+        to_frame([], backend="duckdb")  # type: ignore[arg-type]
 
 
 def test_adaptive_cv_mpc_beats_priority_blind_myopic() -> None:

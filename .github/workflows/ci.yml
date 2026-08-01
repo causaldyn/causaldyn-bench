@@ -14,6 +14,9 @@ name: ci
 # float64 output than for a float32 one, so x64 draws a *different* Monte-Carlo instance rather than a
 # rounder copy of the same one. An assertion that survives both jobs is an assertion about an
 # estimator; one that does not was reading a property of a particular draw.
+#
+# `test` runs the supported interpreter range; `test-x64` stays on the floor alone, because its axis
+# is the dtype rather than the Python version and repeating it fourfold would buy nothing.
 
 on:
   push:
@@ -39,7 +42,7 @@ jobs:
         # v8.0.0, so `@v9` does not resolve. The other actions here still publish them.
         uses: astral-sh/setup-uv@v9.0.0
         with:
-          python-version: "3.12"
+          python-version: "3.11"
       - name: Sync dependencies
         run: uv sync --group dev
       - name: Lint
@@ -49,6 +52,10 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
     defaults:
       run:
         working-directory: causaldyn-bench
@@ -63,7 +70,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v9.0.0
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
       - name: Sync dependencies
         run: uv sync --group dev
       - name: Tests
@@ -85,7 +92,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v9.0.0
         with:
-          python-version: "3.12"
+          python-version: "3.11"
       - name: Sync dependencies
         run: uv sync --group dev
       - name: Tests at float64
