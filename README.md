@@ -1,5 +1,9 @@
 # causaldyn-bench
 
+[![ci](https://github.com/causaldyn/causaldyn-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/causaldyn/causaldyn-bench/actions/workflows/ci.yml)
+[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![doi](https://zenodo.org/badge/DOI/10.5281/zenodo.22139814.svg)](https://doi.org/10.5281/zenodo.22139814)
+
 A benchmark for **causal, constrained, dynamical decision-making** — it scores *predictions and
 decisions*, not just one-step error. The point is to measure methods on the axis each deserves, so a
 gradient-boosted tree can win one-step prediction while a causal, constrained controller wins the

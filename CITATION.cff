@@ -8,6 +8,8 @@ authors:
     email: ilia.gradina@gmail.com
     orcid: "https://orcid.org/0009-0008-0911-8765"
 repository-code: "https://github.com/causaldyn/causaldyn-bench"
+# the concept DOI, which resolves to the newest release rather than to one version
+doi: "10.5281/zenodo.22139814"
 license: MIT
 version: 0.0.1
 date-released: "2026-08-28"
