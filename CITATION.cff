@@ -1,0 +1,42 @@
+cff-version: 1.2.0
+title: "causaldyn-bench"
+message: "If you use this benchmark, please cite it using these metadata."
+type: software
+authors:
+  - given-names: Ilia
+    family-names: Gradina
+    email: ilia.gradina@gmail.com
+    orcid: "https://orcid.org/0009-0008-0911-8765"
+repository-code: "https://github.com/causaldyn/causaldyn-bench"
+license: MIT
+version: 0.0.1
+date-released: "2026-08-28"
+abstract: >-
+  A benchmark for causal, constrained, dynamical decision-making. It scores predictions and
+  decisions on the axis each deserves, so a gradient-boosted tree can win one-step prediction
+  while a causal, constrained controller wins the closed loop. Eleven tracks cover one-step and
+  rollout prediction, counterfactual effect recovery under confounding, oracle-regret control,
+  lagged-structure discovery, impulse-response (dynamic) effects, offline incentive allocation
+  when SUTVA fails through a shared equilibrium, control under partial identification where no
+  adjustment set exists, and causal identification of the control channel on two live external
+  plants: a BOPTEST building emulator logged by a weather-compensated controller, and
+  Gymnasium's Pendulum-v1, whose channel is known exactly. Results are committed as tables with
+  multi-seed bootstrap confidence intervals.
+keywords:
+  - benchmark
+  - causal inference
+  - optimal control
+  - model predictive control
+  - offline reinforcement learning
+  - interference
+  - partial identification
+  - jax
+references:
+  - type: software
+    title: "causal-hybrid-control"
+    authors:
+      - given-names: Ilia
+        family-names: Gradina
+        orcid: "https://orcid.org/0009-0008-0911-8765"
+    doi: "10.5281/zenodo.21737789"
+    repository-code: "https://github.com/causaldyn/causal-hybrid-control"
