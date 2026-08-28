@@ -1,6 +1,6 @@
 [project]
 name = "causaldyn-bench"
-version = "0.0.1"
+version = "0.1.0"
 description = "A benchmark for causal, constrained, dynamical decision-making: it scores predictions and decisions, not just one-step error."
 readme = "README.md"
 requires-python = ">=3.11,<3.15"

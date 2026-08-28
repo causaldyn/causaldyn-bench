@@ -11,7 +11,7 @@ repository-code: "https://github.com/causaldyn/causaldyn-bench"
 # the concept DOI, which resolves to the newest release rather than to one version
 doi: "10.5281/zenodo.22139814"
 license: MIT
-version: 0.0.1
+version: 0.1.0
 date-released: "2026-08-28"
 abstract: >-
   A benchmark for causal, constrained, dynamical decision-making. It scores predictions and
