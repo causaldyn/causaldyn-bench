@@ -140,6 +140,48 @@
     "lower_is_better": true
   },
   {
+    "track": "D-planner",
+    "method": "plant/gradient",
+    "metric": "regret",
+    "value": 0.0,
+    "lower_is_better": true
+  },
+  {
+    "track": "D-planner",
+    "method": "hybrid/gradient",
+    "metric": "regret",
+    "value": 0.0015802383422851562,
+    "lower_is_better": true
+  },
+  {
+    "track": "D-planner",
+    "method": "plant/cem",
+    "metric": "regret",
+    "value": 0.0019006729125976562,
+    "lower_is_better": true
+  },
+  {
+    "track": "D-planner",
+    "method": "hybrid/cem",
+    "metric": "regret",
+    "value": 0.0030126571655273438,
+    "lower_is_better": true
+  },
+  {
+    "track": "D-planner",
+    "method": "known_only/cem",
+    "metric": "regret",
+    "value": 1.7177038192749023,
+    "lower_is_better": true
+  },
+  {
+    "track": "D-planner",
+    "method": "known_only/gradient",
+    "metric": "regret",
+    "value": 1.7181310653686523,
+    "lower_is_better": true
+  },
+  {
     "track": "D-adaptive-cv",
     "method": "uniform",
     "metric": "regret",
@@ -297,14 +339,14 @@
     "track": "E-systems",
     "method": "known-only",
     "metric": "solve_ms",
-    "value": 11.29471100284718,
+    "value": 10.177424999710638,
     "lower_is_better": true
   },
   {
     "track": "E-systems",
     "method": "hybrid-CHC",
     "metric": "solve_ms",
-    "value": 20.61967900226591,
+    "value": 16.815214999951422,
     "lower_is_better": true
   }
 ]

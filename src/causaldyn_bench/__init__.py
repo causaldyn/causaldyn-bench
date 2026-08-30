@@ -21,6 +21,7 @@ from causaldyn_bench.leaderboard import (
     to_frame,
     to_markdown,
 )
+from causaldyn_bench.shooting import cross_entropy_control, planner_gap, track_planner
 from causaldyn_bench.structure import track_structure
 from causaldyn_bench.tracks import (
     TrackResult,
@@ -39,9 +40,11 @@ __all__ = [
     "TrackResult",
     "ZoneIncentiveGame",
     "__version__",
+    "cross_entropy_control",
     "fit_dynamics_models",
     "format_leaderboard",
     "interference_report",
+    "planner_gap",
     "run_all",
     "save_results",
     "to_frame",
@@ -54,5 +57,6 @@ __all__ = [
     "track_dynamic_effect",
     "track_e_systems",
     "track_interference",
+    "track_planner",
     "track_structure",
 ]

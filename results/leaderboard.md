@@ -40,6 +40,17 @@
 | 8 | support-shift/greedy | 5.5574 |
 | 9 | pricing/predictive | 13735.4927 |
 
+## D-planner  (metric: regret, lower is better)
+
+| rank | method | value |
+|---|---|---|
+| 1 | plant/gradient **(best)** | 0.0000 |
+| 2 | hybrid/gradient | 0.0016 |
+| 3 | plant/cem | 0.0019 |
+| 4 | hybrid/cem | 0.0030 |
+| 5 | known_only/cem | 1.7177 |
+| 6 | known_only/gradient | 1.7181 |
+
 ## D-adaptive-cv  (metric: regret, lower is better)
 
 | rank | method | value |
@@ -106,6 +117,6 @@
 
 | rank | method | value |
 |---|---|---|
-| 1 | known-only **(best)** | 11.2947 |
-| 2 | hybrid-CHC | 20.6197 |
+| 1 | known-only **(best)** | 10.1774 |
+| 2 | hybrid-CHC | 16.8152 |
 

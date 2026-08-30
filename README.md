@@ -18,6 +18,7 @@ closed-loop decision. Built on
 | **B** rollout | `x_t, u_{t:t+H} → x_{t+1:t+H}` | rollout RMSE | hybrid (physics anchors the horizon) |
 | **C** counterfactual | `x_{t+1}(do(u))` under confounding | \|effect − truth\| | causal / Double ML |
 | **D** control | `u_t = π(x_t)` under constraints | regret vs oracle | causal hybrid controller |
+| **D-planner** planner vs model | the same objective planned by a gradient and by a sampler, on three models | regret on the true plant | *neither* — the model axis decides it |
 | **E** systems | control-solve latency | ms | (a compiled runtime, later) |
 | **F** structure | which lagged parents drive the target, under confounding + autocorrelation | F1 / control payoff | discovery-informed residual |
 | **G** dynamic effect | the impulse response `∂x_{t+h}/∂u_t`, not just `h = 1` | IRF error / control payoff | structured (Levinson) IRF |
@@ -36,6 +37,17 @@ Track D bundles the CHC oracle-regret tasks (pricing / inventory / support-shift
 known, bursty arrivals and heterogeneous priorities. A priority-blind, load-proportional myopic split
 crowds out critical streams; the constrained CHC-MPC plans over the known dynamics and matches the
 oracle. First numbers — CHC-MPC regret `0.0`, myopic `166`, uniform `330`.
+
+**Track D-planner** (`causaldyn_bench.shooting`) exists to let CHC lose. Cross-entropy-method
+planning needs no adjoint, no Jacobian and no differentiable model — only rollout evaluations —
+so crossing it with the gradient planner over three models (true plant / learned hybrid /
+physics-only) separates what the library's adjoint machinery is worth from what *learning the
+residual* is worth. It is not close, and not in the flattering direction for the adjoint: regret
+on the true plant is `plant/gradient` 0, `hybrid/gradient` 0.0016, `plant/cem` 0.0019,
+`hybrid/cem` 0.0030, against `known_only/*` at **1.72**. The model axis is ~1000× the planner
+axis, and the sampling planner with full knowledge of the plant is *worse* than the gradient
+planner on a learned model. The defensible claim is therefore about identification and the
+learned residual, not about the solver.
 
 Design rule: to be honest about the win, **never** claim "best model" — claim the decision under a stated
 budget. Track A is expected to go to the trees; the value is Tracks B–D.
