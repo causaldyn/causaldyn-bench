@@ -129,7 +129,7 @@
     "track": "D-control",
     "method": "support-shift/pessimistic",
     "metric": "regret",
-    "value": 2.417774200439453,
+    "value": 2.4169483184814453,
     "lower_is_better": true
   },
   {
@@ -150,7 +150,7 @@
     "track": "D-planner",
     "method": "hybrid/gradient",
     "metric": "regret",
-    "value": 0.0015802383422851562,
+    "value": 0.0015783309936523438,
     "lower_is_better": true
   },
   {
@@ -339,14 +339,14 @@
     "track": "E-systems",
     "method": "known-only",
     "metric": "solve_ms",
-    "value": 10.177424999710638,
+    "value": 0.9370110019517597,
     "lower_is_better": true
   },
   {
     "track": "E-systems",
     "method": "hybrid-CHC",
     "metric": "solve_ms",
-    "value": 16.815214999951422,
+    "value": 6.525420001707971,
     "lower_is_better": true
   }
 ]

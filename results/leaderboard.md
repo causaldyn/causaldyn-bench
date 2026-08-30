@@ -36,7 +36,7 @@
 | 4 | support-shift/oracle | 0.0000 |
 | 5 | inventory/causal-CHC | 0.0000 |
 | 6 | inventory/predictive | 1.0977 |
-| 7 | support-shift/pessimistic | 2.4178 |
+| 7 | support-shift/pessimistic | 2.4169 |
 | 8 | support-shift/greedy | 5.5574 |
 | 9 | pricing/predictive | 13735.4927 |
 
@@ -117,6 +117,6 @@
 
 | rank | method | value |
 |---|---|---|
-| 1 | known-only **(best)** | 10.1774 |
-| 2 | hybrid-CHC | 16.8152 |
+| 1 | known-only **(best)** | 0.9370 |
+| 2 | hybrid-CHC | 6.5254 |
 
