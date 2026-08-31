@@ -1,4 +1,4 @@
-"""CLI: ``python -m causaldyn_bench [--save]`` runs all five tracks and prints the leaderboard."""
+"""CLI: ``python -m causaldyn_bench [--save]`` runs every track and prints the leaderboard."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from causaldyn_bench.leaderboard import format_leaderboard, run_all, save_result
 
 
 def main() -> None:
-    print("causaldyn-bench - 5-track leaderboard")
+    print("causaldyn-bench leaderboard")
     print("=" * 44)
     results = run_all()
     print(format_leaderboard(results))

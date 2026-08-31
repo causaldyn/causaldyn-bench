@@ -113,10 +113,30 @@
 | 1 | chc-irf **(best)** | 0.0326 |
 | 2 | one-step | 1.0049 |
 
+## K-delay  (metric: |tau_hat - tau|, lower is better)
+
+| rank | method | value |
+|---|---|---|
+| 1 | adjusted-LP-refined **(best)** | 0.0672 |
+| 2 | adjusted-LP | 0.1000 |
+| 3 | cross-correlation | 0.4000 |
+| 4 | local-projection | 0.4000 |
+
+## K-payoff  (metric: closed-loop regret, lower is better)
+
+| rank | method | value |
+|---|---|---|
+| 1 | oracle **(best)** | 0.0000 |
+| 2 | adjusted-LP-refined | 0.0067 |
+| 3 | adjusted-LP | 0.0162 |
+| 4 | cross-correlation | 0.6768 |
+| 5 | local-projection | 0.6768 |
+| 6 | delay-blind | 18953.5046 |
+
 ## E-systems  (metric: solve_ms, lower is better)
 
 | rank | method | value |
 |---|---|---|
-| 1 | known-only **(best)** | 0.7379 |
-| 2 | hybrid-CHC | 6.0312 |
+| 1 | known-only **(best)** | 0.6684 |
+| 2 | hybrid-CHC | 5.1748 |
 

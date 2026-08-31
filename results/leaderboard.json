@@ -336,17 +336,87 @@
     "lower_is_better": true
   },
   {
+    "track": "K-delay",
+    "method": "cross-correlation",
+    "metric": "|tau_hat - tau|",
+    "value": 0.4,
+    "lower_is_better": true
+  },
+  {
+    "track": "K-delay",
+    "method": "local-projection",
+    "metric": "|tau_hat - tau|",
+    "value": 0.4,
+    "lower_is_better": true
+  },
+  {
+    "track": "K-delay",
+    "method": "adjusted-LP",
+    "metric": "|tau_hat - tau|",
+    "value": 0.10000000000000009,
+    "lower_is_better": true
+  },
+  {
+    "track": "K-delay",
+    "method": "adjusted-LP-refined",
+    "metric": "|tau_hat - tau|",
+    "value": 0.06716958503053905,
+    "lower_is_better": true
+  },
+  {
+    "track": "K-payoff",
+    "method": "cross-correlation",
+    "metric": "closed-loop regret",
+    "value": 0.6768387795036467,
+    "lower_is_better": true
+  },
+  {
+    "track": "K-payoff",
+    "method": "local-projection",
+    "metric": "closed-loop regret",
+    "value": 0.6768387795036467,
+    "lower_is_better": true
+  },
+  {
+    "track": "K-payoff",
+    "method": "adjusted-LP",
+    "metric": "closed-loop regret",
+    "value": 0.01620990351881113,
+    "lower_is_better": true
+  },
+  {
+    "track": "K-payoff",
+    "method": "adjusted-LP-refined",
+    "metric": "closed-loop regret",
+    "value": 0.0066907339976924884,
+    "lower_is_better": true
+  },
+  {
+    "track": "K-payoff",
+    "method": "delay-blind",
+    "metric": "closed-loop regret",
+    "value": 18953.50456987513,
+    "lower_is_better": true
+  },
+  {
+    "track": "K-payoff",
+    "method": "oracle",
+    "metric": "closed-loop regret",
+    "value": 0.0,
+    "lower_is_better": true
+  },
+  {
     "track": "E-systems",
     "method": "known-only",
     "metric": "solve_ms",
-    "value": 0.7378669979516417,
+    "value": 0.6683859974145889,
     "lower_is_better": true
   },
   {
     "track": "E-systems",
     "method": "hybrid-CHC",
     "metric": "solve_ms",
-    "value": 6.031206998159178,
+    "value": 5.174806006834842,
     "lower_is_better": true
   }
 ]

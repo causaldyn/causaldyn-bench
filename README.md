@@ -26,6 +26,31 @@ closed-loop decision. Built on
 | **I** sensitivity | control when **no adjustment set exists** — the assumed `Γ` is the only lever | worst-case closed-loop cost | a *calibrated* `Γ`, not the largest one |
 | **D-causal** identification | the control channel of a *real* emulator, logged by a weather-compensated controller | \|8h step response − randomised reference\| | orthogonal (de-confounded) fit |
 | **J** identification, non-building | the control channel of a *third-party* plant whose answer is known exactly (`Pendulum-v1`) | \|fitted gain − 3.0\| | orthogonal (de-confounded) fit |
+| **K** delay identification | *when* the incentive acts, from a log whose confounder acts at a **different** lag | \|τ̂ − τ\| / closed-loop regret | adjusted local projection |
+
+**Track K** (`causaldyn_bench.delay_identification`) is the only track whose payoff is
+*discontinuous*. Every other board scores a cost gap; here the closed loop is `x' = -K·x(t − τ)`,
+whose exact boundary is `K·τ = π/2`, so getting the delay wrong enough is a Hopf bifurcation rather
+than a worse number. It also scores something no other track does — the **argmax** of an effect. The
+confounder acts at 0.6 s while the incentive acts at 1.0 s, so an unadjusted impulse response peaks
+on the *confounder's* lag: the estimate is wrong about **when**, not about how much.
+
+The three tiers are the result. Ignoring the delay diverges (regret `18953`, gain `3.10` = 1.97× past
+`π/2`); estimating it *badly* still stabilises and pays `0.68`, because the stabilising set in delay
+space is a **half-line** — under-estimating survives down to `2/(πe) = 0.234`, and `0.6/1.0` is well
+inside it; adjusting reaches `0.016`, and sub-grid refinement `0.0067`. Note the two ratios: a 4×
+smaller delay error buys a **42×** smaller regret. Cross-correlation and an *unadjusted* local
+projection are carried as separate rows and score identically — they are the same argmax, so the
+board's gap is adjustment, not the estimator family. This track is not allowed to flatter CHC by
+comparing its adjusted estimator against a weaker unadjusted one.
+
+The track also states the limit of its own claim. Aggregated over one observation stride the
+incentive splits 2:1 across lags 3 and 4 while the confounder lands wholly in lag 2, so the peak
+relocates iff `σ_η² < 1.5·|c·κ|·σ_z²/|b| − κ²·σ_z²` — `σ_η = 1.4697` here, bracketed by measurement
+in `[1.45, 1.50]`, and the 2:1 split is visible in the fitted response (`0.168` at lag 3, `0.085` at
+lag 4). So **enough exploration in the logging policy recovers the delay with no adjustment at all**.
+The failure is a property of a thin log, not of cross-correlation; the shipped `σ_η = 0.5` sits
+deliberately below the threshold.
 
 Track I is the odd one out on purpose: it scores a **modelling assumption**, not a method. The
 confounder is absent from the log, so nothing can be estimated better; the board carries a
