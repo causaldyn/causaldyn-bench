@@ -136,7 +136,7 @@
     "track": "D-control",
     "method": "support-shift/greedy",
     "metric": "regret",
-    "value": 5.5573883056640625,
+    "value": 6.799188613891602,
     "lower_is_better": true
   },
   {
@@ -339,14 +339,14 @@
     "track": "E-systems",
     "method": "known-only",
     "metric": "solve_ms",
-    "value": 0.9370110019517597,
+    "value": 0.7378669979516417,
     "lower_is_better": true
   },
   {
     "track": "E-systems",
     "method": "hybrid-CHC",
     "metric": "solve_ms",
-    "value": 6.525420001707971,
+    "value": 6.031206998159178,
     "lower_is_better": true
   }
 ]

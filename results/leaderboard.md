@@ -37,7 +37,7 @@
 | 5 | inventory/causal-CHC | 0.0000 |
 | 6 | inventory/predictive | 1.0977 |
 | 7 | support-shift/pessimistic | 2.4169 |
-| 8 | support-shift/greedy | 5.5574 |
+| 8 | support-shift/greedy | 6.7992 |
 | 9 | pricing/predictive | 13735.4927 |
 
 ## D-planner  (metric: regret, lower is better)
@@ -117,6 +117,6 @@
 
 | rank | method | value |
 |---|---|---|
-| 1 | known-only **(best)** | 0.9370 |
-| 2 | hybrid-CHC | 6.5254 |
+| 1 | known-only **(best)** | 0.7379 |
+| 2 | hybrid-CHC | 6.0312 |
 
