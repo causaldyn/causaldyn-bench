@@ -117,6 +117,12 @@ uv tool install podman-compose               # or: sudo dnf install -y podman-co
 # clone + bring up the service (first build is ~4 GB, ~15-30 min)
 git clone https://github.com/ibpsa/project1-boptest.git
 cd project1-boptest
+
+# SELinux: relabel the bind mount, or the containers cannot read the tree they are handed.
+# Fedora mounts with SELinux enforcing and the upstream compose file predates rootless Podman,
+# so without the :z suffix the worker fails on permission errors that name no cause.
+sed -i 's|- ./:/usr/src/boptest$|- ./:/usr/src/boptest:z|' docker-compose.yml
+
 podman-compose up web worker provision       # REST API at http://127.0.0.1:8000
 curl http://127.0.0.1:8000/version           # sanity-check once it is up
 ```
