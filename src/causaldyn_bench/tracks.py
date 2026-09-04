@@ -202,9 +202,18 @@ def track_d_control() -> list[TrackResult]:
 
 
 def track_e_systems(
-    models: dict[str, Any], horizon: int = 20, steps: int = 40
+    models: dict[str, Any], horizon: int = 20, steps: int = 40, repeats: int = 7
 ) -> list[TrackResult]:
-    """E: control-solve latency on CPU (JIT-warmed). A compiled runtime would compete here later."""
+    """E: control-solve latency on CPU (JIT-warmed). A compiled runtime would compete here later.
+
+    Reports the MINIMUM over ``repeats`` timed solves, not one sample. A single sample after a
+    single warm-up is not reproducible: measured over 12 fresh calls on an idle machine, the
+    known-only solve ranged 0.586-0.823 ms (max/min 1.40x, CV 9.8%) and the FIRST timed sample was
+    the outlier every time -- one warm-up does not finish the frequency ramp. That is what moved
+    this track from 0.67 to 0.92 ms between two idle-machine snapshots, and it was misattributed
+    to machine load before being measured. Latency noise is one-sided, so the minimum estimates
+    the uncontended cost and the mean does not.
+    """
     cost = QuadraticCost(
         Q=jnp.diag(jnp.array([1.0, 0.1])),
         R=jnp.array([[0.05]]),
@@ -220,8 +229,12 @@ def track_e_systems(
 
     out = []
     for name, model in (("known-only", models["known_only"]), ("hybrid-CHC", models["hybrid"])):
-        solve(model).block_until_ready()  # warm the JIT
-        t0 = time.perf_counter()
-        solve(model).block_until_ready()
-        out.append(TrackResult("E-systems", name, "solve_ms", (time.perf_counter() - t0) * 1e3))
+        for _ in range(2):  # two warm-ups: one compiles, the second rides out the frequency ramp
+            solve(model).block_until_ready()
+        best = float("inf")
+        for _ in range(repeats):
+            t0 = time.perf_counter()
+            solve(model).block_until_ready()
+            best = min(best, (time.perf_counter() - t0) * 1e3)
+        out.append(TrackResult("E-systems", name, "solve_ms", best))
     return out

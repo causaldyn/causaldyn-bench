@@ -19,7 +19,7 @@ closed-loop decision. Built on
 | **C** counterfactual | `x_{t+1}(do(u))` under confounding | \|effect − truth\| | causal / Double ML |
 | **D** control | `u_t = π(x_t)` under constraints | regret vs oracle | causal hybrid controller |
 | **D-planner** planner vs model | the same objective planned by a gradient and by a sampler, on three models | regret on the true plant | *neither* — the model axis decides it |
-| **E** systems | control-solve latency | ms | the known-only model — fewer terms to differentiate, same compiled solver |
+| **E** systems | control-solve latency | ms (min of 7, after 2 warm-ups) | the known-only model — fewer terms to differentiate, same compiled solver |
 | **F** structure | which lagged parents drive the target, under confounding + autocorrelation | F1 / control payoff | discovery-informed residual |
 | **G** dynamic effect | the impulse response `∂x_{t+h}/∂u_t`, not just `h = 1` | IRF error / control payoff | structured (Levinson) IRF |
 | **H** marketplace | offline incentive allocation when SUTVA fails through a shared equilibrium | regret vs equilibrium-aware oracle | de-confounded + equilibrium-aware |

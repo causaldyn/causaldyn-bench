@@ -133,10 +133,30 @@
 | 5 | local-projection | 0.6768 |
 | 6 | delay-blind | 18953.5046 |
 
+## N-fold-direct  (metric: MSE / random unit folds (2 clusters), lower is better)
+
+| rank | method | value |
+|---|---|---|
+| 1 | random rows **(best)** | 0.8610 |
+| 2 | designed folds (chc) | 0.9059 |
+| 3 | random units | 1.0000 |
+| 4 | contiguous folds | 1.3702 |
+| 5 | neighbour exclusion | 1.6661 |
+
+## N-fold-spillover  (metric: MSE / random unit folds (2 clusters), lower is better)
+
+| rank | method | value |
+|---|---|---|
+| 1 | random rows **(best)** | 0.9755 |
+| 2 | designed folds (chc) | 0.9949 |
+| 3 | random units | 1.0000 |
+| 4 | contiguous folds | 1.3575 |
+| 5 | neighbour exclusion | 1.6124 |
+
 ## E-systems  (metric: solve_ms, lower is better)
 
 | rank | method | value |
 |---|---|---|
-| 1 | known-only **(best)** | 0.6684 |
-| 2 | hybrid-CHC | 5.1748 |
+| 1 | known-only **(best)** | 0.5605 |
+| 2 | hybrid-CHC | 4.8965 |
 

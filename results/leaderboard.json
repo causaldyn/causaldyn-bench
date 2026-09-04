@@ -406,17 +406,87 @@
     "lower_is_better": true
   },
   {
+    "track": "N-fold-direct",
+    "method": "random rows",
+    "metric": "MSE / random unit folds (2 clusters)",
+    "value": 0.8609558034401379,
+    "lower_is_better": true
+  },
+  {
+    "track": "N-fold-spillover",
+    "method": "random rows",
+    "metric": "MSE / random unit folds (2 clusters)",
+    "value": 0.9755081625133427,
+    "lower_is_better": true
+  },
+  {
+    "track": "N-fold-direct",
+    "method": "random units",
+    "metric": "MSE / random unit folds (2 clusters)",
+    "value": 1.0,
+    "lower_is_better": true
+  },
+  {
+    "track": "N-fold-spillover",
+    "method": "random units",
+    "metric": "MSE / random unit folds (2 clusters)",
+    "value": 1.0,
+    "lower_is_better": true
+  },
+  {
+    "track": "N-fold-direct",
+    "method": "contiguous folds",
+    "metric": "MSE / random unit folds (2 clusters)",
+    "value": 1.3702288491395176,
+    "lower_is_better": true
+  },
+  {
+    "track": "N-fold-spillover",
+    "method": "contiguous folds",
+    "metric": "MSE / random unit folds (2 clusters)",
+    "value": 1.3574768274839746,
+    "lower_is_better": true
+  },
+  {
+    "track": "N-fold-direct",
+    "method": "neighbour exclusion",
+    "metric": "MSE / random unit folds (2 clusters)",
+    "value": 1.6660912127785052,
+    "lower_is_better": true
+  },
+  {
+    "track": "N-fold-spillover",
+    "method": "neighbour exclusion",
+    "metric": "MSE / random unit folds (2 clusters)",
+    "value": 1.6123838928743006,
+    "lower_is_better": true
+  },
+  {
+    "track": "N-fold-direct",
+    "method": "designed folds (chc)",
+    "metric": "MSE / random unit folds (2 clusters)",
+    "value": 0.9058509446485593,
+    "lower_is_better": true
+  },
+  {
+    "track": "N-fold-spillover",
+    "method": "designed folds (chc)",
+    "metric": "MSE / random unit folds (2 clusters)",
+    "value": 0.9949022960000233,
+    "lower_is_better": true
+  },
+  {
     "track": "E-systems",
     "method": "known-only",
     "metric": "solve_ms",
-    "value": 0.6683859974145889,
+    "value": 0.5604939997283509,
     "lower_is_better": true
   },
   {
     "track": "E-systems",
     "method": "hybrid-CHC",
     "metric": "solve_ms",
-    "value": 5.174806006834842,
+    "value": 4.896525000731344,
     "lower_is_better": true
   }
 ]
