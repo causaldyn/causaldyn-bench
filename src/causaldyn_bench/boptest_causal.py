@@ -897,6 +897,8 @@ class HorizonPlan:
     actions: Array  # (horizon,) in the harness's action units
     states: Array  # (horizon + 1,) Celsius, starting at the measured temperature
     task_cost: float  # the objective the solver actually reached, comfort hinge plus effort
+    solver_iterations: int  # accelerated projected-gradient steps taken -- a fixed budget, not a
+    # stopping rule, so the matching chc.plan.CausalPlan status is "max_iterations" by definition
 
 
 def _mpc_solver(
@@ -1004,6 +1006,7 @@ def _mpc_solver(
             actions=actions,
             states=jnp.concatenate([origin[None], reached]),
             task_cost=float(spent),
+            solver_iterations=iterations,
         )
 
     return solve
@@ -1190,6 +1193,11 @@ def _audit_plan(
             task_cost=plan.task_cost,
             uncertainty_tube=None,
             certified_horizon=None,
+            # this harness's MPC runs a fixed budget with no convergence test, so the honest
+            # status is the one the library reserves for exactly that: it stopped because it ran
+            # out of steps, and nothing here claims the descent had finished.
+            solver_status="max_iterations",
+            solver_iterations=plan.solver_iterations,
         ),
         _horizon_dynamics(fit, covariates, dt),
         lambda x: x[0] - floor,

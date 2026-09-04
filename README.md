@@ -27,6 +27,23 @@ closed-loop decision. Built on
 | **D-causal** identification | the control channel of a *real* emulator, logged by a weather-compensated controller | \|8h step response − randomised reference\| | orthogonal (de-confounded) fit |
 | **J** identification, non-building | the control channel of a *third-party* plant whose answer is known exactly (`Pendulum-v1`) | \|fitted gain − 3.0\| | orthogonal (de-confounded) fit |
 | **K** delay identification | *when* the incentive acts, from a log whose confounder acts at a **different** lag | \|τ̂ − τ\| / closed-loop regret | adjusted local projection |
+| **N** fold design | which cross-fitting **split** to use under network interference — the method is held fixed and only the folds vary | MSE vs a graph-blind unit split | *the design law, negatively* — it convicts the two splits a practitioner reaches for |
+
+**Track N** (`causaldyn_bench.fold_design`) is the only track that varies nothing but the
+cross-fitting split, and its result is an ordering whose useful half is negative. On `C_12` with two
+clusters, over 120 draws: the Result 52 design **ties** the graph-blind split that keeps units
+intact, while the two splits a practitioner reaches for first cost **+37%** MSE (contiguous graph
+blocks) and **+66%** (Emmenegger-style neighbour exclusion). One number explains all three — the
+fraction of edges left inside a fold: `0.50` designed, `0.46` random units, `0.83` contiguous.
+
+The law also forecasts *where* it matters. Its mass ratio designed/contiguous is `0.720` on the
+cycle, `0.974` on a `3×4` torus and `0.966` on a random cubic graph; measured, the arms separate on
+the cycle and scatter inside `0.85–1.16` on the other two. And the whole effect is `O(1/g)` in the
+number of independent clusters (`1.370, 1.139, 1.083, 1.047` across `g = 2, 4, 8, 20`), so fold
+design is a **small-cluster-count** instrument — a handful of cities, not twenty replicas. Neighbour
+exclusion is worse than every alternative where it runs and cannot run at all at `K = 2` on either
+denser graph: its hop-1 neighbourhood covers the training fold. Buying validity by discarding data
+needs a split that is already graph-aware — the design it was meant to replace.
 
 **Track K** (`causaldyn_bench.delay_identification`) is the only track whose payoff is
 *discontinuous*. Every other board scores a cost gap; here the closed loop is `x' = -K·x(t − τ)`,
