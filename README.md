@@ -101,7 +101,24 @@ uv sync --extra trees --extra gym        # tree baselines for A/B, Gymnasium for
 uv run python -m causaldyn_bench         # print the leaderboard
 uv run python -m causaldyn_bench --save  # also write results/leaderboard.{md,json}
 uv run pytest                            # smoke tests
+just check                               # the ladder ci.yml runs: format, lint, tests
 ```
+
+### Paper tables
+
+Every table in paper P2 ("Fold design for cross-fitting on networks and panels") comes out of one
+command, so a number in the manuscript can be traced to a run rather than to a transcription:
+
+```bash
+just paper-2         # -> results/paper2/tables.{md,json}; hours, run it detached
+just paper-2-smoke   # the same pipeline at 12 draws: plumbing only, quotes nothing
+```
+
+Ratios are mean squared error against the random-unit split **on the same draws**, and the interval
+is a **paired** percentile bootstrap: one resampled index set applied to numerator and denominator.
+That matters because the headline comparison (designed against random units) is a near-tie -- an
+unpaired interval would report draw noise that cancels in the ratio and turn "these two tie" into
+"we cannot tell". The quadrature table is relative max-entry error throughout, stated in its header.
 
 This repo depends on `causal-hybrid-control` through a sibling **path**, so it expects the two checked
 out next to each other. CI reproduces that layout with two checkouts and runs the full suite.

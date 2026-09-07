@@ -141,14 +141,20 @@ def _same_fold_mass(shells: list[np.ndarray], fold: np.ndarray) -> float:
     return float(q[same].sum())
 
 
-def _errors(
+def arm_errors(
     graph: tuple[tuple[int, ...], ...] | None,
     fold: np.ndarray | None,
     exclude: bool,
     clusters: int,
     seeds: int,
 ) -> dict[str, np.ndarray] | None:
-    """Signed errors of both coefficients over ``seeds`` draws, or None if the arm cannot run."""
+    """Signed errors of both coefficients over ``seeds`` draws, or None if the arm cannot run.
+
+    Draw ``i`` is ``jax.random.key(i)`` for every arm, so the returned errors are PAIRED across
+    arms: the same panel is estimated under each split. That is what lets a ratio of mean squared
+    errors carry a paired bootstrap interval (:mod:`causaldyn_bench.paper_two`) instead of two
+    independent ones whose difference is mostly draw noise.
+    """
     panel = DelayedNetworkPanel(
         n_clusters=clusters,
         cluster_size=_M,
@@ -204,7 +210,7 @@ def track_fold_design(clusters: int = 2, seeds: int = 120) -> list[TrackResult]:
     }
     layouts = {"rows": None, "units": np.arange(_M), "blocks": blocks, "designed": designed}
     errors = {
-        name: _errors(graph, layouts[layout], exclude, clusters, seeds)
+        name: arm_errors(graph, layouts[layout], exclude, clusters, seeds)
         for name, (layout, exclude) in arms.items()
     }
     baseline = errors["random units"]
@@ -246,7 +252,7 @@ def fold_design_report(
             "predicted_ratio": _same_fold_mass(shells, designed) / _same_fold_mass(shells, blocks)
         }
         for clusters in cluster_grid:
-            base = _errors(graph, np.arange(_M), False, clusters, seeds)
+            base = arm_errors(graph, np.arange(_M), False, clusters, seeds)
             assert base is not None
             for label, fold, exclude in (
                 ("rows", None, False),
@@ -254,7 +260,7 @@ def fold_design_report(
                 ("exclusion", blocks, True),
                 ("designed", designed, False),
             ):
-                err = _errors(graph, fold, exclude, clusters, seeds)
+                err = arm_errors(graph, fold, exclude, clusters, seeds)
                 for coefficient in _TRUE:
                     key = f"{label}/{coefficient}/g{clusters}"
                     entry[key] = (
