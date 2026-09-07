@@ -36,14 +36,18 @@ intact, while the two splits a practitioner reaches for first cost **+37%** MSE 
 blocks) and **+66%** (Emmenegger-style neighbour exclusion). One number explains all three — the
 fraction of edges left inside a fold: `0.50` designed, `0.46` random units, `0.83` contiguous.
 
-The law also forecasts *where* it matters. Its mass ratio designed/contiguous is `0.720` on the
-cycle, `0.974` on a `3×4` torus and `0.966` on a random cubic graph; measured, the arms separate on
-the cycle and scatter inside `0.85–1.16` on the other two. And the whole effect is `O(1/g)` in the
+The law also forecasts *where* it matters, and paired bootstrap intervals (`just paper-2`) say the
+forecast holds: its mass ratio designed/contiguous is `0.720` on the cycle, `0.974` on a `3×4` torus
+and `0.966` on a random cubic graph, and each of those lands **inside** the 95% interval of the
+realised MSE ratio on both coefficients — six cells for six. And the whole effect is `O(1/g)` in the
 number of independent clusters (`1.370, 1.139, 1.083, 1.047` across `g = 2, 4, 8, 20`), so fold
-design is a **small-cluster-count** instrument — a handful of cities, not twenty replicas. Neighbour
-exclusion is worse than every alternative where it runs and cannot run at all at `K = 2` on either
-denser graph: its hop-1 neighbourhood covers the training fold. Buying validity by discarding data
-needs a split that is already graph-aware — the design it was meant to replace.
+design is a **small-cluster-count** instrument — a handful of cities, not twenty replicas. The
+intervals put a boundary on that: at 120 draws the contiguous cost separates from the baseline only
+at `g = 2`, and the exclusion cost only up to `g = 8`, so past a handful of clusters a bad split is
+not merely cheap but undetectable. Neighbour exclusion is worse than every alternative where it runs
+and cannot run at all at `K = 2` on either denser graph: its hop-1 neighbourhood covers the training
+fold. Buying validity by discarding data needs a split that is already graph-aware — the design it
+was meant to replace.
 
 **Track K** (`causaldyn_bench.delay_identification`) is the only track whose payoff is
 *discontinuous*. Every other board scores a cost gap; here the closed loop is `x' = -K·x(t − τ)`,

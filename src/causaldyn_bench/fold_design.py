@@ -7,21 +7,32 @@ Emmenegger-style neighbour exclusion, and the variance-optimal design of Result 
 (`chc.regret.optimal_fold_partition`).
 
 **The result is an ordering, and the useful half of it is negative.** Measured on `C_12` over 120
-draws at `g = 2` clusters, MSE relative to the random-unit split:
+draws at `g = 2` clusters, MSE relative to the random-unit split, with 95% PAIRED bootstrap
+intervals (`causaldyn_bench.paper_two`, `just paper-2`) -- one resampled index set applied to both
+arms, since draw `i` is the same panel under every split:
 
-    arm                  direct   spillover
-    random rows          0.861    0.976
-    random units         1.000    1.000     <- baseline
-    designed (Result 52) 0.906    0.995
-    contiguous blocks    1.370    1.358
-    neighbour exclusion  1.666    1.612
+    arm                  direct                  spillover
+    random rows          0.861 [0.692, 1.076]    0.976 [0.847, 1.120]
+    random units         1.000 [1.000, 1.000]    1.000 [1.000, 1.000]   <- baseline
+    designed (Result 52) 0.906 [0.776, 1.065]    0.995 [0.888, 1.105]
+    contiguous blocks    1.370 [1.101, 1.732]    1.357 [1.145, 1.614]
+    neighbour exclusion  1.666 [1.276, 2.206]    1.612 [1.307, 1.972]
 
-The designed split and the graph-blind unit split **tie**. What separates is the two arms a
-practitioner would actually reach for: keeping neighbours together costs **+37%** MSE, and dropping
-them from the training set costs **+66%**. The design law explains all three positions from one
-number -- the fraction of edges left inside a fold: `0.50` designed, `0.46` random units, `0.83`
-contiguous. Its value here is that it **convicts the obvious split before any simulation**, from a
-trace computation on the graph.
+The designed split and the graph-blind unit split **tie** -- the designed interval covers the
+baseline on both coefficients. What separates is the two arms a practitioner would actually reach
+for: keeping neighbours together costs **+37%** MSE, and dropping them from the training set costs
+**+66%**. The design law explains all three positions from one number -- the fraction of edges left
+inside a fold: `0.50` designed, `0.46` random units, `0.83` contiguous. Its value here is that it
+**convicts the obvious split before any simulation**, from a trace computation on the graph.
+
+*What the intervals add, and it is a narrowing.* Only the exclusion arm clears the baseline on both
+coefficients at both float32 and float64 (worst lower bound `1.166`). The `+37%` contiguous figure
+clears on the spillover coefficient at both dtypes (`1.145`, `1.139`) and on the direct coefficient
+it is sample-dependent: `[1.101, 1.732]` under float32, `[0.934, 1.599]` under float64 -- a
+different sample, because threefry spends a different number of bits per float64 element, not a
+different estimator. So the ordering is the claim, and the separation is the claim only for
+exclusion. Point estimates with a hand-picked tolerance said neither, which is how the earlier
+version of this track's test came to assert a tie at 60 draws and fail at x64 with 0.219.
 
 Three further measurements.
 
@@ -36,6 +47,13 @@ Three further measurements.
    points. **The law tells you when fold design is worth doing, and on two of these three
    topologies the honest answer is "it is not".**
 
+   With paired intervals the forecast is stronger than "same sign, same order": the predicted mass
+   ratio lands INSIDE the 95% interval of the realised ratio on all six topology-by-coefficient
+   cells -- cycle `0.720` against `[0.524, 0.835]` and `[0.624, 0.853]`, torus `0.974` against
+   `[0.764, 1.093]` and `[0.907, 1.126]`, cubic `0.966` against `[0.956, 1.385]` and
+   `[0.873, 1.064]`. Six for six is not proof that the functional is exact; it is the statement
+   that at 120 draws nothing here contradicts it, which is what a forecast can claim.
+
 2. *It is an `O(1/g)` effect in the number of independent clusters* (Result 60), visible at
    estimator level rather than only in the functional. Contiguous-vs-random-units on `C_12` across
    `g = 2, 4, 8, 20`: `1.370, 1.139, 1.083, 1.047` (direct) and `1.357, 1.067, 1.089, 1.073`
@@ -44,6 +62,13 @@ Three further measurements.
    `ordering_is_cluster_invariant` showing up in a real fit. Fold design is a
    **small-cluster-count** instrument: the realistic regime for an experiment run over a handful
    of cities, and exactly not the regime of a simulation with twenty independent replicas.
+
+   The intervals put a boundary on that sentence rather than a slope. Contiguous clears the
+   baseline only at `g = 2` (`[1.101, 1.732]`); at `g = 4, 8, 20` its interval covers 1
+   (`[0.967, 1.355]`, `[0.911, 1.304]`, `[0.970, 1.133]`). Exclusion clears at `g = 2, 4, 8` and
+   not at 20 (`[0.976, 1.198]`). So at 120 draws the cost of a bad split stops being DETECTABLE by
+   `g = 4` for the milder one and by `g = 20` for the worst -- a sharper statement than "it decays
+   like 1/g", and the one a practitioner deciding whether to bother actually needs.
 
 3. *Neighbour exclusion is dominated where it runs and infeasible where it does not.* It is the
    worst arm on the cycle at every one of the four cluster counts, and on the torus and the cubic

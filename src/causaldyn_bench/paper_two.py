@@ -100,9 +100,16 @@ def _layouts(adjacency: np.ndarray) -> dict[str, np.ndarray | None]:
     }
 
 
-def _arm_table(
+def arm_table(
     topology: str, clusters: int, draws: int, n_boot: int
 ) -> dict[str, dict[str, RatioCI]]:
+    """Every arm's MSE ratio against the random-unit split, with paired intervals.
+
+    The body of Table 1, and the honest form of Track N's ordering claim: a TIE is an interval
+    covering 1, a COST is an interval strictly above it. A point estimate with a hand-picked
+    tolerance can state neither, because the pair the claim calls a tie is not resolved at any
+    draw count this benchmark runs.
+    """
     graph, adjacency = _topologies()[topology]
     layouts = _layouts(adjacency)
     errors = {
@@ -130,14 +137,14 @@ def _arm_table(
 
 def table_one(draws: int, n_boot: int) -> dict[str, dict[str, RatioCI]]:
     """The arm ordering on the cycle at ``g = 2``, where the design effect is largest."""
-    return _arm_table("cycle", 2, draws, n_boot)
+    return arm_table("cycle", 2, draws, n_boot)
 
 
 def table_two(
     cluster_grid: tuple[int, ...], draws: int, n_boot: int
 ) -> dict[int, dict[str, dict[str, RatioCI]]]:
     """The same arms across cluster counts: the ``O(1/g)`` decay, with intervals on every cell."""
-    return {g: _arm_table("cycle", g, draws, n_boot) for g in cluster_grid}
+    return {g: arm_table("cycle", g, draws, n_boot) for g in cluster_grid}
 
 
 def table_three(draws: int, n_boot: int) -> dict[str, dict[str, float | RatioCI]]:
