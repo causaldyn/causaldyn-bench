@@ -49,7 +49,8 @@ def test_the_obvious_graph_aware_split_is_the_expensive_one() -> None:
 
     Deliberately NOT asserted: that CONTIGUOUS clears 1. At 120 draws it does on the spillover
     coefficient at both dtypes (lower bounds 1.147 and 1.139) and on the direct coefficient it is
-    sample-dependent -- [1.103, 1.735] under float32, [0.934, 1.599] under float64. The +37%
+    sample-dependent -- [1.103, 1.735] under float32 against [0.934, 1.599] under float64, at the
+    4000 resamples this test uses; the paper table quotes [1.101, 1.732] at 10 000. The +37%
     headline is a point estimate whose interval does not separate from the baseline at g = 2 on
     that coefficient, and the honest claim there is the ordering, not the separation.
     """
