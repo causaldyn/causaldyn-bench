@@ -476,17 +476,45 @@
     "lower_is_better": true
   },
   {
+    "track": "M-allocation",
+    "method": "CHC-adjusted",
+    "metric": "lift",
+    "value": 42.984092712402344,
+    "lower_is_better": false
+  },
+  {
+    "track": "M-allocation",
+    "method": "myopic-greedy",
+    "metric": "lift",
+    "value": 44.159889221191406,
+    "lower_is_better": false
+  },
+  {
+    "track": "M-allocation",
+    "method": "equal-split",
+    "metric": "lift",
+    "value": 41.192527770996094,
+    "lower_is_better": false
+  },
+  {
+    "track": "M-allocation",
+    "method": "naive-MMM",
+    "metric": "lift",
+    "value": 37.67449951171875,
+    "lower_is_better": false
+  },
+  {
     "track": "E-systems",
     "method": "known-only",
     "metric": "solve_ms",
-    "value": 0.5604939997283509,
+    "value": 0.6366369998431765,
     "lower_is_better": true
   },
   {
     "track": "E-systems",
     "method": "hybrid-CHC",
     "metric": "solve_ms",
-    "value": 4.896525000731344,
+    "value": 5.937824000284309,
     "lower_is_better": true
   }
 ]

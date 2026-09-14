@@ -153,10 +153,19 @@
 | 4 | contiguous folds | 1.3575 |
 | 5 | neighbour exclusion | 1.6124 |
 
+## M-allocation  (metric: lift, higher is better)
+
+| rank | method | value |
+|---|---|---|
+| 1 | myopic-greedy **(best)** | 44.1599 |
+| 2 | CHC-adjusted | 42.9841 |
+| 3 | equal-split | 41.1925 |
+| 4 | naive-MMM | 37.6745 |
+
 ## E-systems  (metric: solve_ms, lower is better)
 
 | rank | method | value |
 |---|---|---|
-| 1 | known-only **(best)** | 0.5605 |
-| 2 | hybrid-CHC | 4.8965 |
+| 1 | known-only **(best)** | 0.6366 |
+| 2 | hybrid-CHC | 5.9378 |
 
