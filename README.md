@@ -28,6 +28,7 @@ closed-loop decision. Built on
 | **J** identification, non-building | the control channel of a *third-party* plant whose answer is known exactly (`Pendulum-v1`) | \|fitted gain − 3.0\| | orthogonal (de-confounded) fit |
 | **K** delay identification | *when* the incentive acts, from a log whose confounder acts at a **different** lag | \|τ̂ − τ\| / closed-loop regret | adjusted local projection |
 | **N** fold design | which cross-fitting **split** to use under network interference — the method is held fixed and only the folds vary | MSE vs a graph-blind unit split | *the design law, negatively* — it convicts the two splits a practitioner reaches for |
+| **M** allocation over time | media budget across channels **and** weeks, from a log whose planner chased the season | lift over doing nothing, audited on the true plant | *the identification axis* — and the horizon axis only when the two channel orderings conflict |
 
 **Track N** (`causaldyn_bench.fold_design`) is the only track that varies nothing but the
 cross-fitting split, and its result is an ordering whose useful half is negative. On `C_12` with two
@@ -48,6 +49,24 @@ not merely cheap but undetectable. Neighbour exclusion is worse than every alter
 and cannot run at all at `K = 2` on either denser graph: its hop-1 neighbourhood covers the training
 fold. Buying validity by discarding data needs a split that is already graph-aware — the design it
 was meant to replace.
+
+**Track M** (`causaldyn_bench.allocation`) scores the MMM case study as a 2×2 in *identified?* ×
+*forward-looking?*: the CHC schedule, the **same identified fit spent on this week alone**, an equal
+split, and a whole-horizon plan fitted observationally — all at matched budget, all audited on the
+true plant. The result is not the one the track was built to show. Over eight seeds, mean lift over
+doing nothing: `CHC-adjusted 46.56`, `myopic-greedy 46.88`, `equal-split 44.11`, `naive-MMM 36.70`.
+Adjusting for the season is worth **+9.9 and wins 8 of 8**; looking past this week is worth **−0.3
+with its sign flipping 5/3**, inside `6.2%` of the mean lift. Both identified rules beat the equal
+split at 8 of 8.
+
+And the design that flips it is one line, which is what makes the null a measurement rather than an
+absence. A myopic rule loses when the carryover ordering **contradicts** the immediate one — not
+merely because carryover exists. On the shipped plant `β_c/θ_c` ranks the channels `(1.29, 1.50,
+1.60)` against `γ_c`'s `(0.50, 0.20, 0.35)`: the two disagree about the top channel but *agree about
+which to drop*, and dropping it is most of the available gain. Re-parameterise so the best immediate
+channel is the worst carryover channel — `β/θ` of `(0.07, 8.00, 1.60)` at unchanged `γ`, so the
+myopic ordering is untouched by construction — and the CHC schedule wins **6 of 6** by `2.11…3.40`
+(`+8.8%`). The equal split then catches the optimiser, because concentration has become the error.
 
 **Track K** (`causaldyn_bench.delay_identification`) is the only track whose payoff is
 *discontinuous*. Every other board scores a cost gap; here the closed loop is `x' = -K·x(t − τ)`,
@@ -110,19 +129,50 @@ just check                               # the ladder ci.yml runs: format, lint,
 
 ### Paper tables
 
-Every table in paper P2 ("Fold design for cross-fitting on networks and panels") comes out of one
-command, so a number in the manuscript can be traced to a run rather than to a transcription:
+Every table in papers P1 ("Debias every channel"), P2 ("Fold design for cross-fitting on networks
+and panels") and P3 ("Information-exploration duality") comes out of one command, so a number in
+the manuscript can be traced to a run rather than to a transcription:
 
 ```bash
+just paper-1         # -> results/paper1/tables.{md,json}; hours, run it detached
+just paper-1-smoke   # 30 seeds and two windows: plumbing only, resolves no ladder
 just paper-2         # -> results/paper2/tables.{md,json}; hours, run it detached
 just paper-2-smoke   # the same pipeline at 12 draws: plumbing only, quotes nothing
+just paper-3         # -> results/paper3/tables.{md,json}; minutes
+just paper-3-smoke   # one seed and a short ladder: plumbing only
 ```
 
-Ratios are mean squared error against the random-unit split **on the same draws**, and the interval
-is a **paired** percentile bootstrap: one resampled index set applied to numerator and denominator.
-That matters because the headline comparison (designed against random units) is a near-tie -- an
-unpaired interval would report draw noise that cancels in the ratio and turn "these two tie" into
-"we cannot tell". The quadrature table is relative max-entry error throughout, stated in its header.
+P1's headline numbers are all exponents fitted to log-log sweeps, so every table names the window
+it was fitted on. Its organising finding is that a fitted slope is not the exponent: the
+order-transfer certificate's `2.05 / 4.01 / 6.00` against a theoretical `2 / 4 / 6` is not
+agreement-up-to-noise but the exponent plus a **closed-form window term**, and Table 1 reconstructs
+that term from the plant (Maxima-derived, then gated against the certificate) and reports what is
+left. Two terms cut the `2.83e-2` miss at `p = 1` to `7.6e-3`. The same window has a lower end that
+fails catastrophically rather than gracefully -- push the sweep to `delta in [1e-5, 2e-4]` and the
+three-channel full-orthogonality slope reads `nan`, because `delta^4` regret has underflowed to
+exactly zero -- so every cell carries the double-precision cancellation floor beside it. The two
+`G` ladders come with the only error bar the certificate surface admits -- a chain of *nested
+prefixes* in which rung `j` carries a known multiple of the wanted variance -- and each caption
+**states whether its walk clears that scale instead of assuming it does**. On the first full run
+both refused: reading a single rung gave a scale of `0.0475` at 240 seeds and `0.0665` at 960,
+larger after four times the work, because one draw of `|N(0, sigma^2)|` decides nothing. Pooling
+three rescaled rungs on the same budget turned the refusals into `4.9x` and `3.1x`.
+
+P2's ratios are mean squared error against the random-unit split **on the same draws**, and the
+interval is a **paired** percentile bootstrap: one resampled index set applied to numerator and
+denominator. That matters because the headline comparison (designed against random units) is a
+near-tie -- an unpaired interval would report draw noise that cancels in the ratio and turn "these
+two tie" into "we cannot tell". The quadrature table is relative max-entry error throughout, stated
+in its header.
+
+P3 runs the same discipline in the opposite direction: four of its five tables are closed-form or
+exact-quadrature functions of the model -- a minimax floor, a digamma sum, the root of a quadratic --
+and carry **no** intervals, because a band around an exact number invents uncertainty. The fifth is
+a range over seeds with a relative-spread column, which is how the run revealed that its headline
+alignment factor moves `2.83 .. 3.64` across seeds while the bracket it illustrates does not. The
+plant constants the tables need are not exposed by any certificate, so they are reconstructed and
+**gated** against two identities that are; `plant_constants` raises rather than returning a silent
+second copy.
 
 This repo depends on `causal-hybrid-control` through a sibling **path**, so it expects the two checked
 out next to each other. CI reproduces that layout with two checkouts and runs the full suite.
