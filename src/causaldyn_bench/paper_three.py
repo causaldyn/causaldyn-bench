@@ -1,22 +1,25 @@
 """Every table in paper P3, "Information-exploration duality".
 
-One command produces all five.
+One command produces all six.
 
     uv run python -m causaldyn_bench.paper_three --out results/paper3
 
-Nothing here re-derives a model. Every number is read off a certificate in ``chc.regret`` --
+Nothing here re-derives a model. Tables 1-5 are read off certificates in ``chc.regret`` --
 :func:`minimax_exploration_certificate` (Result 56's floor and the policies that meet it),
 :func:`capped_exploration_policy` (Results 56 and 66) and
 :func:`multivariate_van_trees_certificate` (Result 67) -- so a table and the library cannot drift.
+Table 6 is the one simulation in this module: every certificate charges a round the van Trees
+floor, so none of them can say whether an actual estimator attains it, and :func:`table_six` runs
+one on the certificate's own plant.
 
 Three decisions a manuscript needs and a leaderboard does not, each falsifiable:
 
 1. **No intervals where the quantity is exact.** P2's tables are ratios of Monte-Carlo errors and
-   every cell carries a paired bootstrap. Four of the five tables here are *closed-form or exact-
+   every cell carries a paired bootstrap. Four of the six tables here are *closed-form or exact-
    quadrature functions of the model* -- a minimax floor, a digamma sum, the root of a quadratic --
-   and putting a band around them would invent uncertainty that does not exist. Table 5 is the
-   exception and says so: its estimator arms are averages over prior draws, and it is reported as a
-   range across seeds rather than a single number.
+   and putting a band around them would invent uncertainty that does not exist. Tables 5 and 6
+   are the exceptions and say so: Table 5's estimator arms are averages over prior draws, reported
+   as a range across seeds; Table 6 is a Monte-Carlo and every cell carries its half-width.
 2. **A range where the number is an instance.** Table 5's headline factor turned out to depend on
    the effect matrix the certificate draws from its seed -- it moves `2.83 .. 3.64` over five seeds,
    a `22%` spread against the Monte-Carlo columns' `0.9%` and `2.2%`. The table therefore reports
@@ -58,7 +61,7 @@ class PlantConstants:
     """``A``, ``K``, ``c``, ``I0`` of the exploration objective, with the checks that pin them."""
 
     curvature: float  # A = b^2 + rr
-    numerator: float  # K = A (du*/db)^2 sigma^2, the van Trees numerator
+    numerator: float  # K = A (du*/db)^2; sigma^2 enters through c, never through K
     info_rate: float  # c = eta/sigma^2
     prior_info: float  # I0
     c_causal_residual: float  # |2 sqrt(A K/c) - certificate's c_causal|
@@ -308,6 +311,148 @@ def table_five(seeds: tuple[int, ...]) -> dict[str, object]:
     return out
 
 
+def _oracle_action(effect: np.ndarray | float) -> np.ndarray:
+    """``u*(b) = -b x/(b^2 + rr)``: the one-step plant's optimal action, bounded in ``b``."""
+    effect = np.asarray(effect, dtype=np.float64)
+    return -effect * _XT / (effect * effect + _RR)
+
+
+@dataclass(frozen=True)
+class CommitOutcome:
+    """The realised regret of explore-then-commit, averaged over replications, and its two parts."""
+
+    regret: float
+    standard_error: float  # of the regret's mean
+    probe_cost: float  # mean cost of the probe rounds
+    commit_cost: float  # mean cost of the committed rounds
+
+
+def explore_then_commit(
+    horizon: int,
+    probe_rounds: int,
+    probe: str,
+    effect: float,
+    k: PlantConstants,
+    rng: np.random.Generator,
+    reps: int,
+) -> CommitOutcome:
+    """The REALISED regret of explore-then-commit with least squares, over ``reps`` replications.
+
+    ``probe_rounds`` rounds play the prior centre's action plus a probe, the rest commit to
+    ``u*(bhat)``. Only the probe identifies the effect -- ``y = b sqrt(eta) e + noise`` -- which is
+    the objective's own information model. The budget is the constant-magnitude optimum
+    ``sqrt(K (T - n)/(A c))`` of validation STEP 10, for both probes: ``"constant"`` spends it as
+    ``+-sqrt(M/n)``, ``"gaussian"`` as ``N(0, M/n)`` dither. The cost is the plant's exact
+    ``(b^2 + rr)(u - u*(b))^2`` at the TRUE effect, so nothing here is linearised.
+    """
+    budget = np.sqrt(k.numerator * (horizon - probe_rounds) / (k.curvature * k.info_rate))
+    scale = np.sqrt(budget / probe_rounds)
+    if probe == "constant":
+        e = rng.choice(np.array([-1.0, 1.0]), size=(reps, probe_rounds)) * scale
+    elif probe == "gaussian":
+        e = rng.normal(0.0, scale, size=(reps, probe_rounds))
+    else:
+        raise ValueError(f"probe must be 'constant' or 'gaussian', got {probe!r}")
+    y = effect * np.sqrt(_ETA) * e + rng.normal(0.0, _SIGMA, size=(reps, probe_rounds))
+    estimate = (y * e).sum(axis=1) / (np.sqrt(_ETA) * (e * e).sum(axis=1))
+    curvature = effect * effect + _RR
+    target = _oracle_action(effect)
+    explore = curvature * ((_oracle_action(_B) - target + e) ** 2).sum(axis=1)
+    commit = (horizon - probe_rounds) * curvature * (_oracle_action(estimate) - target) ** 2
+    regret = explore + commit
+    return CommitOutcome(
+        float(regret.mean()),
+        float(regret.std(ddof=1) / np.sqrt(reps)),
+        float(explore.mean()),
+        float(commit.mean()),
+    )
+
+
+def table_six(
+    horizons: tuple[int, ...],
+    rounds: tuple[int, ...],
+    reps: int,
+    seed: int,
+    k: PlantConstants,
+) -> dict[str, object]:
+    """The floor against a REAL estimator: attained by a constant-magnitude probe, not by dither.
+
+    Tables 1-5 charge every round the van Trees floor, so they can say which SCHEDULE attains
+    ``c_causal sqrt(T)`` and nothing about whether a policy does. This table runs one. Panel (a):
+    explore-then-commit with a ``+-`` probe and least squares, at the prior centre and at the edges
+    of the ``T^(-1/4)`` neighbourhood the minimax bound ranges over. Panel (b): the same budget as
+    Gaussian dither over ``n`` rounds, which least squares sees through ``E[1/chi2_n] = 1/(n - 2)``
+    -- a factor ``(n - 1)/(n - 2)`` where finite, and for ``n <= 2`` a lost RATE, because the
+    plant's bounded ``u*`` clips an estimate that would otherwise have infinite variance.
+
+    Monte-Carlo, so every cell carries a 95% half-width; each cell draws from its own child of
+    ``seed``, so a cell does not depend on which cells ran before it.
+    """
+    c_causal = 2.0 * np.sqrt(k.curvature * k.numerator / k.info_rate)
+    children = iter(np.random.SeedSequence(seed).spawn(len(horizons) * (3 + len(rounds))))
+
+    def c_at(effect: float) -> float:
+        sensitivity = -_XT * (_RR - effect * effect) / (_RR + effect * effect) ** 2
+        return 2.0 * (effect * effect + _RR) * abs(sensitivity) * _SIGMA / np.sqrt(_ETA)
+
+    edges = []
+    for horizon in horizons:
+        radius = horizon**-0.25
+        cells = {}
+        for name, effect in (("low", _B - radius), ("centre", _B), ("high", _B + radius)):
+            outcome = explore_then_commit(
+                horizon, 1, "constant", effect, k, np.random.default_rng(next(children)), reps
+            )
+            floor = c_causal * np.sqrt(horizon)
+            cells[name] = {
+                "ratio": outcome.regret / floor,
+                "half_width": 1.96 * outcome.standard_error / floor,
+                "commit_over_probe": outcome.commit_cost / outcome.probe_cost,
+            }
+        edges.append(
+            {
+                "horizon": int(horizon),
+                "radius": float(radius),
+                "cells": cells,
+                "local_constant_high": float(c_at(_B + radius) / c_causal),
+            }
+        )
+
+    dither = []
+    for n in rounds:
+        means = []
+        cells = []
+        for horizon in horizons:
+            outcome = explore_then_commit(
+                horizon, n, "gaussian", _B, k, np.random.default_rng(next(children)), reps
+            )
+            floor = c_causal * np.sqrt(horizon)
+            means.append(outcome.regret)
+            cells.append(
+                {
+                    "ratio": outcome.regret / floor,
+                    "half_width": 1.96 * outcome.standard_error / floor,
+                }
+            )
+        slope = float(np.polyfit(np.log(horizons), np.log(means), 1)[0])
+        dither.append(
+            {
+                "rounds": int(n),
+                "cells": cells,
+                "slope": slope,
+                "predicted": (n - 1) / (n - 2) if n > 2 else None,
+            }
+        )
+    return {
+        "horizons": [int(t) for t in horizons],
+        "reps": int(reps),
+        "seed": int(seed),
+        "c_causal": float(c_causal),
+        "edges": edges,
+        "dither": dither,
+    }
+
+
 def _cell(lo: float, hi: float) -> str:
     if lo == hi:
         return f"{lo:.4g}"
@@ -320,6 +465,7 @@ def _markdown(
     three: dict[str, dict[str, float]],
     four: dict[str, object],
     five: dict[str, object],
+    six: dict[str, object],
     k: PlantConstants,
 ) -> str:
     horizons = one["horizons"]
@@ -333,7 +479,8 @@ def _markdown(
         f"`I0 = {k.prior_info:g}`, recovered from the certificates and checked against them "
         f"(`c_causal` residual `{k.c_causal_residual:.1e}`, floor residual "
         f"`{k.floor_residual:.1e}`). Tables 1-4 are exact functions of the model and carry no "
-        "intervals; Table 5 is a range over seeds, and says which of its columns moved.",
+        "intervals; Table 5 is a range over seeds, and says which of its columns moved; Table 6 "
+        "runs an actual estimator and carries Monte-Carlo half-widths.",
         "",
         "## Table 1 -- the sequential minimax floor, and who attains it",
         "",
@@ -356,8 +503,10 @@ def _markdown(
         f"policies and horizons is `{one['min_policy_ratio']:.6f}`. The constant is SHARP, not a "
         f"rate: burst reaches `{one['burst_over_floor']:.6f}` while taper sits at "
         f"`{one['taper_over_floor']:.4f}` against `sqrt(2) = {one['sqrt_two']:.4f}`. "
-        f"`c_causal = {one['c_causal']:.6g}` and its log-log slope in `eta` is "
-        f"`{one['eta_slope']:.4f}` -- the `1/sqrt(eta)` causal scaling.",
+        f"`c_causal = {one['c_causal']:.6g}`. Every column here charges each round the van Trees "
+        "floor, so this table says which SCHEDULE attains the constant; Table 6 runs a policy. "
+        f"The certificate's log-log slope in `eta`, `{one['eta_slope']:.4f}`, evaluates the "
+        "closed form `c_causal ~ 1/sqrt(eta)` and checks its transcription, nothing more.",
         "",
         "## Table 2 -- a cap costs an additive logarithm, so its ratio to the floor decreases",
         "",
@@ -484,6 +633,66 @@ def _markdown(
         "`orthogonal_ratio` is 1 to floating-point zero at every seed, `worst_single_direction` "
         "reproduces `aligned_ratio` exactly, and the factor stays strictly inside `(1, k)`. Quote "
         "the bracket; the factor is an instance of it.",
+    ]
+    six_horizons = six["horizons"]
+    edges = six["edges"]
+    dither = six["dither"]
+    assert isinstance(six_horizons, list) and isinstance(edges, list) and isinstance(dither, list)
+    lines += [
+        "",
+        "## Table 6 -- the floor against a real estimator: a constant-magnitude probe attains it, "
+        "dither does not",
+        "",
+        f"Explore-then-commit with least squares on the one-step plant, `{six['reps']:,}` "
+        f"replications a cell (seed `{six['seed']}`), the budget of validation STEP 10. Cells are "
+        "the realised regret over `c_causal sqrt(T)`, with a 95% Monte-Carlo half-width.",
+        "",
+        "(a) a `+-sqrt(M)` probe in one round, at the prior centre and at the edges of the "
+        "`T^(-1/4)` neighbourhood the minimax bound ranges over:",
+        "",
+        "| T | b0 - T^(-1/4) | b0 | b0 + T^(-1/4) | c(b0 + T^(-1/4)) / c(b0) |",
+        "|---|---|---|---|---|",
+    ]
+    for row in edges:
+        cells = row["cells"]
+        lines.append(
+            f"| {row['horizon']:,} | "
+            + " | ".join(
+                f"{cells[name]['ratio']:.4f} ± {cells[name]['half_width']:.4f}"
+                for name in ("low", "centre", "high")
+            )
+            + f" | {row['local_constant_high']:.4f} |"
+        )
+    lines += [
+        "",
+        "At the centre the ratio tends to 1: the constant is attained by a policy, not only by a "
+        "schedule. The edges approach it more slowly because the local constant itself moves "
+        "across the neighbourhood at first order -- the last column -- and the neighbourhood "
+        "shrinks only like `T^(-1/4)`.",
+        "",
+        "(b) the same budget as Gaussian dither over `n` rounds, at the prior centre:",
+        "",
+        "| n | "
+        + " | ".join(f"T = {t:,}" for t in six_horizons)
+        + " | log-log slope | (n-1)/(n-2) |",
+        "|---|" + "---|" * (len(six_horizons) + 2),
+    ]
+    for row in dither:
+        predicted = row["predicted"]
+        lines.append(
+            f"| {row['rounds']} | "
+            + " | ".join(f"{cell['ratio']:.3f} ± {cell['half_width']:.3f}" for cell in row["cells"])
+            + f" | {row['slope']:.3f} | "
+            + ("inf" if predicted is None else f"{predicted:.4f}")
+            + " |"
+        )
+    lines += [
+        "",
+        "Least squares sees a probe through its realised energy, not its variance. One Gaussian "
+        "round loses the RATE -- the slope is `3/4`, not `1/2` -- because a near-zero draw leaves "
+        "an estimate the bounded `u*` can only clip; two rounds lose a logarithm; from three the "
+        "rate returns with the factor `(n-1)/(n-2)`. A cap forces `n = M/cap`, of order "
+        "`sqrt(T)`, which is why capped blocks never see this.",
         "",
     ]
     return "\n".join(lines)
@@ -499,6 +708,12 @@ def main() -> None:
     parser.add_argument("--schedule-horizon", type=int, default=4000)
     parser.add_argument("--cap-horizon", type=int, default=4000)
     parser.add_argument("--seeds", type=int, nargs="+", default=[11, 12, 13, 14, 15])
+    parser.add_argument(
+        "--estimator-horizons", type=int, nargs="+", default=[10**3, 10**4, 10**5, 10**6, 10**7]
+    )
+    parser.add_argument("--probe-rounds", type=int, nargs="+", default=[1, 2, 3, 10, 30])
+    parser.add_argument("--estimator-reps", type=int, default=200_000)
+    parser.add_argument("--estimator-seed", type=int, default=20260926)
     parser.add_argument("--out", type=Path, default=Path("results/paper3"))
     args = parser.parse_args()
 
@@ -508,9 +723,16 @@ def main() -> None:
     three = table_three(args.schedule_horizon, constants)
     four = table_four(tuple(args.mass_horizons), tuple(args.caps), args.cap_horizon, constants)
     five = table_five(tuple(args.seeds))
+    six = table_six(
+        tuple(args.estimator_horizons),
+        tuple(args.probe_rounds),
+        args.estimator_reps,
+        args.estimator_seed,
+        constants,
+    )
 
     args.out.mkdir(parents=True, exist_ok=True)
-    text = _markdown(one, two, three, four, five, constants)
+    text = _markdown(one, two, three, four, five, six, constants)
     (args.out / "tables.md").write_text(text)
     (args.out / "tables.json").write_text(
         json.dumps(
@@ -528,6 +750,7 @@ def main() -> None:
                 "table3": three,
                 "table4": four,
                 "table5": five,
+                "table6": six,
             },
             indent=2,
         )

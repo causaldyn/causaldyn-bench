@@ -1,6 +1,6 @@
 # P3 tables -- information-exploration duality
 
-Plant `A = 1.5`, `K = 0.0740741`, `c = 1.22449`, `I0 = 1`, recovered from the certificates and checked against them (`c_causal` residual `0.0e+00`, floor residual `0.0e+00`). Tables 1-4 are exact functions of the model and carry no intervals; Table 5 is a range over seeds, and says which of its columns moved.
+Plant `A = 1.5`, `K = 0.0740741`, `c = 1.22449`, `I0 = 1`, recovered from the certificates and checked against them (`c_causal` residual `0.0e+00`, floor residual `0.0e+00`). Tables 1-4 are exact functions of the model and carry no intervals; Table 5 is a range over seeds, and says which of its columns moved; Table 6 runs an actual estimator and carries Monte-Carlo half-widths.
 
 ## Table 1 -- the sequential minimax floor, and who attains it
 
@@ -11,7 +11,7 @@ Plant `A = 1.5`, `K = 0.0740741`, `c = 1.22449`, `I0 = 1`, recovered from the ce
 | 100,000 | 189.3 | 1 | 1.398 | 8.152 | 39.13 |
 | 1,000,000 | 601.2 | 1 | 1.407 | 25.04 | 123.2 |
 
-Ratios to the floor, so a cell below 1 falsifies the bound; the minimum over all policies and horizons is `1.000123`. The constant is SHARP, not a rate: burst reaches `1.000123` while taper sits at `1.4072` against `sqrt(2) = 1.4142`. `c_causal = 0.602464` and its log-log slope in `eta` is `-0.5000` -- the `1/sqrt(eta)` causal scaling.
+Ratios to the floor, so a cell below 1 falsifies the bound; the minimum over all policies and horizons is `1.000123`. The constant is SHARP, not a rate: burst reaches `1.000123` while taper sits at `1.4072` against `sqrt(2) = 1.4142`. `c_causal = 0.602464`. Every column here charges each round the van Trees floor, so this table says which SCHEDULE attains the constant; Table 6 runs a policy. The certificate's log-log slope in `eta`, `-0.5000`, evaluates the closed form `c_causal ~ 1/sqrt(eta)` and checks its transcription, nothing more.
 
 ## Table 2 -- a cap costs an additive logarithm, so its ratio to the floor decreases
 
@@ -91,3 +91,31 @@ Range over 5 seeds. A column marked exact did not move at all; with a single see
 The same information loss costs a factor in the direction the optimal action leans on and exactly nothing in a direction in the kernel of `Psi'` -- which is the whole content of the trace form, and is invisible to a scalar plant that has only one direction.
 
 The spread column is the reason this table is a range. The certificate draws the 2x2 effect matrix from its seed, so the SIZE of the aligned factor is a property of that draw and moves more across seeds than either estimator column does. The BRACKET does not: `orthogonal_ratio` is 1 to floating-point zero at every seed, `worst_single_direction` reproduces `aligned_ratio` exactly, and the factor stays strictly inside `(1, k)`. Quote the bracket; the factor is an instance of it.
+
+## Table 6 -- the floor against a real estimator: a constant-magnitude probe attains it, dither does not
+
+Explore-then-commit with least squares on the one-step plant, `200,000` replications a cell (seed `20260926`), the budget of validation STEP 10. Cells are the realised regret over `c_causal sqrt(T)`, with a 95% Monte-Carlo half-width.
+
+(a) a `+-sqrt(M)` probe in one round, at the prior centre and at the edges of the `T^(-1/4)` neighbourhood the minimax bound ranges over:
+
+| T | b0 - T^(-1/4) | b0 | b0 + T^(-1/4) | c(b0 + T^(-1/4)) / c(b0) |
+|---|---|---|---|---|
+| 1,000 | 1.8269 ± 0.0289 | 1.2029 ± 0.0164 | 1.2093 ± 0.0088 | 1.4104 |
+| 10,000 | 0.7316 ± 0.0047 | 0.8928 ± 0.0031 | 1.1157 ± 0.0032 | 1.2456 |
+| 100,000 | 0.8052 ± 0.0024 | 0.9541 ± 0.0029 | 1.0966 ± 0.0034 | 1.1431 |
+| 1,000,000 | 0.8986 ± 0.0026 | 0.9842 ± 0.0030 | 1.0645 ± 0.0033 | 1.0821 |
+| 10,000,000 | 0.9480 ± 0.0029 | 0.9929 ± 0.0030 | 1.0399 ± 0.0033 | 1.0467 |
+
+At the centre the ratio tends to 1: the constant is attained by a policy, not only by a schedule. The edges approach it more slowly because the local constant itself moves across the neighbourhood at first order -- the last column -- and the neighbourhood shrinks only like `T^(-1/4)`.
+
+(b) the same budget as Gaussian dither over `n` rounds, at the prior centre:
+
+| n | T = 1,000 | T = 10,000 | T = 100,000 | T = 1,000,000 | T = 10,000,000 | log-log slope | (n-1)/(n-2) |
+|---|---|---|---|---|---|---|---|
+| 1 | 12.939 ± 0.137 | 23.278 ± 0.339 | 41.553 ± 0.824 | 75.744 ± 2.004 | 130.903 ± 4.694 | 0.752 | inf |
+| 2 | 7.074 ± 0.104 | 8.048 ± 0.197 | 9.367 ± 0.380 | 9.617 ± 0.663 | 10.125 ± 1.162 | 0.539 | inf |
+| 3 | 4.902 ± 0.084 | 4.039 ± 0.126 | 3.177 ± 0.175 | 2.933 ± 0.273 | 2.316 ± 0.294 | 0.421 | 2.0000 |
+| 10 | 1.929 ± 0.037 | 1.093 ± 0.020 | 1.043 ± 0.006 | 1.089 ± 0.004 | 1.116 ± 0.005 | 0.452 | 1.1250 |
+| 30 | 1.377 ± 0.022 | 0.921 ± 0.005 | 0.980 ± 0.003 | 1.016 ± 0.003 | 1.028 ± 0.003 | 0.479 | 1.0357 |
+
+Least squares sees a probe through its realised energy, not its variance. One Gaussian round loses the RATE -- the slope is `3/4`, not `1/2` -- because a near-zero draw leaves an estimate the bounded `u*` can only clip; two rounds lose a logarithm; from three the rate returns with the factor `(n-1)/(n-2)`. A cap forces `n = M/cap`, of order `sqrt(T)`, which is why capped blocks never see this.

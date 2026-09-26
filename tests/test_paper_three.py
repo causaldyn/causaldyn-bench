@@ -10,6 +10,7 @@ from causaldyn_bench import paper_three
 from causaldyn_bench.paper_three import (
     _schedules,
     exact_mass,
+    explore_then_commit,
     plant_constants,
     result_56_mass,
     table_five,
@@ -110,3 +111,73 @@ def test_the_aligned_factor_is_an_instance_and_the_bracket_is_the_result() -> No
         )
     assert np.isclose(spread["orthogonal_ratio"]["lo"], 1.0, atol=1e-12)
     assert np.isclose(spread["orthogonal_ratio"]["hi"], 1.0, atol=1e-12)
+
+
+def _ratio(horizon: int, rounds: int, probe: str, seed: int, reps: int = 50_000) -> float:
+    k = plant_constants()
+    c_causal = 2.0 * np.sqrt(k.curvature * k.numerator / k.info_rate)
+    outcome = explore_then_commit(
+        horizon, rounds, probe, paper_three._B, k, np.random.default_rng(seed), reps
+    )
+    return outcome.regret / (c_causal * np.sqrt(horizon))
+
+
+def test_a_constant_magnitude_probe_attains_the_floor_with_a_real_estimator() -> None:
+    """Tables 1-5 charge every round the van Trees floor, so "the constant is sharp" there means a
+    SCHEDULE attains it. Table 6's claim is that a POLICY does: one probe of magnitude
+    ``sqrt(M)``, least squares, commit. Its regret must approach ``c_causal sqrt(T)`` and grow at
+    rate ``1/2``; a wrong budget, a random-magnitude probe or a mis-scaled estimate each break one
+    of the two."""
+    ratios = [_ratio(horizon, 1, "constant", seed) for seed, horizon in enumerate((10**5, 10**6))]
+    assert abs(ratios[-1] - 1.0) < 0.03
+    horizons = (10**4, 10**5, 10**6, 10**7)
+    k = plant_constants()
+    means = [
+        explore_then_commit(
+            t, 1, "constant", paper_three._B, k, np.random.default_rng(100 + i), 50_000
+        ).regret
+        for i, t in enumerate(horizons)
+    ]
+    slope = np.polyfit(np.log(horizons), np.log(means), 1)[0]
+    assert abs(slope - 0.5) < 0.03
+
+
+def test_gaussian_dither_of_the_same_budget_is_not_the_same_design() -> None:
+    """The reduced objective sees a probe through its variance, least squares through its realised
+    energy, and ``E[1/chi2_n] = 1/(n - 2)``. So from three rounds the price is the factor
+    ``(n - 1)/(n - 2)``, and one round loses the RATE: the bounded ``u*`` clips an estimate whose
+    variance is infinite, which leaves regret of order ``T^(3/4)``."""
+    for rounds in (10, 30):
+        assert (
+            abs(_ratio(10**6, rounds, "gaussian", seed=rounds) - (rounds - 1) / (rounds - 2)) < 0.05
+        )
+
+    horizons = (10**3, 10**4, 10**5, 10**6)
+    k = plant_constants()
+    means = [
+        explore_then_commit(
+            t, 1, "gaussian", paper_three._B, k, np.random.default_rng(200 + i), 50_000
+        ).regret
+        for i, t in enumerate(horizons)
+    ]
+    slope = np.polyfit(np.log(horizons), np.log(means), 1)[0]
+    assert 0.70 < slope < 0.80
+
+
+def test_an_unknown_probe_is_refused() -> None:
+    with pytest.raises(ValueError, match="probe must be"):
+        explore_then_commit(
+            10**3, 1, "uniform", 1.0, plant_constants(), np.random.default_rng(0), 10
+        )
+
+
+def test_the_budget_is_where_the_commit_phase_costs_what_the_probe_did() -> None:
+    """The regret is flat in the budget at its optimum -- ten per cent too much costs half a per
+    cent -- so the ratio to the floor cannot pin the budget. Validation STEP 10's identity can: at
+    ``M = sqrt(K (T - n)/(A c))`` the committed rounds cost exactly what the probe did. The plant's
+    bounded ``u*`` shaves the commit phase slightly, so the balance holds to a few per cent."""
+    k = plant_constants()
+    outcome = explore_then_commit(
+        10**6, 1, "constant", paper_three._B, k, np.random.default_rng(7), 50_000
+    )
+    assert abs(outcome.commit_cost / outcome.probe_cost - 1.0) < 0.06
