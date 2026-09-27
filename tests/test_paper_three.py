@@ -89,12 +89,10 @@ def test_the_aligned_factor_is_an_instance_and_the_bracket_is_the_result() -> No
     leans on the cut direction is a property of that draw; a single number read off one seed states
     the bracket's content and carries the draw's. Both halves are asserted here."""
     single = table_five((11,))["spread"]
-    assert isinstance(single, dict)
     # one seed cannot tell an exact column from a lucky one, so it must decline to mark them
     assert all(values["seed_invariant"] is None for values in single.values())
 
     spread = table_five((11, 12, 13))["spread"]
-    assert isinstance(spread, dict)
     assert all(isinstance(values["seed_invariant"], bool) for values in spread.values())
 
     # the factor MOVES, and by more than either Monte-Carlo estimator column

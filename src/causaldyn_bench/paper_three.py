@@ -43,6 +43,7 @@ import argparse
 import json
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TypedDict
 
 import numpy as np
 from chc.regret import (
@@ -113,7 +114,72 @@ def result_56_mass(horizon: float, k: PlantConstants) -> float:
     )
 
 
-def table_one(horizons: tuple[int, ...]) -> dict[str, object]:
+# The tables are plain dicts because `main` writes each to tables.json as it stands; the
+# TypedDicts below only name their schema.
+class TableOne(TypedDict):
+    horizons: list[int]
+    floor: list[float]
+    ratios: dict[str, list[float]]
+    c_causal: float
+    min_policy_ratio: float
+    burst_over_floor: float
+    taper_over_floor: float
+    eta_slope: float
+    sqrt_two: float
+
+
+class TableTwo(TypedDict):
+    horizons: list[int]
+    caps: list[float]
+    rows: dict[str, dict[int, dict[str, float]]]
+
+
+class TableFour(TypedDict):
+    cap: float
+    cap_horizon: int
+    ceiling: float
+    coefficient: float
+    ladder: list[dict[str, float]]
+    by_cap: list[dict[str, float]]
+    agreement: list[dict[str, float]]
+
+
+class SeedSpread(TypedDict):
+    lo: float
+    hi: float
+    span: float
+    seed_invariant: bool | None
+
+
+class TableFive(TypedDict):
+    seeds: list[int]
+    spread: dict[str, SeedSpread]
+
+
+class EdgeRow(TypedDict):
+    horizon: int
+    radius: float
+    cells: dict[str, dict[str, float]]
+    local_constant_high: float
+
+
+class DitherRow(TypedDict):
+    rounds: int
+    cells: list[dict[str, float]]
+    slope: float
+    predicted: float | None
+
+
+class TableSix(TypedDict):
+    horizons: list[int]
+    reps: int
+    seed: int
+    c_causal: float
+    edges: list[EdgeRow]
+    dither: list[DitherRow]
+
+
+def table_one(horizons: tuple[int, ...]) -> TableOne:
     """The sequential minimax floor, and which designs attain it.
 
     Every cell is a ratio to the floor, so a cell below ``1`` falsifies the lower bound outright.
@@ -140,7 +206,7 @@ def table_one(horizons: tuple[int, ...]) -> dict[str, object]:
     }
 
 
-def table_two(horizons: tuple[int, ...], caps: tuple[float, ...]) -> dict[str, object]:
+def table_two(horizons: tuple[int, ...], caps: tuple[float, ...]) -> TableTwo:
     """A per-round cap costs an ADDITIVE logarithm, so its ratio to the uncapped floor tends to 1.
 
     This is the table that separates a cap from a taper. The taper's ``sqrt(2)`` in Table 1 is a
@@ -207,7 +273,7 @@ def table_four(
     ladder_caps: tuple[float, ...],
     cap_horizon: int,
     k: PlantConstants,
-) -> dict[str, object]:
+) -> TableFour:
     """What Result 56's closed form drops is a CONSTANT, and the cap decides how big it is.
 
     Panel (a) is the horizon ladder at one cap: the gap to the closed form rises to the ceiling
@@ -223,7 +289,7 @@ def table_four(
         * np.sqrt(k.numerator / (k.curvature * k.info_rate))
         / (8.0 * k.curvature * k.info_rate * cap**2)
     )
-    ladder = []
+    ladder: list[dict[str, float]] = []
     for horizon in horizons:
         exact = exact_mass(horizon, cap, k)
         gap = result_56_mass(horizon, k) - exact
@@ -236,7 +302,7 @@ def table_four(
                 "scaled_residual": (gap - ceiling) * np.sqrt(horizon),
             }
         )
-    by_cap = []
+    by_cap: list[dict[str, float]] = []
     for level in ladder_caps:
         exact = exact_mass(cap_horizon, level, k)
         gap = result_56_mass(cap_horizon, k) - exact
@@ -249,7 +315,7 @@ def table_four(
                 "relative": gap / exact,
             }
         )
-    agreement = []
+    agreement: list[dict[str, float]] = []
     for horizon in (h for h in horizons if h <= 10**6):
         policy = capped_exploration_policy(horizon=horizon, cap=cap)
         agreement.append(
@@ -271,7 +337,7 @@ def table_four(
     }
 
 
-def table_five(seeds: tuple[int, ...]) -> dict[str, object]:
+def table_five(seeds: tuple[int, ...]) -> TableFive:
     """The matrix floor is a TRACE, so confounding is priced by ALIGNMENT rather than by a ratio.
 
     Reported as a range over seeds, and the range is the finding. The certificate's alignment arm
@@ -295,8 +361,7 @@ def table_five(seeds: tuple[int, ...]) -> dict[str, object]:
         "hodges_pointwise_ratio",
         "hodges_bayes_ratio",
     )
-    out: dict[str, object] = {"seeds": [int(s) for s in seeds]}
-    spread: dict[str, dict[str, float | bool | None]] = {}
+    spread: dict[str, SeedSpread] = {}
     for field in fields:
         values = np.array([float(getattr(curve, field)) for curve in curves])
         lo, hi = float(values.min()), float(values.max())
@@ -312,8 +377,7 @@ def table_five(seeds: tuple[int, ...]) -> dict[str, object]:
             # rather than saying "invariant" about a quantity it never varied
             "seed_invariant": bool(span < 1e-12) if len(curves) > 1 else None,
         }
-    out["spread"] = spread
-    return out
+    return {"seeds": [int(s) for s in seeds], "spread": spread}
 
 
 def _oracle_action(effect: np.ndarray | float) -> np.ndarray:
@@ -379,7 +443,7 @@ def table_six(
     reps: int,
     seed: int,
     k: PlantConstants,
-) -> dict[str, object]:
+) -> TableSix:
     """The floor against a REAL estimator: attained by a constant-magnitude probe, not by dither.
 
     Tables 1-5 charge every round the van Trees floor, so they can say which SCHEDULE attains
@@ -400,7 +464,7 @@ def table_six(
         sensitivity = -_XT * (_RR - effect * effect) / (_RR + effect * effect) ** 2
         return 2.0 * (effect * effect + _RR) * abs(sensitivity) * _SIGMA / np.sqrt(_ETA)
 
-    edges = []
+    edges: list[EdgeRow] = []
     for horizon in horizons:
         radius = horizon**-0.25
         cells = {}
@@ -423,7 +487,7 @@ def table_six(
             }
         )
 
-    dither = []
+    dither: list[DitherRow] = []
     for n in rounds:
         means = []
         cells = []
@@ -465,18 +529,16 @@ def _cell(lo: float, hi: float) -> str:
 
 
 def _markdown(
-    one: dict[str, object],
-    two: dict[str, object],
+    one: TableOne,
+    two: TableTwo,
     three: dict[str, dict[str, float]],
-    four: dict[str, object],
-    five: dict[str, object],
-    six: dict[str, object],
+    four: TableFour,
+    five: TableFive,
+    six: TableSix,
     k: PlantConstants,
 ) -> str:
     horizons = one["horizons"]
-    assert isinstance(horizons, list)
     ratios = one["ratios"]
-    assert isinstance(ratios, dict)
     lines = [
         "# P3 tables -- information-exploration duality",
         "",
@@ -493,7 +555,6 @@ def _markdown(
         "|---|---|---|---|---|---|",
     ]
     floors = one["floor"]
-    assert isinstance(floors, list)
     for index, horizon in enumerate(horizons):
         lines.append(
             f"| {horizon:,} | {floors[index]:.4g} | "
@@ -519,7 +580,6 @@ def _markdown(
         "|---|" + "---|" * len(horizons),
     ]
     rows = two["rows"]
-    assert isinstance(rows, dict)
     for cap, cells in rows.items():
         lines.append(
             f"| {cap} | "
@@ -556,11 +616,9 @@ def _markdown(
         )
     ceiling = four["ceiling"]
     coefficient = four["coefficient"]
-    assert isinstance(ceiling, float) and isinstance(coefficient, float)
     ladder = four["ladder"]
     by_cap = four["by_cap"]
     agreement = four["agreement"]
-    assert isinstance(ladder, list) and isinstance(by_cap, list) and isinstance(agreement, list)
     lines += [
         "",
         "The block lengths span nearly an order of magnitude and every delivered mass lands on the "
@@ -608,7 +666,6 @@ def _markdown(
         )
     spread = five["spread"]
     seeds = five["seeds"]
-    assert isinstance(spread, dict) and isinstance(seeds, list)
     lines += [
         "",
         "## Table 5 -- the matrix floor is a trace, so confounding is priced by ALIGNMENT",
@@ -642,7 +699,6 @@ def _markdown(
     six_horizons = six["horizons"]
     edges = six["edges"]
     dither = six["dither"]
-    assert isinstance(six_horizons, list) and isinstance(edges, list) and isinstance(dither, list)
     lines += [
         "",
         "## Table 6 -- the floor against a real estimator: a constant-magnitude probe attains it, "
