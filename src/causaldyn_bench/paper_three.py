@@ -202,14 +202,19 @@ def table_three(horizon: int, k: PlantConstants) -> dict[str, dict[str, float]]:
 
 
 def table_four(
-    horizons: tuple[int, ...], caps: tuple[float, ...], cap_horizon: int, k: PlantConstants
+    horizons: tuple[int, ...],
+    caps: tuple[float, ...],
+    ladder_caps: tuple[float, ...],
+    cap_horizon: int,
+    k: PlantConstants,
 ) -> dict[str, object]:
     """What Result 56's closed form drops is a CONSTANT, and the cap decides how big it is.
 
     Panel (a) is the horizon ladder at one cap: the gap to the closed form rises to the ceiling
     ``K/(2 A c cap)`` and stops, and the residual after subtracting it decays exactly as the
     expansion says. Panel (b) is the cap ladder at one horizon, which is the operational reading --
-    a constant that never vanishes is invisible at a loose cap and dominant at a tight one.
+    a constant that never vanishes is invisible at a loose cap and dominant at a tight one. It takes
+    its own ladder, wider than the three caps Table 2 shares with panel (a).
     """
     cap = caps[len(caps) // 2]
     ceiling = k.numerator / (2.0 * k.curvature * k.info_rate * cap)
@@ -232,7 +237,7 @@ def table_four(
             }
         )
     by_cap = []
-    for level in caps:
+    for level in ladder_caps:
         exact = exact_mass(cap_horizon, level, k)
         gap = result_56_mass(cap_horizon, k) - exact
         by_cap.append(
@@ -707,6 +712,13 @@ def main() -> None:
     )
     parser.add_argument("--schedule-horizon", type=int, default=4000)
     parser.add_argument("--cap-horizon", type=int, default=4000)
+    parser.add_argument(
+        "--ladder-caps",
+        type=float,
+        nargs="+",
+        default=[10 ** (-k / 2) for k in range(1, 7)],
+        help="Table 4(b)'s caps: half-decades from 10^-0.5 to 10^-3",
+    )
     parser.add_argument("--seeds", type=int, nargs="+", default=[11, 12, 13, 14, 15])
     parser.add_argument(
         "--estimator-horizons", type=int, nargs="+", default=[10**3, 10**4, 10**5, 10**6, 10**7]
@@ -721,7 +733,13 @@ def main() -> None:
     one = table_one(tuple(args.horizons))
     two = table_two(tuple(args.horizons), tuple(args.caps))
     three = table_three(args.schedule_horizon, constants)
-    four = table_four(tuple(args.mass_horizons), tuple(args.caps), args.cap_horizon, constants)
+    four = table_four(
+        tuple(args.mass_horizons),
+        tuple(args.caps),
+        tuple(args.ladder_caps),
+        args.cap_horizon,
+        constants,
+    )
     five = table_five(tuple(args.seeds))
     six = table_six(
         tuple(args.estimator_horizons),

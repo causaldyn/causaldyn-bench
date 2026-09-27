@@ -59,9 +59,12 @@ The gap rises to the ceiling and stops -- it never reaches it, and never exceeds
 
 | cap | exact mass | Result 56 - exact | ceiling | as a share of the mass |
 |---|---|---|---|---|
+| 0.316228 | 11.8249 | 0.0595 | 0.0638 | 0.50% |
 | 0.1 | 11.6973 | 0.1871 | 0.2016 | 1.60% |
-| 0.03 | 11.2731 | 0.6113 | 0.6722 | 5.42% |
+| 0.0316228 | 11.3036 | 0.5808 | 0.6377 | 5.14% |
 | 0.01 | 10.1544 | 1.7300 | 2.0165 | 17.04% |
+| 0.00316228 | 7.3804 | 4.5040 | 6.3766 | 61.03% |
+| 0.001 | 3.5312 | 8.3531 | 20.1646 | 236.55% |
 
 (c) the library's fixed point against the closed-form root, in units of the cap:
 
