@@ -1,0 +1,1595 @@
+{
+  "precision": "float64",
+  "scored_precision": "float64",
+  "decision": "INCONCLUSIVE",
+  "effect": 0.6387467522490555,
+  "prbs_authority": 0.5175052236121988,
+  "paired": {
+    "pairs": 168,
+    "mean": -0.02660307200855724,
+    "low": -0.04327278580396504,
+    "high": -0.00989683213153877,
+    "taper_lower": 92,
+    "taper_estimate": 0.6158517715390389,
+    "block_estimate": 0.6424548435475962,
+    "effect": 0.6387467522490555
+  },
+  "by_sign": [
+    {
+      "sign": 1,
+      "pairs": 84,
+      "taper_regret": 7.287223610692582,
+      "block_regret": 9.213041458362506,
+      "gap": -1.9258178476699246,
+      "taper_wins": 53,
+      "taper_estimate": 0.6791156219564659,
+      "block_estimate": 0.7122227393628462,
+      "lazy_regret": 11.335761010594714
+    },
+    {
+      "sign": -1,
+      "pairs": 84,
+      "taper_regret": 11.534177889822685,
+      "block_regret": 10.225087171465505,
+      "gap": 1.3090907183571792,
+      "taper_wins": 33,
+      "taper_estimate": 0.5525879211216117,
+      "block_estimate": 0.5726869477323461,
+      "lazy_regret": 21.415546196908963
+    }
+  ],
+  "by_window": [
+    {
+      "window": 0,
+      "day": 1,
+      "pairs": 24,
+      "gap": -3.7083875478072037,
+      "taper_wins": 19,
+      "taper_estimate": 0.5925337206447042,
+      "block_estimate": 0.665352061152971
+    },
+    {
+      "window": 1,
+      "day": 9,
+      "pairs": 24,
+      "gap": 0.4209092697332129,
+      "taper_wins": 11,
+      "taper_estimate": 0.6604771707492813,
+      "block_estimate": 0.6215135728548805
+    },
+    {
+      "window": 2,
+      "day": 17,
+      "pairs": 24,
+      "gap": -1.758429799666717,
+      "taper_wins": 14,
+      "taper_estimate": 0.6329903607153224,
+      "block_estimate": 0.7212709392877493
+    },
+    {
+      "window": 3,
+      "day": 25,
+      "pairs": 24,
+      "gap": -1.5441366113180777,
+      "taper_wins": 12,
+      "taper_estimate": 0.5501268329479325,
+      "block_estimate": 0.5536976454441759
+    },
+    {
+      "window": 4,
+      "day": 33,
+      "pairs": 24,
+      "gap": 2.8915081562112057,
+      "taper_wins": 5,
+      "taper_estimate": 0.6224841343465316,
+      "block_estimate": 0.699526479091054
+    },
+    {
+      "window": 5,
+      "day": 41,
+      "pairs": 24,
+      "gap": -1.0716613105689596,
+      "taper_wins": 13,
+      "taper_estimate": 0.6029997309718966,
+      "block_estimate": 0.49797223242571365
+    },
+    {
+      "window": 6,
+      "day": 49,
+      "pairs": 24,
+      "gap": 2.611652890821931,
+      "taper_wins": 12,
+      "taper_estimate": 0.6493504503976036,
+      "block_estimate": 0.7378509745766286
+    }
+  ],
+  "curve": [
+    {
+      "window": 0,
+      "day": 1,
+      "multiplier": 0.5,
+      "estimate": 0.31937337612452776,
+      "loss": 37.35017744660952,
+      "regret": 6.244232295135028,
+      "anchored": true
+    },
+    {
+      "window": 0,
+      "day": 1,
+      "multiplier": 0.6,
+      "estimate": 0.3832480513494333,
+      "loss": 32.876495793931994,
+      "regret": 1.7705506424575006,
+      "anchored": false
+    },
+    {
+      "window": 0,
+      "day": 1,
+      "multiplier": 0.7,
+      "estimate": 0.4471227265743388,
+      "loss": 30.16805733382913,
+      "regret": -0.9378878176453647,
+      "anchored": false
+    },
+    {
+      "window": 0,
+      "day": 1,
+      "multiplier": 0.8,
+      "estimate": 0.5109974017992445,
+      "loss": 28.70560654064493,
+      "regret": -2.4003386108295643,
+      "anchored": false
+    },
+    {
+      "window": 0,
+      "day": 1,
+      "multiplier": 0.9,
+      "estimate": 0.57487207702415,
+      "loss": 29.5820856843918,
+      "regret": -1.5238594670826942,
+      "anchored": false
+    },
+    {
+      "window": 0,
+      "day": 1,
+      "multiplier": 1.0,
+      "estimate": 0.6387467522490555,
+      "loss": 31.105945151474494,
+      "regret": 0.0,
+      "anchored": true
+    },
+    {
+      "window": 0,
+      "day": 1,
+      "multiplier": 1.1,
+      "estimate": 0.7026214274739612,
+      "loss": 34.326865769551034,
+      "regret": 3.2209206180765406,
+      "anchored": false
+    },
+    {
+      "window": 0,
+      "day": 1,
+      "multiplier": 1.25,
+      "estimate": 0.7984334403113194,
+      "loss": 41.464332034902704,
+      "regret": 10.35838688342821,
+      "anchored": false
+    },
+    {
+      "window": 0,
+      "day": 1,
+      "multiplier": 1.5,
+      "estimate": 0.9581201283735833,
+      "loss": 58.72837378050811,
+      "regret": 27.622428629033614,
+      "anchored": true
+    },
+    {
+      "window": 1,
+      "day": 9,
+      "multiplier": 0.5,
+      "estimate": 0.31937337612452776,
+      "loss": 52.29413257181238,
+      "regret": 12.350687608454756,
+      "anchored": true
+    },
+    {
+      "window": 1,
+      "day": 9,
+      "multiplier": 0.6,
+      "estimate": 0.3832480513494333,
+      "loss": 47.9581499342173,
+      "regret": 8.014704970859675,
+      "anchored": false
+    },
+    {
+      "window": 1,
+      "day": 9,
+      "multiplier": 0.7,
+      "estimate": 0.4471227265743388,
+      "loss": 44.39840590846718,
+      "regret": 4.454960945109555,
+      "anchored": false
+    },
+    {
+      "window": 1,
+      "day": 9,
+      "multiplier": 0.8,
+      "estimate": 0.5109974017992445,
+      "loss": 41.72584823023341,
+      "regret": 1.7824032668757823,
+      "anchored": false
+    },
+    {
+      "window": 1,
+      "day": 9,
+      "multiplier": 0.9,
+      "estimate": 0.57487207702415,
+      "loss": 40.412624779625766,
+      "regret": 0.469179816268138,
+      "anchored": false
+    },
+    {
+      "window": 1,
+      "day": 9,
+      "multiplier": 1.0,
+      "estimate": 0.6387467522490555,
+      "loss": 39.94344496335763,
+      "regret": 0.0,
+      "anchored": true
+    },
+    {
+      "window": 1,
+      "day": 9,
+      "multiplier": 1.1,
+      "estimate": 0.7026214274739612,
+      "loss": 41.22622393027958,
+      "regret": 1.2827789669219527,
+      "anchored": false
+    },
+    {
+      "window": 1,
+      "day": 9,
+      "multiplier": 1.25,
+      "estimate": 0.7984334403113194,
+      "loss": 44.87054825265224,
+      "regret": 4.927103289294614,
+      "anchored": false
+    },
+    {
+      "window": 1,
+      "day": 9,
+      "multiplier": 1.5,
+      "estimate": 0.9581201283735833,
+      "loss": 56.410603685438005,
+      "regret": 16.467158722080377,
+      "anchored": true
+    },
+    {
+      "window": 2,
+      "day": 17,
+      "multiplier": 0.5,
+      "estimate": 0.31937337612452776,
+      "loss": 55.43482184202724,
+      "regret": 10.410880310687126,
+      "anchored": true
+    },
+    {
+      "window": 2,
+      "day": 17,
+      "multiplier": 0.6,
+      "estimate": 0.3832480513494333,
+      "loss": 52.347529540301835,
+      "regret": 7.323588008961721,
+      "anchored": false
+    },
+    {
+      "window": 2,
+      "day": 17,
+      "multiplier": 0.7,
+      "estimate": 0.4471227265743388,
+      "loss": 48.8878042108043,
+      "regret": 3.8638626794641837,
+      "anchored": false
+    },
+    {
+      "window": 2,
+      "day": 17,
+      "multiplier": 0.8,
+      "estimate": 0.5109974017992445,
+      "loss": 46.50159424969856,
+      "regret": 1.4776527183584491,
+      "anchored": false
+    },
+    {
+      "window": 2,
+      "day": 17,
+      "multiplier": 0.9,
+      "estimate": 0.57487207702415,
+      "loss": 45.2342901429034,
+      "regret": 0.21034861156328333,
+      "anchored": false
+    },
+    {
+      "window": 2,
+      "day": 17,
+      "multiplier": 1.0,
+      "estimate": 0.6387467522490555,
+      "loss": 45.023941531340114,
+      "regret": 0.0,
+      "anchored": true
+    },
+    {
+      "window": 2,
+      "day": 17,
+      "multiplier": 1.1,
+      "estimate": 0.7026214274739612,
+      "loss": 46.52898304124706,
+      "regret": 1.5050415099069454,
+      "anchored": false
+    },
+    {
+      "window": 2,
+      "day": 17,
+      "multiplier": 1.25,
+      "estimate": 0.7984334403113194,
+      "loss": 50.733353030836625,
+      "regret": 5.709411499496511,
+      "anchored": false
+    },
+    {
+      "window": 2,
+      "day": 17,
+      "multiplier": 1.5,
+      "estimate": 0.9581201283735833,
+      "loss": 63.95088456143246,
+      "regret": 18.926943030092346,
+      "anchored": true
+    },
+    {
+      "window": 3,
+      "day": 25,
+      "multiplier": 0.5,
+      "estimate": 0.31937337612452776,
+      "loss": 124.46306654188915,
+      "regret": 26.511698338441775,
+      "anchored": true
+    },
+    {
+      "window": 3,
+      "day": 25,
+      "multiplier": 0.6,
+      "estimate": 0.3832480513494333,
+      "loss": 117.58881810132843,
+      "regret": 19.637449897881055,
+      "anchored": false
+    },
+    {
+      "window": 3,
+      "day": 25,
+      "multiplier": 0.7,
+      "estimate": 0.4471227265743388,
+      "loss": 110.538521609038,
+      "regret": 12.587153405590627,
+      "anchored": false
+    },
+    {
+      "window": 3,
+      "day": 25,
+      "multiplier": 0.8,
+      "estimate": 0.5109974017992445,
+      "loss": 104.57410994624524,
+      "regret": 6.622741742797871,
+      "anchored": false
+    },
+    {
+      "window": 3,
+      "day": 25,
+      "multiplier": 0.9,
+      "estimate": 0.57487207702415,
+      "loss": 100.47156770997316,
+      "regret": 2.5201995065257847,
+      "anchored": false
+    },
+    {
+      "window": 3,
+      "day": 25,
+      "multiplier": 1.0,
+      "estimate": 0.6387467522490555,
+      "loss": 97.95136820344737,
+      "regret": 0.0,
+      "anchored": true
+    },
+    {
+      "window": 3,
+      "day": 25,
+      "multiplier": 1.1,
+      "estimate": 0.7026214274739612,
+      "loss": 97.23989508407227,
+      "regret": -0.7114731193750998,
+      "anchored": false
+    },
+    {
+      "window": 3,
+      "day": 25,
+      "multiplier": 1.25,
+      "estimate": 0.7984334403113194,
+      "loss": 99.16650542421996,
+      "regret": 1.21513722077259,
+      "anchored": false
+    },
+    {
+      "window": 3,
+      "day": 25,
+      "multiplier": 1.5,
+      "estimate": 0.9581201283735833,
+      "loss": 110.49464328189097,
+      "regret": 12.5432750784436,
+      "anchored": true
+    },
+    {
+      "window": 4,
+      "day": 33,
+      "multiplier": 0.5,
+      "estimate": 0.31937337612452776,
+      "loss": 116.83888311437893,
+      "regret": 25.255089806958452,
+      "anchored": true
+    },
+    {
+      "window": 4,
+      "day": 33,
+      "multiplier": 0.6,
+      "estimate": 0.3832480513494333,
+      "loss": 111.55697367129551,
+      "regret": 19.97318036387503,
+      "anchored": false
+    },
+    {
+      "window": 4,
+      "day": 33,
+      "multiplier": 0.7,
+      "estimate": 0.4471227265743388,
+      "loss": 104.71693528632592,
+      "regret": 13.133141978905442,
+      "anchored": false
+    },
+    {
+      "window": 4,
+      "day": 33,
+      "multiplier": 0.8,
+      "estimate": 0.5109974017992445,
+      "loss": 99.04700880034248,
+      "regret": 7.463215492922004,
+      "anchored": false
+    },
+    {
+      "window": 4,
+      "day": 33,
+      "multiplier": 0.9,
+      "estimate": 0.57487207702415,
+      "loss": 94.68975973149492,
+      "regret": 3.1059664240744382,
+      "anchored": false
+    },
+    {
+      "window": 4,
+      "day": 33,
+      "multiplier": 1.0,
+      "estimate": 0.6387467522490555,
+      "loss": 91.58379330742048,
+      "regret": 0.0,
+      "anchored": true
+    },
+    {
+      "window": 4,
+      "day": 33,
+      "multiplier": 1.1,
+      "estimate": 0.7026214274739612,
+      "loss": 90.11624147888585,
+      "regret": -1.4675518285346243,
+      "anchored": false
+    },
+    {
+      "window": 4,
+      "day": 33,
+      "multiplier": 1.25,
+      "estimate": 0.7984334403113194,
+      "loss": 90.78220787069827,
+      "regret": -0.8015854367222062,
+      "anchored": false
+    },
+    {
+      "window": 4,
+      "day": 33,
+      "multiplier": 1.5,
+      "estimate": 0.9581201283735833,
+      "loss": 98.21788358153121,
+      "regret": 6.634090274110733,
+      "anchored": true
+    },
+    {
+      "window": 5,
+      "day": 41,
+      "multiplier": 0.5,
+      "estimate": 0.31937337612452776,
+      "loss": 165.3310130362775,
+      "regret": 33.72526819239977,
+      "anchored": true
+    },
+    {
+      "window": 5,
+      "day": 41,
+      "multiplier": 0.6,
+      "estimate": 0.3832480513494333,
+      "loss": 156.4111044725823,
+      "regret": 24.805359628704565,
+      "anchored": false
+    },
+    {
+      "window": 5,
+      "day": 41,
+      "multiplier": 0.7,
+      "estimate": 0.4471227265743388,
+      "loss": 147.201786756815,
+      "regret": 15.596041912937267,
+      "anchored": false
+    },
+    {
+      "window": 5,
+      "day": 41,
+      "multiplier": 0.8,
+      "estimate": 0.5109974017992445,
+      "loss": 137.96424202418197,
+      "regret": 6.3584971803042265,
+      "anchored": false
+    },
+    {
+      "window": 5,
+      "day": 41,
+      "multiplier": 0.9,
+      "estimate": 0.57487207702415,
+      "loss": 136.10351906314796,
+      "regret": 4.497774219270212,
+      "anchored": false
+    },
+    {
+      "window": 5,
+      "day": 41,
+      "multiplier": 1.0,
+      "estimate": 0.6387467522490555,
+      "loss": 131.60574484387774,
+      "regret": 0.0,
+      "anchored": true
+    },
+    {
+      "window": 5,
+      "day": 41,
+      "multiplier": 1.1,
+      "estimate": 0.7026214274739612,
+      "loss": 128.26258670511342,
+      "regret": -3.3431581387643234,
+      "anchored": false
+    },
+    {
+      "window": 5,
+      "day": 41,
+      "multiplier": 1.25,
+      "estimate": 0.7984334403113194,
+      "loss": 129.10150500099633,
+      "regret": -2.504239842881418,
+      "anchored": false
+    },
+    {
+      "window": 5,
+      "day": 41,
+      "multiplier": 1.5,
+      "estimate": 0.9581201283735833,
+      "loss": 131.32486385298333,
+      "regret": -0.280880990894417,
+      "anchored": true
+    },
+    {
+      "window": 6,
+      "day": 49,
+      "multiplier": 0.5,
+      "estimate": 0.31937337612452776,
+      "loss": 162.1542339745555,
+      "regret": 35.41096682628583,
+      "anchored": true
+    },
+    {
+      "window": 6,
+      "day": 49,
+      "multiplier": 0.6,
+      "estimate": 0.3832480513494333,
+      "loss": 152.66238416230232,
+      "regret": 25.91911701403265,
+      "anchored": false
+    },
+    {
+      "window": 6,
+      "day": 49,
+      "multiplier": 0.7,
+      "estimate": 0.4471227265743388,
+      "loss": 142.53814315136557,
+      "regret": 15.794876003095908,
+      "anchored": false
+    },
+    {
+      "window": 6,
+      "day": 49,
+      "multiplier": 0.8,
+      "estimate": 0.5109974017992445,
+      "loss": 133.58560954727096,
+      "regret": 6.842342399001296,
+      "anchored": false
+    },
+    {
+      "window": 6,
+      "day": 49,
+      "multiplier": 0.9,
+      "estimate": 0.57487207702415,
+      "loss": 131.60991650387604,
+      "regret": 4.86664935560637,
+      "anchored": false
+    },
+    {
+      "window": 6,
+      "day": 49,
+      "multiplier": 1.0,
+      "estimate": 0.6387467522490555,
+      "loss": 126.74326714826967,
+      "regret": 0.0,
+      "anchored": true
+    },
+    {
+      "window": 6,
+      "day": 49,
+      "multiplier": 1.1,
+      "estimate": 0.7026214274739612,
+      "loss": 122.8408160439942,
+      "regret": -3.902451104275471,
+      "anchored": false
+    },
+    {
+      "window": 6,
+      "day": 49,
+      "multiplier": 1.25,
+      "estimate": 0.7984334403113194,
+      "loss": 122.15542775795953,
+      "regret": -4.587839390310137,
+      "anchored": false
+    },
+    {
+      "window": 6,
+      "day": 49,
+      "multiplier": 1.5,
+      "estimate": 0.9581201283735833,
+      "loss": 124.18057947956642,
+      "regret": -2.562687668703248,
+      "anchored": true
+    }
+  ],
+  "summary": {
+    "multipliers": [
+      0.5,
+      0.6,
+      0.7,
+      0.8,
+      0.9,
+      1.0,
+      1.1,
+      1.25,
+      1.5
+    ],
+    "windows": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "mean_regret": [
+      21.415546196908963,
+      15.349135789538886,
+      9.213164158208231,
+      4.0209305984900094,
+      2.0208940666036477,
+      0.0,
+      -0.4879847280062971,
+      2.0451963175825947,
+      11.335761010594714
+    ],
+    "lowest_mean": 1.1,
+    "lowest_by_window": [
+      0.8,
+      1.0,
+      1.0,
+      1.1,
+      1.1,
+      1.1,
+      1.25
+    ]
+  },
+  "costs": [
+    {
+      "window": 0,
+      "multiplier": 0.5,
+      "seed": 0,
+      "schedule": "block",
+      "spent": 1.3613129983039751,
+      "cost": 4.975074135905402,
+      "per_energy": 3.6546144362859376,
+      "drift": 2.3721080655292326e-11
+    },
+    {
+      "window": 0,
+      "multiplier": 0.5,
+      "seed": 0,
+      "schedule": "taper",
+      "spent": 1.3613129983039765,
+      "cost": 0.5543720500570544,
+      "per_energy": 0.4072333480600947,
+      "drift": 3.300637541059359e-12
+    },
+    {
+      "window": 0,
+      "multiplier": 0.5,
+      "seed": 1,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 6.697956247387502,
+      "per_energy": 4.920217654376556,
+      "drift": 1.9490520308806936e-11
+    },
+    {
+      "window": 0,
+      "multiplier": 0.5,
+      "seed": 1,
+      "schedule": "taper",
+      "spent": 1.3613129983039758,
+      "cost": 4.601958433326949,
+      "per_energy": 3.3805292677440155,
+      "drift": 1.0565381902694071e-11
+    },
+    {
+      "window": 0,
+      "multiplier": 1.0,
+      "seed": 0,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 3.937252345381019,
+      "per_energy": 2.892246199284323,
+      "drift": 6.404654584457603e-12
+    },
+    {
+      "window": 0,
+      "multiplier": 1.0,
+      "seed": 0,
+      "schedule": "taper",
+      "spent": 1.3613129983039756,
+      "cost": 2.1610130237476923,
+      "per_energy": 1.5874475792415428,
+      "drift": 6.2200244954624395e-12
+    },
+    {
+      "window": 0,
+      "multiplier": 1.0,
+      "seed": 1,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 3.3006095107384965,
+      "per_energy": 2.4245779735084,
+      "drift": 5.495714994196987e-12
+    },
+    {
+      "window": 0,
+      "multiplier": 1.0,
+      "seed": 1,
+      "schedule": "taper",
+      "spent": 1.3613129983039753,
+      "cost": 1.265151091332605,
+      "per_energy": 0.9293609132571451,
+      "drift": 7.7964301681277e-12
+    },
+    {
+      "window": 0,
+      "multiplier": 1.5,
+      "seed": 0,
+      "schedule": "block",
+      "spent": 1.3613129983039751,
+      "cost": 5.747730997881817,
+      "per_energy": 4.222196515454394,
+      "drift": 4.671374398412809e-12
+    },
+    {
+      "window": 0,
+      "multiplier": 1.5,
+      "seed": 0,
+      "schedule": "taper",
+      "spent": 1.3613129983039753,
+      "cost": 4.223620373591558,
+      "per_energy": 3.1026078343875785,
+      "drift": 1.5221490734518284e-11
+    },
+    {
+      "window": 0,
+      "multiplier": 1.5,
+      "seed": 1,
+      "schedule": "block",
+      "spent": 1.3613129983039751,
+      "cost": 3.312691288383469,
+      "per_energy": 2.4334530651735977,
+      "drift": 1.9500623338331025e-11
+    },
+    {
+      "window": 0,
+      "multiplier": 1.5,
+      "seed": 1,
+      "schedule": "taper",
+      "spent": 1.3613129983039753,
+      "cost": 2.266932854283098,
+      "per_energy": 1.6652546894853801,
+      "drift": 2.5527913116718537e-11
+    },
+    {
+      "window": 1,
+      "multiplier": 0.5,
+      "seed": 0,
+      "schedule": "block",
+      "spent": 1.361312998303975,
+      "cost": 4.817199402974737,
+      "per_energy": 3.5386420382207198,
+      "drift": 1.8032242365961793e-11
+    },
+    {
+      "window": 1,
+      "multiplier": 0.5,
+      "seed": 0,
+      "schedule": "taper",
+      "spent": 1.3613129983039758,
+      "cost": 0.2852776271740254,
+      "per_energy": 0.20956064294504298,
+      "drift": 6.669831353889322e-12
+    },
+    {
+      "window": 1,
+      "multiplier": 0.5,
+      "seed": 1,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 8.316537657770546,
+      "per_energy": 6.109203150290862,
+      "drift": 2.42548758855321e-11
+    },
+    {
+      "window": 1,
+      "multiplier": 0.5,
+      "seed": 1,
+      "schedule": "taper",
+      "spent": 1.3613129983039758,
+      "cost": 0.730173491582903,
+      "per_energy": 0.5363744359251745,
+      "drift": 9.869771666615179e-12
+    },
+    {
+      "window": 1,
+      "multiplier": 1.0,
+      "seed": 0,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 4.846946157644908,
+      "per_energy": 3.560493555621369,
+      "drift": 1.27613475342514e-11
+    },
+    {
+      "window": 1,
+      "multiplier": 1.0,
+      "seed": 0,
+      "schedule": "taper",
+      "spent": 1.3613129983039753,
+      "cost": 3.0907359126251563,
+      "per_energy": 2.2704079932211214,
+      "drift": 1.0102696457181537e-11
+    },
+    {
+      "window": 1,
+      "multiplier": 1.0,
+      "seed": 1,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 3.7272230574673486,
+      "per_energy": 2.737961851617519,
+      "drift": 4.467426428789167e-12
+    },
+    {
+      "window": 1,
+      "multiplier": 1.0,
+      "seed": 1,
+      "schedule": "taper",
+      "spent": 1.3613129983039751,
+      "cost": 4.0627170028360595,
+      "per_energy": 2.9844106446479937,
+      "drift": 4.074407478071862e-12
+    },
+    {
+      "window": 1,
+      "multiplier": 1.5,
+      "seed": 0,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 6.618190488661085,
+      "per_energy": 4.861622930881081,
+      "drift": 1.1535106203552914e-11
+    },
+    {
+      "window": 1,
+      "multiplier": 1.5,
+      "seed": 0,
+      "schedule": "taper",
+      "spent": 1.3613129983039751,
+      "cost": 6.40624325220687,
+      "per_energy": 4.705929687138993,
+      "drift": 9.685030555317553e-12
+    },
+    {
+      "window": 1,
+      "multiplier": 1.5,
+      "seed": 1,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 4.258613849161314,
+      "per_energy": 3.12831351384069,
+      "drift": 1.640365621113915e-11
+    },
+    {
+      "window": 1,
+      "multiplier": 1.5,
+      "seed": 1,
+      "schedule": "taper",
+      "spent": 1.3613129983039753,
+      "cost": 6.379996771974973,
+      "per_energy": 4.686649418556677,
+      "drift": 1.0724310328669162e-11
+    },
+    {
+      "window": 2,
+      "multiplier": 0.5,
+      "seed": 0,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 18.6857266116533,
+      "per_energy": 13.72625298879344,
+      "drift": 2.1164514585336747e-11
+    },
+    {
+      "window": 2,
+      "multiplier": 0.5,
+      "seed": 0,
+      "schedule": "taper",
+      "spent": 1.3613129983039756,
+      "cost": 8.902440874846413,
+      "per_energy": 6.539598818154041,
+      "drift": 1.9164392295323296e-11
+    },
+    {
+      "window": 2,
+      "multiplier": 0.5,
+      "seed": 1,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 2.311016891815335,
+      "per_energy": 1.697638158670762,
+      "drift": 1.3544665389275679e-11
+    },
+    {
+      "window": 2,
+      "multiplier": 0.5,
+      "seed": 1,
+      "schedule": "taper",
+      "spent": 1.3613129983039762,
+      "cost": 0.9745739934882707,
+      "per_energy": 0.7159073590735316,
+      "drift": 7.891132192128225e-12
+    },
+    {
+      "window": 2,
+      "multiplier": 1.0,
+      "seed": 0,
+      "schedule": "block",
+      "spent": 1.3613129983039756,
+      "cost": 3.3435670318097976,
+      "per_energy": 2.4561339206894086,
+      "drift": 3.3999469906120794e-12
+    },
+    {
+      "window": 2,
+      "multiplier": 1.0,
+      "seed": 0,
+      "schedule": "taper",
+      "spent": 1.3613129983039758,
+      "cost": 5.9751115506588945,
+      "per_energy": 4.389226840633366,
+      "drift": 5.1346704665888865e-12
+    },
+    {
+      "window": 2,
+      "multiplier": 1.0,
+      "seed": 1,
+      "schedule": "block",
+      "spent": 1.3613129983039756,
+      "cost": 2.2443474208188974,
+      "per_energy": 1.6486637706501528,
+      "drift": 3.3999469906120794e-12
+    },
+    {
+      "window": 2,
+      "multiplier": 1.0,
+      "seed": 1,
+      "schedule": "taper",
+      "spent": 1.3613129983039758,
+      "cost": -0.8161252013848141,
+      "per_energy": -0.5995132657967736,
+      "drift": 1.02873265461767e-11
+    },
+    {
+      "window": 2,
+      "multiplier": 1.5,
+      "seed": 0,
+      "schedule": "block",
+      "spent": 1.3613129983039756,
+      "cost": 3.5479994946041558,
+      "per_energy": 2.6063069250235,
+      "drift": 1.5281109710940655e-11
+    },
+    {
+      "window": 2,
+      "multiplier": 1.5,
+      "seed": 0,
+      "schedule": "taper",
+      "spent": 1.3613129983039756,
+      "cost": 6.090546897554518,
+      "per_energy": 4.4740239057017535,
+      "drift": 1.5439205469647277e-11
+    },
+    {
+      "window": 2,
+      "multiplier": 1.5,
+      "seed": 1,
+      "schedule": "block",
+      "spent": 1.3613129983039756,
+      "cost": 3.7572678508414157,
+      "per_energy": 2.7600323037556374,
+      "drift": 1.3321566072477253e-11
+    },
+    {
+      "window": 2,
+      "multiplier": 1.5,
+      "seed": 1,
+      "schedule": "taper",
+      "spent": 1.361312998303976,
+      "cost": 1.0602601849594322,
+      "per_energy": 0.7788511431833696,
+      "drift": 2.4159785283472957e-11
+    },
+    {
+      "window": 3,
+      "multiplier": 0.5,
+      "seed": 0,
+      "schedule": "block",
+      "spent": 1.3613129983039751,
+      "cost": 1.959744549742112,
+      "per_energy": 1.4395987933588434,
+      "drift": 1.7733092771976544e-11
+    },
+    {
+      "window": 3,
+      "multiplier": 0.5,
+      "seed": 0,
+      "schedule": "taper",
+      "spent": 1.3613129983039762,
+      "cost": 6.422629338801059,
+      "per_energy": 4.717966659249447,
+      "drift": 1.1841583269500688e-11
+    },
+    {
+      "window": 3,
+      "multiplier": 0.5,
+      "seed": 1,
+      "schedule": "block",
+      "spent": 1.361312998303975,
+      "cost": -0.5930655832870286,
+      "per_energy": -0.43565703407365824,
+      "drift": 1.460831455801781e-11
+    },
+    {
+      "window": 3,
+      "multiplier": 0.5,
+      "seed": 1,
+      "schedule": "taper",
+      "spent": 1.3613129983039762,
+      "cost": 3.1119053638556124,
+      "per_energy": 2.2859587528604024,
+      "drift": 1.1071477068469449e-11
+    },
+    {
+      "window": 3,
+      "multiplier": 1.0,
+      "seed": 0,
+      "schedule": "block",
+      "spent": 1.3613129983039756,
+      "cost": 4.597912258910242,
+      "per_energy": 3.3775570090336764,
+      "drift": 9.605538586754392e-12
+    },
+    {
+      "window": 3,
+      "multiplier": 1.0,
+      "seed": 0,
+      "schedule": "taper",
+      "spent": 1.3613129983039758,
+      "cost": 4.584582763257771,
+      "per_energy": 3.3677653625357156,
+      "drift": 5.829559057701772e-12
+    },
+    {
+      "window": 3,
+      "multiplier": 1.0,
+      "seed": 1,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 1.4428631768275295,
+      "per_energy": 1.0599055313694612,
+      "drift": 6.3444804965229196e-12
+    },
+    {
+      "window": 3,
+      "multiplier": 1.0,
+      "seed": 1,
+      "schedule": "taper",
+      "spent": 1.3613129983039758,
+      "cost": 0.6708940661802529,
+      "per_energy": 0.49282866395612346,
+      "drift": 1.170263885796885e-11
+    },
+    {
+      "window": 3,
+      "multiplier": 1.5,
+      "seed": 0,
+      "schedule": "block",
+      "spent": 1.3613129983039756,
+      "cost": 2.1548549525964233,
+      "per_energy": 1.5829239530373258,
+      "drift": 3.211797494628854e-11
+    },
+    {
+      "window": 3,
+      "multiplier": 1.5,
+      "seed": 0,
+      "schedule": "taper",
+      "spent": 1.3613129983039758,
+      "cost": 4.1680218885107365,
+      "per_energy": 3.0617660256704857,
+      "drift": 1.7524870443708096e-11
+    },
+    {
+      "window": 3,
+      "multiplier": 1.5,
+      "seed": 1,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 3.273562273521975,
+      "per_energy": 2.4047094809205682,
+      "drift": 2.358968576032794e-11
+    },
+    {
+      "window": 3,
+      "multiplier": 1.5,
+      "seed": 1,
+      "schedule": "taper",
+      "spent": 1.3613129983039758,
+      "cost": 0.4130818198735966,
+      "per_energy": 0.30344367561923263,
+      "drift": 3.048461483246001e-11
+    },
+    {
+      "window": 4,
+      "multiplier": 0.5,
+      "seed": 0,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 5.133215855174612,
+      "per_energy": 3.7707829584893062,
+      "drift": 2.2461144055796467e-11
+    },
+    {
+      "window": 4,
+      "multiplier": 0.5,
+      "seed": 0,
+      "schedule": "taper",
+      "spent": 1.3308826857396863,
+      "cost": 7.311340389206663,
+      "per_energy": 5.49360245463192,
+      "drift": 1.5991985513608142e-11
+    },
+    {
+      "window": 4,
+      "multiplier": 0.5,
+      "seed": 1,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 5.669010381205695,
+      "per_energy": 4.1643695375483585,
+      "drift": 1.8889723119031032e-11
+    },
+    {
+      "window": 4,
+      "multiplier": 0.5,
+      "seed": 1,
+      "schedule": "taper",
+      "spent": 1.335705328232606,
+      "cost": 2.5271542386070536,
+      "per_energy": 1.8919998185160816,
+      "drift": 1.0287160012723007e-11
+    },
+    {
+      "window": 4,
+      "multiplier": 1.0,
+      "seed": 0,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 3.699490022878095,
+      "per_energy": 2.7175895826214793,
+      "drift": 5.021094651169733e-12
+    },
+    {
+      "window": 4,
+      "multiplier": 1.0,
+      "seed": 0,
+      "schedule": "taper",
+      "spent": 1.3613129983039753,
+      "cost": 7.245403518501007,
+      "per_energy": 5.3223641642501525,
+      "drift": 1.1327272453343085e-11
+    },
+    {
+      "window": 4,
+      "multiplier": 1.0,
+      "seed": 1,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 3.792272441046123,
+      "per_energy": 2.785746147851976,
+      "drift": 4.416467191958873e-12
+    },
+    {
+      "window": 4,
+      "multiplier": 1.0,
+      "seed": 1,
+      "schedule": "taper",
+      "spent": 1.3613129983039753,
+      "cost": 0.7389922180998951,
+      "per_energy": 0.5428525394384586,
+      "drift": 9.82525172332771e-12
+    },
+    {
+      "window": 4,
+      "multiplier": 1.5,
+      "seed": 0,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 5.863903452663465,
+      "per_energy": 4.3075350488602915,
+      "drift": 5.533573599336705e-12
+    },
+    {
+      "window": 4,
+      "multiplier": 1.5,
+      "seed": 0,
+      "schedule": "taper",
+      "spent": 1.3613129983039751,
+      "cost": 9.007399341167186,
+      "per_energy": 6.616699724743151,
+      "drift": 1.0595080368602794e-11
+    },
+    {
+      "window": 4,
+      "multiplier": 1.5,
+      "seed": 1,
+      "schedule": "block",
+      "spent": 1.3613129983039756,
+      "cost": 4.449979702087845,
+      "per_energy": 3.2688879836099107,
+      "drift": 1.217881351323058e-11
+    },
+    {
+      "window": 4,
+      "multiplier": 1.5,
+      "seed": 1,
+      "schedule": "taper",
+      "spent": 1.3613129983039758,
+      "cost": 0.92974623118333,
+      "per_energy": 0.6829775608854661,
+      "drift": 3.180689045478857e-11
+    },
+    {
+      "window": 5,
+      "multiplier": 0.5,
+      "seed": 0,
+      "schedule": "block",
+      "spent": 1.3613129983039756,
+      "cost": -1.561044403366168,
+      "per_energy": -1.1467196782158346,
+      "drift": 3.5315639301813917e-12
+    },
+    {
+      "window": 5,
+      "multiplier": 0.5,
+      "seed": 0,
+      "schedule": "taper",
+      "spent": 1.0439662995625767,
+      "cost": 2.2079046428815445,
+      "per_energy": 2.114919460337618,
+      "drift": 4.610922754721969e-12
+    },
+    {
+      "window": 5,
+      "multiplier": 0.5,
+      "seed": 1,
+      "schedule": "block",
+      "spent": 1.3613129983039756,
+      "cost": -10.05191325084968,
+      "per_energy": -7.38398389156138,
+      "drift": 6.940892305351554e-12
+    },
+    {
+      "window": 5,
+      "multiplier": 0.5,
+      "seed": 1,
+      "schedule": "taper",
+      "spent": 1.1098282318043764,
+      "cost": 4.2417987625479725,
+      "per_energy": 3.8220317712152525,
+      "drift": 1.5949297438311305e-11
+    },
+    {
+      "window": 5,
+      "multiplier": 1.0,
+      "seed": 0,
+      "schedule": "block",
+      "spent": 1.3613129983039751,
+      "cost": -0.5749595892445427,
+      "per_energy": -0.42235664388782745,
+      "drift": 9.803269307440132e-12
+    },
+    {
+      "window": 5,
+      "multiplier": 1.0,
+      "seed": 0,
+      "schedule": "taper",
+      "spent": 1.3613129983039762,
+      "cost": 3.014418839113546,
+      "per_energy": 2.214346621878385,
+      "drift": 5.558997706600621e-12
+    },
+    {
+      "window": 5,
+      "multiplier": 1.0,
+      "seed": 1,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": -3.674134503962435,
+      "per_energy": -2.6989638007864056,
+      "drift": 1.2846945729449999e-11
+    },
+    {
+      "window": 5,
+      "multiplier": 1.0,
+      "seed": 1,
+      "schedule": "taper",
+      "spent": 1.3613129983039758,
+      "cost": 5.328255667200722,
+      "per_energy": 3.914056263209898,
+      "drift": 7.963407711031323e-12
+    },
+    {
+      "window": 5,
+      "multiplier": 1.5,
+      "seed": 0,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 9.109927772336988,
+      "per_energy": 6.692015564155203,
+      "drift": 1.5000778397222803e-11
+    },
+    {
+      "window": 5,
+      "multiplier": 1.5,
+      "seed": 0,
+      "schedule": "taper",
+      "spent": 1.3613129983039762,
+      "cost": 6.581308919282179,
+      "per_energy": 4.834530286188156,
+      "drift": 8.251399563619088e-12
+    },
+    {
+      "window": 5,
+      "multiplier": 1.5,
+      "seed": 1,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 0.6065641568373223,
+      "per_energy": 0.44557288264566997,
+      "drift": 2.750910610416213e-11
+    },
+    {
+      "window": 5,
+      "multiplier": 1.5,
+      "seed": 1,
+      "schedule": "taper",
+      "spent": 1.3613129983039758,
+      "cost": 6.449223744210684,
+      "per_energy": 4.737502508420623,
+      "drift": 1.8311796523562407e-11
+    },
+    {
+      "window": 6,
+      "multiplier": 0.5,
+      "seed": 0,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 7.598536284823382,
+      "per_energy": 5.581770169160364,
+      "drift": 1.2352008305072104e-11
+    },
+    {
+      "window": 6,
+      "multiplier": 0.5,
+      "seed": 0,
+      "schedule": "taper",
+      "spent": 1.2031453977924473,
+      "cost": 9.395779822695602,
+      "per_energy": 7.809346933409001,
+      "drift": 4.2327807925346406e-12
+    },
+    {
+      "window": 6,
+      "multiplier": 0.5,
+      "seed": 1,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 9.51656558134286,
+      "per_energy": 6.990725566566471,
+      "drift": 4.386380147991531e-12
+    },
+    {
+      "window": 6,
+      "multiplier": 0.5,
+      "seed": 1,
+      "schedule": "taper",
+      "spent": 1.3481043230151772,
+      "cost": 7.4369935482892515,
+      "per_energy": 5.516630591062591,
+      "drift": 2.81125123180459e-12
+    },
+    {
+      "window": 6,
+      "multiplier": 1.0,
+      "seed": 0,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 2.576325067635736,
+      "per_energy": 1.8925295437900855,
+      "drift": 3.4258151870858455e-12
+    },
+    {
+      "window": 6,
+      "multiplier": 1.0,
+      "seed": 0,
+      "schedule": "taper",
+      "spent": 1.3613129983039758,
+      "cost": 5.967807673537209,
+      "per_energy": 4.383861522641997,
+      "drift": 6.640687999492911e-12
+    },
+    {
+      "window": 6,
+      "multiplier": 1.0,
+      "seed": 1,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 3.90476771389055,
+      "per_energy": 2.868383478858572,
+      "drift": 5.6556981320454724e-12
+    },
+    {
+      "window": 6,
+      "multiplier": 1.0,
+      "seed": 1,
+      "schedule": "taper",
+      "spent": 1.361312998303976,
+      "cost": 5.782125420669701,
+      "per_energy": 4.247462139767634,
+      "drift": 3.1686875345826593e-12
+    },
+    {
+      "window": 6,
+      "multiplier": 1.5,
+      "seed": 0,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 4.823860579446901,
+      "per_energy": 3.5435352380068537,
+      "drift": 6.604827795797519e-12
+    },
+    {
+      "window": 6,
+      "multiplier": 1.5,
+      "seed": 0,
+      "schedule": "taper",
+      "spent": 1.3613129983039758,
+      "cost": 7.79256035236638,
+      "per_energy": 5.7242973233010535,
+      "drift": 7.429501458489085e-12
+    },
+    {
+      "window": 6,
+      "multiplier": 1.5,
+      "seed": 1,
+      "schedule": "block",
+      "spent": 1.3613129983039753,
+      "cost": 6.343950314009149,
+      "per_energy": 4.660170234114354,
+      "drift": 3.692934846810658e-12
+    },
+    {
+      "window": 6,
+      "multiplier": 1.5,
+      "seed": 1,
+      "schedule": "taper",
+      "spent": 1.3613129983039765,
+      "cost": 5.106344496660725,
+      "per_energy": 3.751043663744182,
+      "drift": 6.998845947236987e-12
+    }
+  ],
+  "cost_summary": [
+    {
+      "multiplier": 0.5,
+      "episodes": 14,
+      "block_spent": 1.3613129983039758,
+      "taper_spent": 1.3044383037556202,
+      "block_per_energy": 3.3305324891364827,
+      "taper_per_energy": 3.2458328795131584,
+      "block_minus_taper": 0.08469960962332378,
+      "block_dearer": 8,
+      "model": 1.6319896540348653
+    },
+    {
+      "multiplier": 1.0,
+      "episodes": 14,
+      "block_spent": 1.3613129983039756,
+      "taper_spent": 1.3613129983039758,
+      "block_per_energy": 1.950033437158728,
+      "taper_per_energy": 2.5747769987773403,
+      "block_minus_taper": -0.6247435616186122,
+      "block_dearer": 7,
+      "model": 1.6319896540348653
+    },
+    {
+      "multiplier": 1.5,
+      "episodes": 14,
+      "block_spent": 1.3613129983039758,
+      "taper_spent": 1.3613129983039758,
+      "block_per_energy": 3.3512339742485056,
+      "taper_per_energy": 3.5089698176447217,
+      "block_minus_taper": -0.15773584339621613,
+      "block_dearer": 8,
+      "model": 1.6319896540348653
+    }
+  ]
+}
