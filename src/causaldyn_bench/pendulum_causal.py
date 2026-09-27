@@ -869,8 +869,8 @@ def summarise(rows: Sequence[dict[str, Any]], key: str) -> dict[str, float]:
     return {
         "mean": float(values.mean()),
         "sem": spread,
-        "lo": float(values.min()),
-        "hi": float(values.max()),
+        "lo": float(np.min(values)),
+        "hi": float(np.max(values)),
     }
 
 
