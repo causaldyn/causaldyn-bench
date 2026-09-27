@@ -96,3 +96,12 @@ paper-4-smoke:
     uv run python -u -m causaldyn_bench.paper_four \
         --horizons 0.30 0.76 --seeds 0 --widths 16 \
         --out results/paper4-smoke
+
+# ── Tracks with their own report ──────────────────────────────────────────────
+
+# Track L against DCBO -> results/track_l.{md,json}. Minutes: sixty prescribe fits and the scoring.
+# At 64-bit, because the fit is load-bearing. The DCBO arms are read from results/track_l_dcbo.json,
+# which scripts/dcbo_reference.py writes in an isolated environment (its docstring has the setup),
+# so neither GPy nor numpy<2 ever enters this lockfile.
+track-l:
+    JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.dcbo_track --out results

@@ -29,6 +29,26 @@ closed-loop decision. Built on
 | **K** delay identification | *when* the incentive acts, from a log whose confounder acts at a **different** lag | \|τ̂ − τ\| / closed-loop regret | adjusted local projection |
 | **N** fold design | which cross-fitting **split** to use under network interference — the method is held fixed and only the folds vary | MSE vs a graph-blind unit split | *the design law, negatively* — it convicts the two splits a practitioner reaches for |
 | **M** allocation over time | media budget across channels **and** weeks, from a log whose planner chased the season | lift over doing nothing, audited on the true plant | *the identification axis* — and the horizon axis only when the two channel orderings conflict |
+| **L** sequential intervention | which variables to set, and to what, at each step of DCBO's three synthetic dynamic SCMs | regret vs the per-step oracle, each step against the arm's own history | *the reference methods, on their own ground* — the track says where CHC cannot follow, and where DCBO cannot |
+
+**Track L** (`causaldyn_bench.dcbo_track`) tests the "no analogues" claim in both directions
+against DCBO (Aglietti et al., NeurIPS 2021), the nearest academic statement of *which lever, how
+much, when*. Its three synthetic SCMs are ported from the equations, not the code — the
+repository's `LICENSE` says MIT while its README and `setup.py` say GPL-3.0-or-later — and the
+reference itself runs only in an isolated environment (`scripts/dcbo_reference.py`, GPy 1.13 on
+NumPy 1.26), entering the bench as data. The port replays the outcomes the reference recorded for
+its own decisions, except in three CBO runs on `nonstat` whose history the reference re-drew with
+noise. Every arm reads the same log per seed and is scored on the noise-free SCM, each step against
+the best response to the arm's own history. Over ten seeds, mean total regret (`just track-l`): on
+`stat` the CHC arm ties DCBO — `0.42` against `0.50`, paired difference `−0.08 [−0.30, 0.12]` —
+from the log alone, without one experiment; on `ind` (`5.88` against `2.54`) and `nonstat` (`6.48`
+against `1.39`) it loses to every reference method, because `prescribe` cannot state those
+problems. It tracks a set point where DCBO minimises, sets every lever at every step, fits one
+control-affine, time-invariant transition — `ind`'s optimum is an interior bump, `nonstat` changes
+its equations mid-horizon — and runs no experiments. Nor are the graph-blind baselines a formality:
+at ten explorative interventions a step, ABO beats DCBO on both stationary SCMs (`0.06` and
+`1.17`). The other way round, DCBO cannot run on Track M's confounded media log at all: its `Root`
+takes the true SEM as the oracle its experiments query, and a log has none to give.
 
 **Track N** (`causaldyn_bench.fold_design`) is the only track that varies nothing but the
 cross-fitting split, and its result is an ordering whose useful half is negative. On `C_12` with two
@@ -125,6 +145,7 @@ uv run python -m causaldyn_bench         # print the leaderboard
 uv run python -m causaldyn_bench --save  # also write results/leaderboard.{md,json}
 uv run pytest                            # smoke tests
 just check                               # the ladder ci.yml runs: format, lint, tests
+just track-l                             # Track L against DCBO -> results/track_l.{md,json}
 ```
 
 ### Paper tables

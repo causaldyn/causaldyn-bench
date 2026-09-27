@@ -9,6 +9,7 @@ from typing import Any, Literal
 
 from causaldyn_bench.adaptive_cv import track_adaptive_cv
 from causaldyn_bench.allocation import track_allocation
+from causaldyn_bench.dcbo_track import track_dcbo
 from causaldyn_bench.delay_identification import track_delay_identification
 from causaldyn_bench.dynamic_effect import track_dynamic_effect
 from causaldyn_bench.fold_design import track_fold_design
@@ -48,6 +49,7 @@ def run_all(seed: int = 0, steps: int = 1500) -> list[TrackResult]:
         *track_delay_identification(seed),
         *track_fold_design(),
         *track_allocation(seed),
+        *track_dcbo(),
         *track_e_systems(models),
     ]
 
