@@ -87,6 +87,13 @@ paper-3-live-posthoc url="http://127.0.0.1:8000":
     JAX_ENABLE_X64=1 timeout -s INT 7200 uv run python -u \
         -m causaldyn_bench.boptest_capped_posthoc --url {{url}}
 
+# L8.1, the heat pump through chc.prescribe: hours on the service's single worker, resumable from
+# its journal. Needs the BOPTEST stack up. SIGINT rather than TERM, so an interrupted episode still
+# stops its test.
+boptest-prescribe-live url="http://127.0.0.1:8000":
+    JAX_ENABLE_X64=1 timeout -s INT 14400 uv run python -u -m causaldyn_bench.boptest_prescribe \
+        --url {{url}} --out results/boptest_prescribe
+
 # Hours, not minutes -- 8 horizons x (1 + 5 seeds x 3 widths x 2 optimisers) solves. Run it detached.
 paper-4:
     uv run python -u -m causaldyn_bench.paper_four --out results/paper4

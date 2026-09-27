@@ -397,6 +397,7 @@ def log_episode(
     step_s: float = 1800.0,
     hold: int = 4,
     explore_scale: float | None = None,
+    start_time: float = 0.0,
 ) -> LoggedEpisode:
     """Drive one identification episode under ``policy`` and return the log.
 
@@ -405,6 +406,10 @@ def log_episode(
     ``hold`` steps and independent of the plant. ``hold`` matters for both -- i.i.d. per-step action
     is low-passed by a building's slow thermal mode, which collapses the identified DC gain no
     matter how the action was chosen.
+
+    ``start_time`` is seconds into the year. There is no warm-up at any start, as there was none
+    for the logs that began at 0: the building leaves the emulator's initial state wherever in
+    the year the log begins.
     """
     if policy not in ("reset", "prbs"):
         raise ValueError(f"unknown policy {policy!r}; expected 'reset' or 'prbs'")
@@ -415,7 +420,7 @@ def log_episode(
     clipped = 0
     try:
         client.set_step(testid, step_s)
-        measurements = client.initialize(testid, 0.0, 0.0)
+        measurements = client.initialize(testid, start_time, 0.0)
         level = case.reference_action
         for i in range(steps):
             forecast = client.forecast(testid, [LOWER_SETP], step_s, step_s)
