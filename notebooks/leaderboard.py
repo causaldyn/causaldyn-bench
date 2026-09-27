@@ -19,7 +19,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-%matplotlib inline
+# %matplotlib inline
 
 from causaldyn_bench import run_all, to_frame
 
