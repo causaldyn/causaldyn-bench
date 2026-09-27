@@ -54,7 +54,8 @@ def test_to_frame_carries_the_same_records_into_either_backend(backend) -> None:
 
 def test_to_frame_rejects_an_unknown_backend() -> None:
     with pytest.raises(ValueError, match="got 'duckdb'"):
-        to_frame([], backend="duckdb")  # type: ignore[arg-type]
+        # deliberately outside `Backend`: the runtime check exists for callers no checker sees
+        to_frame([], backend="duckdb")  # ty: ignore[invalid-argument-type]
 
 
 def test_adaptive_cv_mpc_beats_priority_blind_myopic() -> None:

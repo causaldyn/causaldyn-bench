@@ -73,7 +73,7 @@ def test_boptest_track_raises_without_a_service() -> None:
 
 @pytest.mark.skipif(not _URL, reason="set BOPTEST_URL to a running BOPTEST-Service")
 def test_live_baseline_episode_returns_standard_kpis() -> None:
-    if not is_available(_URL):
+    if not _URL or not is_available(_URL):
         pytest.skip("BOPTEST_URL is set but the service is unreachable")
     kpis = run_episode(
         BOPTestClient(_URL), DEFAULT_TESTCASE, baseline_controller(), horizon_steps=6

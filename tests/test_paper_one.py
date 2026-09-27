@@ -4,6 +4,7 @@ import json
 
 import numpy as np
 import pytest
+from chc.regret import CompositionTransferCurve
 
 from causaldyn_bench import paper_one
 from causaldyn_bench.paper_one import (
@@ -23,7 +24,9 @@ _SHIPPED = (0.01, 0.2)
 _TIGHT = (1e-4, 2e-3)
 
 
-def test_the_window_expansion_is_checked_against_the_library_not_copied_from_it() -> None:
+def test_the_window_expansion_is_checked_against_the_library_not_copied_from_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """`lambda` and `c2` are Maxima's, not the certificate's, so a reconstruction nobody checks is
     a second copy that drifts. The prediction must reproduce the certificate's own fitted slope to
     within the next order, and the gate must actually fire when the plant moves."""
@@ -37,15 +40,14 @@ def test_the_window_expansion_is_checked_against_the_library_not_copied_from_it(
     # closed form does not, so that is what the mutation does -- moving `_B` here would move both
     original = paper_one.composition_transfer_certificate
 
-    def moved_plant(**kwargs: object) -> object:
-        return original(**{**kwargs, "b": 1.4})
+    def moved_plant(
+        *, b: float, rr: float, xt: float, delta_lo: float, delta_hi: float, n_delta: int
+    ) -> CompositionTransferCurve:
+        return original(b=1.4, rr=rr, xt=xt, delta_lo=delta_lo, delta_hi=delta_hi, n_delta=n_delta)
 
-    try:
-        paper_one.composition_transfer_certificate = moved_plant
-        with pytest.raises(RuntimeError, match="no longer reproduces the window expansion"):
-            transfer_constants()
-    finally:
-        paper_one.composition_transfer_certificate = original
+    monkeypatch.setattr(paper_one, "composition_transfer_certificate", moved_plant)
+    with pytest.raises(RuntimeError, match="no longer reproduces the window expansion"):
+        transfer_constants()
 
 
 def test_the_second_window_term_improves_every_cell_the_window_still_limits() -> None:
