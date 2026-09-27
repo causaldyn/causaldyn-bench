@@ -77,7 +77,7 @@ def test_the_schedules_in_table_three_really_do_differ_in_length() -> None:
     is a property of the fixture and is asserted here rather than read off the output."""
     horizon = 4000
     lengths = [
-        capped_exploration_policy(horizon=horizon, cap=caps).block_rounds
+        capped_exploration_policy(horizon=horizon, cap=[float(c) for c in caps]).block_rounds
         for caps in _schedules(horizon).values()
     ]
     assert max(lengths) / min(lengths) > 5.0

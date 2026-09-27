@@ -254,7 +254,7 @@ def table_three(horizon: int, k: PlantConstants) -> dict[str, dict[str, float]]:
     leading = result_56_mass(horizon, k)
     out: dict[str, dict[str, float]] = {}
     for name, caps in _schedules(horizon).items():
-        policy = capped_exploration_policy(horizon=horizon, cap=caps)
+        policy = capped_exploration_policy(horizon=horizon, cap=[float(c) for c in caps])
         landing = float(caps[min(policy.block_rounds, caps.size) - 1])
         out[name] = {
             "block_rounds": float(policy.block_rounds),
