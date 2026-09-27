@@ -55,7 +55,7 @@ class _Cubic(eqx.Module):
 
     beta: float
 
-    def __call__(self, t: float, x: jax.Array, u: jax.Array) -> jax.Array:
+    def __call__(self, t: float | jax.Array, x: jax.Array, u: jax.Array) -> jax.Array:
         return jnp.array([0.0, -self.beta * x[0] ** 3])
 
 
