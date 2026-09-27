@@ -21,18 +21,20 @@ arms, since draw `i` is the same panel under every split:
 The designed split and the graph-blind unit split **tie** -- the designed interval covers the
 baseline on both coefficients. What separates is the two arms a practitioner would actually reach
 for: keeping neighbours together costs **+37%** MSE, and dropping them from the training set costs
-**+66%**. The design law explains all three positions from one number -- the fraction of edges left
-inside a fold: `0.50` designed, `0.46` random units, `0.83` contiguous. Its value here is that it
+**+67%**. The design law explains all three positions from one number -- the fraction of edges left
+inside a fold: `0.50` designed, `0.50` for the one random-unit split that arm uses on every draw
+(`5/11 ~ 0.45` in expectation over balanced splits), `0.83` contiguous. Its value here is that it
 **convicts the obvious split before any simulation**, from a trace computation on the graph.
 
 *What the intervals add, and it is a narrowing.* Only the exclusion arm clears the baseline on both
-coefficients at both float32 and float64 (worst lower bound `1.166`). The `+37%` contiguous figure
-clears on the spillover coefficient at both dtypes (`1.145`, `1.139`) and on the direct coefficient
-it is sample-dependent: `[1.101, 1.732]` under float32, `[0.934, 1.599]` under float64 -- a
-different sample, because threefry spends a different number of bits per float64 element, not a
-different estimator. So the ordering is the claim, and the separation is the claim only for
-exclusion. Point estimates with a hand-picked tolerance said neither, which is how the earlier
-version of this track's test came to assert a tie at 60 draws and fail at x64 with 0.219.
+coefficients at both float32 and float64 (worst lower bound `1.276`). The `+37%` contiguous figure
+clears on the spillover coefficient at both dtypes (`1.145`, `1.136`) and on the direct coefficient
+it is sample-dependent: `[1.101, 1.732]` under float32, `[0.933, 1.591]` under float64
+(`just paper-2-x64`) -- a different sample, because threefry spends a different number of bits per
+float64 element, not a different estimator. So the ordering is the claim, and the separation is the
+claim only for exclusion. Point estimates with a hand-picked tolerance said neither, which is how
+the earlier version of this track's test came to assert a tie at 60 draws and fail at x64 with
+0.219.
 
 Three further measurements.
 
@@ -40,14 +42,11 @@ Three further measurements.
    cross-sectional mass ratio designed/contiguous is `0.720` on the cycle, `0.974` on the 3x4
    torus and `0.966` on a random cubic graph -- a real gap on one, almost none on the other two.
    Measured over 120 draws at each of `g = 2, 4, 8, 20`: on the cycle every arm separates in the
-   predicted order; on the torus and the cubic graph every arm scatters inside `0.85-1.16` with no
-   pattern in `g` or in the arm. The size is right too: the panel functional puts the designed
-   split at `0.588` of the contiguous split's variance and the realised MSE ratio at `g = 2` is
-   `0.66` (direct) and `0.73` (spillover) -- same sign, same order, functional optimistic by 7-14
-   points. **The law tells you when fold design is worth doing, and on two of these three
-   topologies the honest answer is "it is not".**
+   predicted order; on the torus and the cubic graph every arm scatters between `0.845` and
+   `1.160`, with no pattern in `g` or in the arm. **The law tells you when fold design is worth
+   doing, and on two of these three topologies the honest answer is "it is not".**
 
-   With paired intervals the forecast is stronger than "same sign, same order": the predicted mass
+   With paired intervals the forecast is sharper than a sign: the predicted mass
    ratio lands INSIDE the 95% interval of the realised ratio on all six topology-by-coefficient
    cells -- cycle `0.720` against `[0.524, 0.835]` and `[0.624, 0.853]`, torus `0.974` against
    `[0.764, 1.093]` and `[0.907, 1.126]`, cubic `0.966` against `[0.956, 1.385]` and
@@ -77,14 +76,10 @@ Three further measurements.
    Buying validity by discarding data needs a split that is already graph-aware -- that is, it
    needs the design it was meant to replace.
 
-Result 54's exact moment was checked against the plug law on this geometry and **moves the level
-without moving the decision**: the exact `E[X/Y^2]` is `2.3x` the plug-in value for both designs,
-and their ratio moves from `0.588` to `0.597`. The Jensen gap nearly cancels in the design ratio
-here -- a statement about this operator pair, not a general one (Result 51 (m)).
-
-Standard errors are cluster-robust on `cid`, and they have to be: clustered / i.i.d. is `1.87` on
-the spillover coefficient and `0.93` on the direct one, because the exposure is a shell sum while
-the treatment's exogenous part is i.i.d. across units. One i.i.d. SE for both would understate
+Standard errors are cluster-robust on `cid`, and they have to be: on 16 clusters of 8 units over 16
+periods, clustered over heteroskedasticity-robust averages `1.87` on the spillover coefficient and
+`0.93` on the direct one across eight draws, because the exposure is a shell sum while the
+treatment's exogenous part is i.i.d. across units. One unclustered SE for both would understate
 exactly the coefficient interference is about.
 
 Scope: synthetic outcomes throughout, on `chc.network_causal.DelayedNetworkPanel`, `K = 2`,
@@ -218,8 +213,9 @@ def track_fold_design(clusters: int = 2, seeds: int = 120) -> list[TrackResult]:
     ``g = 20`` would report near-ties and call the question settled.
 
     120 draws is what the two large gaps need to be stable; it does NOT resolve designed against
-    random units, which differ by 5-10%. The leaderboard prints a rank because every track does,
-    and those two rows should be read as the tie the module docstring reports, not as an ordering.
+    random units, which differ by -9.4% (direct) and -0.5% (spillover). The leaderboard prints a
+    rank because every track does, and those two rows should be read as the tie the module
+    docstring reports, not as an ordering.
     """
     graph, adjacency = _topologies()["cycle"]
     shells = graph_shells(adjacency.astype(float), 2)
