@@ -1,21 +1,23 @@
 # Verification loop and paper-table generation for causaldyn-bench. `just check` runs exactly what
 # ci.yml runs, in the same order, so a green check here is a green CI; `just paper-2` regenerates
 # every table in paper P2 from one command, which is what makes those tables auditable rather than
-# transcribed. There is deliberately no `ty` recipe: ci.yml does not type-check this repo (the
-# notebooks and the BOPTEST client carry ten pre-existing diagnostics), and a recipe that fails on
-# a clean tree teaches people to skip the ladder.
+# transcribed. `just types` checks the local `.venv`'s interpreter, with the `notebooks` group
+# synced; ci.yml runs it on every supported one, because uv.lock resolves a newer numpy from 3.12.
 
 default:
     @just --list
 
 # The Python ladder, cheapest first. Stops at the first failure.
-check: fmt lint test
+check: fmt lint types test
 
 fmt:
     uv run ruff format --check .
 
 lint:
     uv run ruff check .
+
+types:
+    uv run ty check
 
 # addopts already carries -q; a second one suppresses the summary line entirely.
 test:

@@ -33,6 +33,7 @@ dev = [
     "polars>=1.0",
     "pytest>=8",
     "ruff>=0.6",
+    "ty>=0.0.61",
 ]
 notebooks = [
     "jupyterlab>=4.0",

@@ -26,6 +26,12 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    # Every supported interpreter, not the floor alone: uv.lock resolves a newer numpy from Python
+    # 3.12, whose stubs type some calls differently, so a floor-only job never sees what they flag.
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
     defaults:
       run:
         working-directory: causaldyn-bench
@@ -42,13 +48,16 @@ jobs:
         # v8.0.0, so `@v9` does not resolve. The other actions here still publish them.
         uses: astral-sh/setup-uv@v9.0.0
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
       - name: Sync dependencies
-        run: uv sync --group dev
+        # `notebooks` too: ty checks the leaderboard notebook, which imports matplotlib
+        run: uv sync --group dev --group notebooks
       - name: Lint
         run: uv run ruff check .
       - name: Format check
         run: uv run ruff format --check .
+      - name: Type check
+        run: uv run ty check
 
   test:
     runs-on: ubuntu-latest
