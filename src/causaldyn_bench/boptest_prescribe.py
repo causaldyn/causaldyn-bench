@@ -559,7 +559,7 @@ def run_experiment(
         panel: Panel | None = None
         if fitted is None or any(key not in episodes for key in wanted):
             log = log_episode(
-                plant,  # ty: ignore[invalid-argument-type]
+                plant,
                 HEAT_PUMP,
                 policy="reset",
                 seed=k,
@@ -595,7 +595,7 @@ def run_experiment(
             )
         if baseline is None:
             kpi = run_baseline_episode(
-                plant,  # ty: ignore[invalid-argument-type]
+                plant,
                 HEAT_PUMP.testcase,
                 baseline_controller(),
                 start_time=design.window_day(k) * DAY_S,

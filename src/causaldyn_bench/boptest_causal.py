@@ -387,8 +387,22 @@ def _standardise(columns: np.ndarray) -> tuple[Array, tuple[float, ...], tuple[f
     return jnp.asarray((columns - centre) / scale), tuple(centre), tuple(scale)
 
 
+# Not boptest_capped.Plant: a log never calls kpi, and that module imports this one.
+class LogPlant(Protocol):
+    """The slice of the BOPTEST-Service API a log uses; :class:`BOPTestClient` is one."""
+
+    def select(self, testcase: str) -> str: ...
+    def set_step(self, testid: str, step_s: float) -> Any: ...
+    def initialize(self, testid: str, start_time: float, warmup_period: float) -> Any: ...
+    def advance(self, testid: str, u: Mapping[str, float]) -> Any: ...
+    def forecast(
+        self, testid: str, point_names: list[str], horizon: float, interval: float
+    ) -> Any: ...
+    def stop(self, testid: str) -> Any: ...
+
+
 def log_episode(
-    client: BOPTestClient,
+    client: LogPlant,
     case: BoptestCase,
     *,
     policy: str,

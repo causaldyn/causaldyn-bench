@@ -125,7 +125,7 @@ def test_a_log_starts_where_it_is_told_and_the_panel_is_in_raw_units(x64) -> Non
     """``start_time`` reaches the plant, and the panel un-standardises what the log standardised."""
     plant = _building()
     log = log_episode(
-        plant,  # ty: ignore[invalid-argument-type]
+        plant,
         HEAT_PUMP,
         policy="reset",
         seed=0,
@@ -143,7 +143,7 @@ def test_a_log_starts_where_it_is_told_and_the_panel_is_in_raw_units(x64) -> Non
 def test_the_two_arms_differ_only_in_what_they_adjust_for(x64) -> None:
     """Same log, same call: the graph's arm is identified through the reset curve's inputs, the
     other asserts its channel with nothing adjusted, and both return a schedule."""
-    log = log_episode(_building(), HEAT_PUMP, policy="reset", seed=0, steps=192, step_s=_STEP_S)  # ty: ignore[invalid-argument-type]
+    log = log_episode(_building(), HEAT_PUMP, policy="reset", seed=0, steps=192, step_s=_STEP_S)
     panel = panel_from_log(log, seed=0)
     held = {arm: prescription(panel, arm, temp=20.5, target=21.0, design=_SMALL) for arm in ARMS}
     assert held["adjusted"].certificate.identification == "identified"
@@ -172,7 +172,7 @@ def test_each_step_applies_the_first_action_of_a_fresh_prescription(x64) -> None
     in. From 19.5 C towards 20 C the plan heats hard and then holds, so its first and last
     actions differ and applying any other than the first is visible."""
     plant = _building()
-    log = log_episode(plant, HEAT_PUMP, policy="reset", seed=0, steps=192, step_s=_STEP_S)  # ty: ignore[invalid-argument-type]
+    log = log_episode(plant, HEAT_PUMP, policy="reset", seed=0, steps=192, step_s=_STEP_S)
     panel = panel_from_log(log, seed=0)
     spy = _Spy(
         model=plant.model,

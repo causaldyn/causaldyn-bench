@@ -20,7 +20,7 @@ import urllib.error
 import urllib.request
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Protocol
 
 DEFAULT_URL = os.environ.get("BOPTEST_URL", "http://127.0.0.1:8000")
 DEFAULT_TESTCASE = "bestest_hydronic_heat_pump"
@@ -133,8 +133,20 @@ def baseline_controller() -> Controller:
     return control
 
 
+# Not boptest_capped.Plant: this never calls forecast, and that module imports this one.
+class KpiPlant(Protocol):
+    """The slice of the BOPTEST-Service API a KPI episode uses; :class:`BOPTestClient` is one."""
+
+    def select(self, testcase: str) -> str: ...
+    def set_step(self, testid: str, step_s: float) -> Any: ...
+    def initialize(self, testid: str, start_time: float, warmup_period: float) -> Any: ...
+    def advance(self, testid: str, u: Mapping[str, float]) -> Any: ...
+    def kpi(self, testid: str) -> Any: ...
+    def stop(self, testid: str) -> Any: ...
+
+
 def run_episode(
-    client: BOPTestClient,
+    client: KpiPlant,
     testcase: str,
     controller: Controller,
     *,

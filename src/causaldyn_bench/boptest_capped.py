@@ -333,7 +333,7 @@ def loss(trace: Trace, design: Design) -> float:
 def fit_zone_model(plant: Plant, design: Design) -> ZoneModel:
     """Stage 0: a randomised two-hour PRBS log and the harness's own linear fit on it."""
     log = log_episode(
-        plant,  # ty: ignore[invalid-argument-type]
+        plant,
         HEAT_PUMP,
         policy="prbs",
         seed=0,
