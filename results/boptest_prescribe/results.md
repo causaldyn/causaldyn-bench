@@ -40,22 +40,22 @@ Energy in kWh/m2 and discomfort in K h, BOPTEST's `ener_tot` and `tdis_tot`. `--
 
 ## What `prescribe` identified from each log
 
-Read through Track D-causal's definitions: the decay at the log's mean action and at the two ends of the actuator, the authority at 21 C in K/h per unit modulation, the 8-hour step response in K.
+Read through Track D-causal's definitions: the channel `b0 + b1 T` in K/h per unit modulation and the zone temperature where it changes sign, the decay at the log's mean action and at the two ends of the actuator, the authority at 21 C, the 8-hour step response in K.
 
-| replicate | arm | identification | adjusted for | authority at 21 C | 8 h step response | decay at mean action | decay off / full | channel standard error | overlap |
-|---|---|---|---|---|---|---|---|---|---|
-| 0 | adjusted | identified | outdoor, solar, bound | 0.7104 | 5.322 | -0.01766 | -0.00993 / -0.03447 | 0.5085 | 0.01132 |
-| 0 | naive | asserted | nothing | 0.4093 | 3.073 | -0.01709 | -0.00021 / -0.05382 | -- | 0.07373 |
-| 1 | adjusted | identified | outdoor, solar, bound | 0.4892 | 3.688 | -0.01596 | +0.01729 / -0.10269 | 0.6108 | 0.00955 |
-| 1 | naive | asserted | nothing | 0.3107 | 2.353 | -0.01469 | +0.01337 / -0.08789 | -- | 0.06415 |
-| 2 | adjusted | identified | outdoor, solar, bound | 0.6031 | 4.521 | -0.01749 | -0.00545 / -0.04870 | 0.6408 | 0.00936 |
-| 2 | naive | asserted | nothing | 0.2736 | 2.048 | -0.01795 | +0.02136 / -0.11994 | -- | 0.06710 |
-| 3 | adjusted | identified | outdoor, solar, bound | 0.6261 | 4.474 | -0.03056 | -0.02492 / -0.04328 | 0.5615 | 0.01109 |
-| 3 | naive | asserted | nothing | 0.3616 | 2.637 | -0.02497 | -0.00167 / -0.07746 | -- | 0.06713 |
-| 4 | adjusted | identified | outdoor, solar, bound | 0.7785 | 6.296 | +0.00291 | -0.01979 / +0.04898 | 0.5851 | 0.01133 |
-| 4 | naive | asserted | nothing | 0.2645 | 1.970 | -0.01921 | +0.02355 / -0.10602 | -- | 0.07317 |
-| 5 | adjusted | identified | outdoor, solar, bound | 0.5720 | 4.212 | -0.02237 | +0.00201 / -0.07707 | 0.6050 | 0.01002 |
-| 5 | naive | asserted | nothing | 0.1820 | 1.332 | -0.02393 | +0.01899 / -0.12025 | -- | 0.06609 |
+| replicate | arm | identification | adjusted for | channel | channel zero at C | authority at 21 C | 8 h step response | decay at mean action | decay off / full | channel standard error | overlap |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | adjusted | identified | outdoor, solar, bound | +1.226 -0.0245 T | 49.94 | 0.7104 | 5.322 | -0.01766 | -0.00993 / -0.03447 | 0.5085 | 0.01132 |
+| 0 | naive | asserted | nothing | +1.535 -0.0536 T | 28.63 | 0.4093 | 3.073 | -0.01709 | -0.00021 / -0.05382 | -- | 0.07373 |
+| 1 | adjusted | identified | outdoor, solar, bound | +3.009 -0.1200 T | 25.08 | 0.4892 | 3.688 | -0.01596 | +0.01729 / -0.10269 | 0.6108 | 0.00955 |
+| 1 | naive | asserted | nothing | +2.437 -0.1013 T | 24.07 | 0.3107 | 2.353 | -0.01469 | +0.01337 / -0.08789 | -- | 0.06415 |
+| 2 | adjusted | identified | outdoor, solar, bound | +1.511 -0.0432 T | 34.95 | 0.6031 | 4.521 | -0.01749 | -0.00545 / -0.04870 | 0.6408 | 0.00936 |
+| 2 | naive | asserted | nothing | +3.241 -0.1413 T | 22.94 | 0.2736 | 2.048 | -0.01795 | +0.02136 / -0.11994 | -- | 0.06710 |
+| 3 | adjusted | identified | outdoor, solar, bound | +1.012 -0.0184 T | 55.10 | 0.6261 | 4.474 | -0.03056 | -0.02492 / -0.04328 | 0.5615 | 0.01109 |
+| 3 | naive | asserted | nothing | +1.953 -0.0758 T | 25.77 | 0.3616 | 2.637 | -0.02497 | -0.00167 / -0.07746 | -- | 0.06713 |
+| 4 | adjusted | identified | outdoor, solar, bound | -0.666 +0.0688 T | 9.68 | 0.7785 | 6.296 | +0.00291 | -0.01979 / +0.04898 | 0.5851 | 0.01133 |
+| 4 | naive | asserted | nothing | +2.986 -0.1296 T | 23.04 | 0.2645 | 1.970 | -0.01921 | +0.02355 / -0.10602 | -- | 0.07317 |
+| 5 | adjusted | identified | outdoor, solar, bound | +2.233 -0.0791 T | 28.23 | 0.5720 | 4.212 | -0.02237 | +0.00201 / -0.07707 | 0.6050 | 0.01002 |
+| 5 | naive | asserted | nothing | +3.106 -0.1392 T | 22.31 | 0.1820 | 1.332 | -0.02393 | +0.01899 / -0.12025 | -- | 0.06609 |
 
 ## Fronts
 

@@ -740,20 +740,24 @@ def markdown(results: Mapping[str, Any]) -> str:
         "",
         "## What `prescribe` identified from each log",
         "",
-        "Read through Track D-causal's definitions: the decay at the log's mean action and at the "
-        "two ends of the actuator, the authority at 21 C in K/h per unit modulation, the 8-hour "
-        "step response in K.",
+        "Read through Track D-causal's definitions: the channel `b0 + b1 T` in K/h per unit "
+        "modulation and the zone temperature where it changes sign, the decay at the log's mean "
+        "action and at the two ends of the actuator, the authority at 21 C, the 8-hour step "
+        "response in K.",
         "",
-        "| replicate | arm | identification | adjusted for | authority at 21 C | 8 h step response "
-        "| decay at mean action | decay off / full | channel standard error | overlap |",
-        "|---|---|---|---|---|---|---|---|---|---|",
+        "| replicate | arm | identification | adjusted for | channel | channel zero at C "
+        "| authority at 21 C | 8 h step response | decay at mean action | decay off / full "
+        "| channel standard error | overlap |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for replicate in replicates:
         for arm in ARMS:
             fit = replicate["fits"][arm]
+            b0, b1 = fit["channel"]
             lines.append(
                 f"| {replicate['replicate']} | {arm} | {fit['identification']} | "
-                f"{', '.join(fit['adjusted_for']) or 'nothing'} | {fit['authority_21']:.4f} | "
+                f"{', '.join(fit['adjusted_for']) or 'nothing'} | {b0:+.3f} {b1:+.4f} T | "
+                f"{_show(-b0 / b1 if b1 else None, '.2f')} | {fit['authority_21']:.4f} | "
                 f"{fit['step_response_8h']:.3f} | {fit['decay']:+.5f} | "
                 f"{fit['decay_at_off']:+.5f} / {fit['decay_at_full']:+.5f} | "
                 f"{_show(fit['channel_error'])} | {fit['overlap']:.5f} |"
