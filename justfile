@@ -63,3 +63,13 @@ paper-3-smoke:
     uv run python -u -m causaldyn_bench.paper_three \
         --horizons 1000 10000 --mass-horizons 10000 100000 --seeds 11 \
         --out results/paper3-smoke
+
+# Hours, not minutes -- 8 horizons x (1 + 5 seeds x 3 widths x 2 optimisers) solves. Run it detached.
+paper-4:
+    uv run python -u -m causaldyn_bench.paper_four --out results/paper4
+
+# Two horizons, one seed, one width. Plumbing check only: two points rank nothing.
+paper-4-smoke:
+    uv run python -u -m causaldyn_bench.paper_four \
+        --horizons 0.30 0.76 --seeds 0 --widths 16 \
+        --out results/paper4-smoke
