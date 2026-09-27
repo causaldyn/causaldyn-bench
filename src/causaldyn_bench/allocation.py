@@ -89,8 +89,8 @@ def allocation_report(
         gap = np.asarray(lifts[left]) - np.asarray(lifts[right])
         return {
             "mean": float(gap.mean()),
-            "min": float(gap.min()),
-            "max": float(gap.max()),
+            "min": float(np.min(gap)),
+            "max": float(np.max(gap)),
             "wins": float((gap > 0.0).sum()),
             "seeds": float(gap.size),
         }

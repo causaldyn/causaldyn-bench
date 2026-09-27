@@ -65,7 +65,7 @@ def identify_thermal_model(
             next_temps.append(measurements[T_ZONE])
     finally:
         client.stop(testid)
-    temps, controls, next_temps = map(np.asarray, (temps, controls, next_temps))
+    temps, controls, next_temps = np.asarray(temps), np.asarray(controls), np.asarray(next_temps)
     features = np.column_stack([temps, controls, np.ones(len(temps))])
     coef, *_ = np.linalg.lstsq(features, next_temps, rcond=None)
     if coef[0] >= a_max:  # OLS on a short slow series drifts to a near-unit-root / unstable pole;
