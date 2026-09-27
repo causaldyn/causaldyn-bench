@@ -27,16 +27,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import numpy as np
 from chc.network_causal import graph_shells
-from chc.regret import (
-    exact_matrix_ratio_moment,
-    matrix_ratio_certificate,
-    optimal_fold_partition,
-)
+from chc.regret import exact_matrix_ratio_moment, optimal_fold_partition
 
 from causaldyn_bench.fold_design import (
     _GAMMAS,
@@ -180,28 +177,37 @@ def table_four(node_grid: tuple[int, ...]) -> dict[str, dict[int, float]]:
 
     Two cells, both against an exact anchor. ``n = 5`` is the existence boundary ``n = q + 2``,
     where the answer is ``I``; ``n = 7`` is margin 2, where it is ``I/3`` -- so an absolute column
-    would make the second look three times better than it is. The certificate's residual is
-    reported as a ratio to the true error in the same convention, which is what says whether it
-    majorises (Result 63 (e): iff the per-node rate reaches 2).
+    would make the second look three times better than it is. The refinement residual of
+    ``matrix_ratio_certificate`` is reported as a ratio to the true error in the same convention,
+    which is what says whether it majorises (Result 63 (e): always once the per-node rate reaches
+    2, and below that only where the error changes sign or moves its largest entry).
+
+    That residual is ``max |value(nodes) - value(nodes - 1)|``, so it is read off the grids this
+    table computes anyway rather than by the certificate's second quadrature per row -- at
+    ``nodes = 9`` that second pass alone is ``262 144`` points. It needs ``nodes - 1`` in the grid;
+    a row without it prints ``--``.
     """
-    out: dict[str, dict[int, float]] = {"rel_n5": {}, "rel_n7": {}, "residual_over_true_n7": {}}
-    for n, key in ((5, "rel_n5"), (7, "rel_n7")):
+    out: dict[str, dict[int, float]] = {
+        "rel_n5": {},
+        "rel_n7": {},
+        "residual_over_true_n5": {},
+        "residual_over_true_n7": {},
+    }
+    for n in (5, 7):
         want = np.eye(3) / (n - 3 - 1)
         scale = float(np.max(np.abs(want)))
-        for nodes in node_grid:
-            got = exact_matrix_ratio_moment(np.eye(n), np.eye(n), np.eye(3 * n), nodes=nodes)
-            out[key][nodes] = float(np.max(np.abs(got - want))) / scale
-    n = 7
-    want = np.eye(3) / (n - 3 - 1)
-    scale = float(np.max(np.abs(want)))
-    for nodes in node_grid:
-        if nodes < 5:
-            continue  # a refinement residual needs a coarser grid to refine from
-        cert = matrix_ratio_certificate(np.eye(n), np.eye(n), np.eye(3 * n), nodes=nodes)
-        # both sides are ABSOLUTE max-entry quantities, so the normalisation cancels and the ratio
-        # is the same in either convention -- which is the point of computing it this way
-        true = float(np.max(np.abs(np.asarray(cert.value) - want)))
-        out["residual_over_true_n7"][nodes] = cert.residual / true if true else float("inf")
+        values = {
+            nodes: exact_matrix_ratio_moment(np.eye(n), np.eye(n), np.eye(3 * n), nodes=nodes)
+            for nodes in node_grid
+        }
+        for nodes, got in values.items():
+            true = float(np.max(np.abs(got - want)))
+            out[f"rel_n{n}"][nodes] = true / scale
+            if nodes - 1 in values:
+                # both sides are ABSOLUTE max-entry quantities, so the normalisation cancels and
+                # the ratio is the same in either convention
+                residual = float(np.max(np.abs(got - values[nodes - 1])))
+                out[f"residual_over_true_n{n}"][nodes] = residual / true if true else float("inf")
     return out
 
 
@@ -258,25 +264,69 @@ def _markdown(
         "",
         "Designed against contiguous, so a ratio below 1 is a win for the design.",
         "",
+    ]
+    return "\n".join(lines + _quadrature_markdown(four))
+
+
+def _quadrature_markdown(four: dict[str, dict[int, float]]) -> list[str]:
+    """Table 4, and every number the text derives from it: rates, digits, residual step ratios."""
+    lines = [
         "## Table 4 -- the q = 3 matrix moment: RELATIVE max-entry error against the exact anchor",
         "",
-        "| nodes | points | n = 5 (boundary) | n = 7 (margin 2) | residual / true, n = 7 |",
-        "|---|---|---|---|---|",
+        "| nodes | points | n = 5 (boundary) | rate | residual / true "
+        "| n = 7 (margin 2) | rate | residual / true |",
+        "|---|---|---|---|---|---|---|---|",
     ]
+    rates = {n: _per_node_rate(four[f"rel_n{n}"]) for n in (5, 7)}
     for nodes in sorted(four["rel_n5"]):
-        residual = four["residual_over_true_n7"].get(nodes)
-        cell = "--" if residual is None else f"{residual:.2f}"
-        lines.append(
-            f"| {nodes} | {nodes**6:,} | {four['rel_n5'][nodes]:.3e} | "
-            f"{four['rel_n7'][nodes]:.3e} | {cell} |"
-        )
+        cells = [str(nodes), f"{nodes**6:,}"]
+        for n in (5, 7):
+            rate = rates[n].get(nodes)
+            residual = four[f"residual_over_true_n{n}"].get(nodes)
+            cells += [
+                f"{four[f'rel_n{n}'][nodes]:.3e}",
+                "--" if rate is None else f"{rate:.3f}",
+                "--" if residual is None else f"{residual:.2f}",
+            ]
+        lines.append("| " + " | ".join(cells) + " |")
     lines += [
         "",
         "Relative throughout: the exact answer is `I` at `n = 5` and `I/3` at `n = 7`, so an"
-        " absolute column would flatter the second by 3x (Result 63 (j)).",
+        " absolute column would flatter the second by 3x (Result 63 (j)). The rate is the per-node"
+        " decay `e(nodes - 1) / e(nodes)`. By the reverse triangle inequality residual / true is at"
+        " least `|rate - 1|`, with equality when the error keeps its sign and its largest entry: a"
+        " rate of 2 always makes the residual majorise the error, and below 2 only a row where that"
+        " premise fails can (Result 63 (e)).",
         "",
     ]
-    return "\n".join(lines)
+    for n in (5, 7):
+        errors = four[f"rel_n{n}"]
+        first, last = min(errors), max(errors)
+        if first == last:
+            continue
+        mean_rate = (errors[first] / errors[last]) ** (1 / (last - first))
+        line = (
+            f"- n = {n}: geometric-mean rate {mean_rate:.2f} per node over nodes {first}-{last},"
+            f" and {-math.log10(errors[last]):.2f} digits at {last}"
+        )
+        if mean_rate > 1:
+            need = math.ceil(last + math.log10(errors[last] * 1e6) / math.log10(mean_rate))
+            line += f"; six digits at that rate need {need} nodes, {need**6:.1e} points"
+        residuals = {k: r * errors[k] for k, r in four[f"residual_over_true_n{n}"].items()}
+        steps = _per_node_rate(residuals)
+        if steps:
+            line += (
+                ". Residual step ratio `residual(nodes - 1) / residual(nodes)`, which equals the"
+                " rate only if the errors are geometric: "
+                + ", ".join(f"{v:.2f} at {k}" for k, v in sorted(steps.items()))
+            )
+        lines += [line + ".", ""]
+    return lines
+
+
+def _per_node_rate(errors: dict[int, float]) -> dict[int, float]:
+    """``e(nodes - 1) / e(nodes)`` at every grid whose next-coarser grid was also computed."""
+    return {k: errors[k - 1] / e for k, e in errors.items() if k - 1 in errors}
 
 
 def _jsonable(obj: object) -> object:

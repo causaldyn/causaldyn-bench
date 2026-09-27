@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from causaldyn_bench.fold_design import arm_errors
-from causaldyn_bench.paper_two import RatioCI, paired_ratio_ci
+from causaldyn_bench.paper_two import RatioCI, _quadrature_markdown, paired_ratio_ci
 
 
 def test_pairing_is_what_makes_a_ratio_interval_narrow() -> None:
@@ -58,3 +58,36 @@ def test_arms_are_paired_across_splits_in_the_measurement_itself() -> None:
     for coefficient in ("direct", "spillover"):
         assert np.array_equal(first[coefficient], again[coefficient])
         assert not np.allclose(first[coefficient], other[coefficient])
+
+
+def test_geometric_errors_are_the_one_case_where_residual_steps_recover_the_rate() -> None:
+    """Errors ``e_k = 2^-k`` refine with residual ``e_{k-1} - e_k``, so residual / true is
+    ``r - 1 = 1`` (Result 63 (e)), and every derived number the text quotes is known exactly: the
+    rate and the residual step ratio both read 2 at every refinement, and six digits sit
+    ``log2(e_9 * 1e6) = 10.93`` nodes past 9, so at 20 nodes."""
+    errors = {k: 2.0**-k for k in range(4, 10)}
+    steps = {k: 1.0 for k in errors if k - 1 in errors}
+    four = {
+        "rel_n5": errors,
+        "rel_n7": errors,
+        "residual_over_true_n5": steps,
+        "residual_over_true_n7": steps,
+    }
+    text = "\n".join(_quadrature_markdown(four))
+    assert "| 9 | 531,441 | 1.953e-03 | 2.000 | 1.00 | 1.953e-03 | 2.000 | 1.00 |" in text
+    assert "geometric-mean rate 2.00 per node over nodes 4-9, and 2.71 digits at 9" in text
+    assert "six digits at that rate need 20 nodes, 6.4e+07 points" in text
+    assert "2.00 at 6, 2.00 at 7, 2.00 at 8, 2.00 at 9." in text
+
+
+def test_a_single_grid_prints_its_row_and_derives_nothing() -> None:
+    """The 64-bit recipe runs one grid; a rate needs two, so there is no rate to print."""
+    four = {
+        "rel_n5": {4: 0.29},
+        "rel_n7": {4: 0.29},
+        "residual_over_true_n5": {},
+        "residual_over_true_n7": {},
+    }
+    text = "\n".join(_quadrature_markdown(four))
+    assert "| 4 | 4,096 | 2.900e-01 | -- | -- | 2.900e-01 | -- | -- |" in text
+    assert "geometric-mean" not in text

@@ -40,16 +40,26 @@ paper-1-smoke:
         --seeds 0 1 2 --n-samples 100 \
         --out results/paper1-smoke
 
-# Hours, not minutes -- 120 draws x 5 arms x 4 cluster counts x 3 topologies. Run it detached.
+# Most of a night -- 120 draws x 5 arms x 4 cluster counts x 3 topologies, then the q = 3
+# quadrature to 531 441 points, where the nodes = 9 cells alone are hours. Run it detached.
 paper-2 draws="120" boot="10000":
     uv run python -u -m causaldyn_bench.paper_two \
-        --draws {{draws}} --boot {{boot}} --clusters 2 4 8 20 --nodes 4 5 6 \
+        --draws {{draws}} --boot {{boot}} --clusters 2 4 8 20 --nodes 4 5 6 7 8 9 \
         --out results/paper2
 
-# The same pipeline small enough to watch. Plumbing check only: 12 draws quote nothing.
+# The arm ordering again at 64-bit precision. Not a rounding check: the panel sampler's seed spends
+# different bits at the wider dtype, so this is an independent panel stream. Only its g = 2 arm
+# table is quoted, hence one cluster count and the cheapest quadrature grid.
+paper-2-x64 draws="120" boot="10000":
+    JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.paper_two \
+        --draws {{draws}} --boot {{boot}} --clusters 2 --nodes 4 \
+        --out results/paper2-x64
+
+# The same pipeline small enough to watch. Plumbing check only: 12 draws quote nothing. Two
+# quadrature grids, so the refinement-residual column is exercised too.
 paper-2-smoke:
     uv run python -u -m causaldyn_bench.paper_two \
-        --draws 12 --boot 500 --clusters 2 --nodes 4 \
+        --draws 12 --boot 500 --clusters 2 --nodes 3 4 \
         --out results/paper2-smoke
 
 # Minutes, not hours -- everything but Table 5 is closed form, and Table 5 is five seeds.
