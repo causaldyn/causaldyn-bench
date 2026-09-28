@@ -114,3 +114,9 @@ paper-4-smoke:
 # so neither GPy nor numpy<2 ever enters this lockfile.
 track-l:
     JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.dcbo_track --out results
+
+# Track O -> results/track_o.{md,json}. Minutes: 500 logs per design through each environment's own
+# step, every evaluate_plan arm on each, and a 400 000-step online truth per plan. Needs the `gym`
+# extra. At 64-bit, so the estimate and the truth score the same cost matrices.
+track-o:
+    JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.ope_calibration --out results

@@ -30,6 +30,7 @@ closed-loop decision. Built on
 | **N** fold design | which cross-fitting **split** to use under network interference — the method is held fixed and only the folds vary | MSE vs a graph-blind unit split | *the design law, negatively* — it convicts the two splits a practitioner reaches for |
 | **M** allocation over time | media budget across channels **and** weeks, from a log whose planner chased the season | lift over doing nothing, audited on the true plant | *the identification axis* — and the horizon axis only when the two channel orderings conflict |
 | **L** sequential intervention | which variables to set, and to what, at each step of DCBO's three synthetic dynamic SCMs | regret vs the per-step oracle, each step against the arm's own history | *the reference methods, on their own ground* — the track says where CHC cannot follow, and where DCBO cannot |
+| **O** off-policy evaluation | does `evaluate_plan`'s 95% interval cover a feedback plan's online cost, estimated from another policy's logs, on two Gymnasium plants CHC did not write | interval coverage over 500 replicates, against ±2 points of nominal | *the interval, not a method* — the track is the 0.8.0 evidence gate |
 
 **Track L** (`causaldyn_bench.dcbo_track`) tests the "no analogues" claim in both directions
 against DCBO (Aglietti et al., NeurIPS 2021), the nearest academic statement of *which lever, how
@@ -49,6 +50,21 @@ its equations mid-horizon — and runs no experiments. Nor are the graph-blind b
 at ten explorative interventions a step, ABO beats DCBO on both stationary SCMs (`0.06` and
 `1.17`). The other way round, DCBO cannot run on Track M's confounded media log at all: its `Root`
 takes the true SEM as the oracle its experiments query, and a log has none to give.
+
+**Track O** (`causaldyn_bench.ope_calibration`, needs the `gym` extra) asks whether
+`chc.evaluate_plan`'s interval covers on plants the library did not write: `Pendulum-v1` hanging and
+`MountainCarContinuous-v0` at its valley floor, both stepped through their own `step`, with a
+Gaussian disturbance on every command. Each replicate logs 4000 transitions of a lightly damped
+legacy operator, fits a linear plant to them by least squares, and evaluates two LQR plans; the
+truth is each plan's online average cost over 400 000 steps. Over 500 replicates (`just track-o`),
+with the fitted model and the smoothing correction trusted, every arm is within two points of
+0.95: `"dr"` 0.944–0.962, `"fqe"` 0.944–0.954, and `"mis"` 0.930–0.964, at the edge on two of the
+four plans. The default `model_error = 1` covers 1.000 everywhere, by design. Three things the
+gate does not show. On the car's aggressive plan the certificate refused 107 of the 500 logs, so
+that coverage is over the 393 it passed. FQE reads 3–5% high on the car (3.4–3.8 standard errors)
+and still covers. And with the logger clipping 2% of steps (the stress row), FQE on the pendulum
+covers 0.900, a bias of 0.018 its certificate cannot see, while `"mis"` and `"dr"` hold. See
+`results/track_o.md`.
 
 **Track N** (`causaldyn_bench.fold_design`) is the only track that varies nothing but the
 cross-fitting split, and its result is an ordering whose useful half is negative. On `C_12` with two
@@ -140,12 +156,13 @@ budget. Track A is expected to go to the trees; the value is Tracks B–D.
 ## Run
 
 ```bash
-uv sync --extra trees --extra gym        # tree baselines for A/B, Gymnasium for Track J (optional)
+uv sync --extra trees --extra gym        # tree baselines for A/B, Gymnasium for Tracks J and O
 uv run python -m causaldyn_bench         # print the leaderboard
 uv run python -m causaldyn_bench --save  # also write results/leaderboard.{md,json}
 uv run pytest                            # smoke tests
 just check                               # the ladder ci.yml runs: format, lint, tests
 just track-l                             # Track L against DCBO -> results/track_l.{md,json}
+just track-o                             # Track O, OPE coverage -> results/track_o.{md,json}
 ```
 
 ### Paper tables
