@@ -74,19 +74,19 @@ was meant to replace.
 *forward-looking?*: the CHC schedule, the **same identified fit spent on this week alone**, an equal
 split, and a whole-horizon plan fitted observationally — all at matched budget, all audited on the
 true plant. The result is not the one the track was built to show. Over eight seeds, mean lift over
-doing nothing: `CHC-adjusted 46.56`, `myopic-greedy 46.88`, `equal-split 44.11`, `naive-MMM 36.70`.
-Adjusting for the season is worth **+9.9 and wins 8 of 8**; looking past this week is worth **−0.3
-with its sign flipping 5/3**, inside `6.2%` of the mean lift. Both identified rules beat the equal
-split at 8 of 8.
+doing nothing: `CHC-adjusted 46.43`, `myopic-greedy 46.11`, `equal-split 44.09`, `naive-MMM 36.49`.
+Adjusting for the season is worth **+9.9 and wins 8 of 8**; looking past this week is worth **+0.3
+with its sign flipping 3/5**, inside `7%` of the mean lift at every seed but one (`+7.3` at seed 4).
+The CHC schedule beats the equal split at 8 of 8, the myopic rule at 7 of 8.
 
 And the design that flips it is one line, which is what makes the null a measurement rather than an
 absence. A myopic rule loses when the carryover ordering **contradicts** the immediate one — not
 merely because carryover exists. On the shipped plant `β_c/θ_c` ranks the channels `(1.29, 1.50,
 1.60)` against `γ_c`'s `(0.50, 0.20, 0.35)`: the two disagree about the top channel but *agree about
 which to drop*, and dropping it is most of the available gain. Re-parameterise so the best immediate
-channel is the worst carryover channel — `β/θ` of `(0.07, 8.00, 1.60)` at unchanged `γ`, so the
-myopic ordering is untouched by construction — and the CHC schedule wins **6 of 6** by `2.11…3.40`
-(`+8.8%`). The equal split then catches the optimiser, because concentration has become the error.
+channel is the worst carryover channel — `β/θ` of `(0.10, 8.00, 1.60)` at unchanged `γ`, so the
+myopic ordering is untouched by construction — and the CHC schedule wins **8 of 8** by `1.20…3.79`
+(`+9.5%`). The equal split then catches the optimiser, because concentration has become the error.
 
 **Track K** (`causaldyn_bench.delay_identification`) is the only track whose payoff is
 *discontinuous*. Every other board scores a cost gap; here the closed loop is `x' = -K·x(t − τ)`,

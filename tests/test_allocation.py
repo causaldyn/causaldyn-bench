@@ -18,7 +18,8 @@ def carryover_dominant() -> MmmReport:
 
 def test_identification_is_what_pays_on_the_shipped_plant(shipped: MmmReport) -> None:
     """Both rules that adjust for the season beat the equal split, and the one that does not loses
-    to it. Holds at 8 of 8 seeds in ``allocation_report``; seed 0 is the regression pin."""
+    to it. Over eight seeds in ``allocation_report`` the adjusted arm holds at 8 of 8 and the other
+    two at 7 of 8, both missing at seed 4; seed 0 is the regression pin."""
     assert shipped.lift("adjusted") > shipped.lift("flat")
     assert shipped.lift("myopic") > shipped.lift("flat")
     assert shipped.lift("confounded") < shipped.lift("flat")
@@ -28,7 +29,7 @@ def test_the_horizon_buys_nothing_when_the_two_orderings_agree_on_what_to_drop(
     shipped: MmmReport,
 ) -> None:
     """The finding the track was not built to show. ``myopic`` reads the same identified fit and
-    spends it on this week alone, and on the shipped plant the two are a tie -- 5/3 on sign over
+    spends it on this week alone, and on the shipped plant the two are a tie -- 3/5 on sign over
     eight seeds. Asserted as a bound on the gap rather than an order, because an order would be
     asserting a sign the measurement says is not there."""
     gap = abs(shipped.lift("adjusted") - shipped.lift("myopic"))
@@ -40,7 +41,7 @@ def test_the_horizon_pays_once_the_carryover_ordering_contradicts_the_immediate_
 ) -> None:
     """The falsification arm, and what makes the null above a measurement rather than an absence.
     Same ``gamma``, so the myopic rule's ordering is untouched; only ``beta/theta`` moves, and moves
-    until the best immediate channel is the worst carryover channel. 6 of 6 seeds."""
+    until the best immediate channel is the worst carryover channel. 8 of 8 seeds."""
     assert carryover_dominant.lift("adjusted") > carryover_dominant.lift("myopic")
     gap = carryover_dominant.lift("adjusted") - carryover_dominant.lift("myopic")
     assert gap > 0.05 * carryover_dominant.lift("myopic")

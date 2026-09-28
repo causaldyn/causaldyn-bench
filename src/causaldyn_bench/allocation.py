@@ -13,19 +13,20 @@ That is a 2x2 in (identified?) x (forward-looking?), which is what separates the
 case study makes into two measurements. What it measured is not what the track was built to show.
 
 **On the shipped plant the identification axis pays and the horizon axis does not.** Over eight
-seeds, mean lift over doing nothing: ``CHC-adjusted 46.56``, ``myopic-greedy 46.88``,
-``equal-split 44.11``, ``naive-MMM 36.70``. Adjusting for the season is worth ``+9.9`` and wins at
-**8 of 8** seeds; looking past this week is worth ``-0.3`` and its sign flips **5/3**, with
-``|difference| <= 6.2%`` of the mean lift. Both identified rules beat the equal split at **8 of 8**.
+seeds, mean lift over doing nothing: ``CHC-adjusted 46.43``, ``myopic-greedy 46.11``,
+``equal-split 44.09``, ``naive-MMM 36.49``. Adjusting for the season is worth ``+9.9`` and wins at
+**8 of 8** seeds; looking past this week is worth ``+0.3`` and its sign flips **3/5**, inside
+``7%`` of the mean lift at every seed but one (``+7.3`` at seed 4). ``CHC-adjusted`` beats the
+equal split at **8 of 8**, ``myopic-greedy`` at **7 of 8**.
 
 **And the design that flips it is one line, which is what makes the null meaningful.** A myopic rule
 loses when the carryover ordering CONTRADICTS the immediate one -- not merely because carryover
 exists. On the shipped plant ``beta_c/theta_c`` ranks the channels ``(1.29, 1.50, 1.60)`` against
 ``gamma_c``'s ``(0.50, 0.20, 0.35)``: the two orderings disagree about the top channel but AGREE
 about which to drop, and dropping ``social`` is most of the available gain. Re-parameterise so the
-best immediate channel is the worst carryover channel -- ``beta/theta`` of ``(0.07, 8.00, 1.60)`` at
+best immediate channel is the worst carryover channel -- ``beta/theta`` of ``(0.10, 8.00, 1.60)`` at
 unchanged ``gamma``, so the myopic rule's ordering is untouched by construction -- and
-``CHC-adjusted`` beats ``myopic-greedy`` at **6 of 6** seeds by ``2.11..3.40`` (``+8.8%`` on the
+``CHC-adjusted`` beats ``myopic-greedy`` at **8 of 8** seeds by ``1.20..3.79`` (``+9.5%`` on the
 mean). The equal split then catches the optimiser, because concentration is now the error.
 
 So the transferable reading is: looking ahead buys nothing on its own; it buys the difference
@@ -49,7 +50,10 @@ _ARMS: tuple[tuple[str, str], ...] = (
 
 # Same gammas as the default, so the myopic rule's channel ordering is unchanged; only the
 # carryover is moved, and moved until it contradicts that ordering rather than merely differing.
-CARRYOVER_DOMINANT = MarketingMixSystem(beta=(0.1, 1.6, 0.8), theta=(1.5, 0.2, 0.5))
+# Search decays at 1.0 a week and no faster because the plan reads the weekly log through RK4: at
+# 1.5 seed 0's log falls by more in a week (0.2668 +- 0.0033) than any RK4 step can (0.2704), at
+# 1.2 the rk4 fit has no fixed point at seed 5, and prescribe refuses both.
+CARRYOVER_DOMINANT = MarketingMixSystem(beta=(0.1, 1.6, 0.8), theta=(1.0, 0.2, 0.5))
 
 
 def track_allocation(seed: int = 0, horizon: int = 12) -> list[TrackResult]:
