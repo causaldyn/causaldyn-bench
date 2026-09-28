@@ -358,7 +358,7 @@ optimiser that does not depend on the scale of the model being compared. See §7
 
 ## Status
 
-v0.0.1 scaffold: all five tracks run on the synthetic CHC systems (a damped oscillator with hidden cubic
+Tracks A–E run on the synthetic CHC systems (a damped oscillator with hidden cubic
 physics for A/B/E, a confounded linear system for C, the CHC oracle-regret tasks plus the
 **adaptive-CV-compute** task for D). A **BOPTEST** (HVAC control) client + control episode ship in
 `causaldyn_bench.boptest`, gated on a running BOPTEST service (`BOPTEST_URL`). The CHC identification +
