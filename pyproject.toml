@@ -66,3 +66,5 @@ select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+# a name chc's top level only serves with a warning is imported from its module here
+filterwarnings = ["error:chc\\.\\w+ leaves the top level:DeprecationWarning"]

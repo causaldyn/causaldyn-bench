@@ -63,12 +63,12 @@ import jax.numpy as jnp
 import numpy as np
 from chc import (
     AffinePolicy,
-    EvaluationMethod,
     InfeasibleEvaluation,
     LinearGaussianPlant,
     QuadraticCost,
     evaluate_plan,
 )
+from chc.evaluation import EvaluationMethod
 from scipy.linalg import solve_discrete_are, solve_discrete_lyapunov
 from scipy.stats import beta
 

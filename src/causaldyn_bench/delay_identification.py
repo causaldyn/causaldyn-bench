@@ -37,7 +37,7 @@ from __future__ import annotations
 import jax
 import jax.numpy as jnp
 import numpy as np
-from chc import exact_delayed_rollout
+from chc.delay import exact_delayed_rollout
 from chc.irf import delay_estimate
 
 from causaldyn_bench.tracks import TrackResult

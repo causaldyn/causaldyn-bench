@@ -18,7 +18,9 @@ from typing import Any
 
 import jax
 import jax.numpy as jnp
-from chc import QuadraticCost, projected_gradient_control, total_cost
+from chc import QuadraticCost
+from chc.control import projected_gradient_control
+from chc.cost import total_cost
 from chc.dynamics import Dynamics
 
 from causaldyn_bench.tracks import DT, TrackResult, fit_dynamics_models

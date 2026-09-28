@@ -11,7 +11,7 @@ just its accuracy. Both DGPs match the gated ``chc`` tests. See plans/18.
 from __future__ import annotations
 
 import numpy as np
-from chc import irf_control_sequence, local_projection_irf, structured_irf
+from chc.irf import irf_control_sequence, local_projection_irf, structured_irf
 
 from causaldyn_bench.tracks import TrackResult
 

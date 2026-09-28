@@ -100,7 +100,8 @@ from typing import Any, Literal
 
 import jax.numpy as jnp
 import numpy as np
-from chc import CausalGraph, Lever, Panel, Prescription, Target, prescribe
+from chc import CausalGraph, Lever, Panel, Target, prescribe
+from chc.decision import Prescription
 
 from causaldyn_bench.boptest import DEFAULT_URL, BOPTestClient, baseline_controller, is_available
 from causaldyn_bench.boptest import run_episode as run_baseline_episode

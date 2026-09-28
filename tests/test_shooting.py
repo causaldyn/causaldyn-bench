@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import jax.numpy as jnp
-from chc import QuadraticCost, total_cost
+from chc import QuadraticCost
+from chc.cost import total_cost
 
 from causaldyn_bench.shooting import cross_entropy_control, planner_gap, track_planner
 from causaldyn_bench.tracks import DT, fit_dynamics_models

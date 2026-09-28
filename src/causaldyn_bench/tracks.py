@@ -17,22 +17,15 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 import numpy as np
-from chc import (
-    BackdoorOLS,
-    ConfoundedLinearSystem,
-    DampedOscillator,
-    DoubleML,
-    HybridDynamics,
-    MLPResidual,
-    QuadraticCost,
-    ZeroResidual,
-    fit_residual,
-    one_step_mse,
-    projected_gradient_control,
-    rk4_step,
-    rollout,
-)
+from chc import HybridDynamics, QuadraticCost
 from chc.benchmark import InventoryTask, PricingTask, SupportShiftTask
+from chc.causal import ConfoundedLinearSystem
+from chc.control import projected_gradient_control
+from chc.dynamics import DampedOscillator
+from chc.estimators import BackdoorOLS, DoubleML
+from chc.integrate import rk4_step, rollout
+from chc.residual import MLPResidual, ZeroResidual
+from chc.train import fit_residual, one_step_mse
 
 from causaldyn_bench.baselines import LinearFitDynamics
 

@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import jax.numpy as jnp
 import numpy as np
-from chc import discover_lagged_parents, estimate_control_effect, partial_corr_test
+from chc.causal import estimate_control_effect
+from chc.discovery import discover_lagged_parents
+from chc.independence import partial_corr_test
 
 from causaldyn_bench.tracks import TrackResult
 
