@@ -144,7 +144,7 @@ def pendulum() -> Operating:
         env.state = np.array([math.pi + x[0], x[1]])
 
     def clipped(env: Any, applied: float) -> bool:
-        return abs(applied) > bound or abs(env.state[1]) >= speed
+        return abs(applied) > bound or abs(float(env.state[1])) >= speed
 
     # continuous time, theta_ddot = -gravity phi - gain kd theta_dot: 2 zeta omega = gain kd
     damping = 2.0 * DAMPING_RATIO * math.sqrt(gravity) / gain
