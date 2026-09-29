@@ -66,6 +66,21 @@ and still covers. And with the logger clipping 2% of steps (the stress row), FQE
 covers 0.900, a bias of 0.018 its certificate cannot see, while `"mis"` and `"dr"` hold. See
 `results/track_o.md`.
 
+**Track P** (`causaldyn_bench.drift_calibration`, needs the `gym` extra) asks whether `chc.gate`'s
+channel-drift monitor keeps its false-alarm bound on the same two environments. Track O's moderate
+plan runs through each environment's own `step` with a logged Gaussian dither of a quarter of the
+bound and process noise on the state, and the monitor reads the dither against the environment's
+linearisation, whose drift is wrong away from the equilibrium. The plan's offset holds its mean
+command at 0.1 of the bound, where 0.1% of the actions clip, or at 0.8, where 23–26% do on an
+unmoved channel, and a clipped decision is read with its draw. Over 300 runs per arm at `A = 10³` (`just track-p`), on
+both environments, both plans and both nulls — the channel as modelled, and grown by exactly the
+radius — at most 0.013 of the runs alarmed within 100 decisions, where `α = H/A = 0.1` is allowed,
+and every run alarmed within `10 A`, after 1.77–2.57 `A` on average. A channel moved to 1.25 times
+the model's was caught on every run, after 96–101 decisions on average with the plan inside the
+bound and 204–223 with it on the bound. Setting the clipped decisions' e-values to 0 instead, which
+is also valid, caught it on 0.7% and 2.0% of the runs within 4000 decisions. See
+`results/track_p.md`.
+
 **Track N** (`causaldyn_bench.fold_design`) is the only track that varies nothing but the
 cross-fitting split, and its result is an ordering whose useful half is negative. On `C_12` with two
 clusters, over 120 draws: the Result 52 design **ties** the graph-blind split that keeps units
@@ -156,13 +171,14 @@ budget. Track A is expected to go to the trees; the value is Tracks B–D.
 ## Run
 
 ```bash
-uv sync --extra trees --extra gym        # tree baselines for A/B, Gymnasium for Tracks J and O
+uv sync --extra trees --extra gym        # tree baselines for A/B, Gymnasium for Tracks J, O and P
 uv run python -m causaldyn_bench         # print the leaderboard
 uv run python -m causaldyn_bench --save  # also write results/leaderboard.{md,json}
 uv run pytest                            # smoke tests
 just check                               # the ladder ci.yml runs: format, lint, tests
 just track-l                             # Track L against DCBO -> results/track_l.{md,json}
 just track-o                             # Track O, OPE coverage -> results/track_o.{md,json}
+just track-p                             # Track P, drift false alarms -> results/track_p.{md,json}
 ```
 
 ### Paper tables

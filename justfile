@@ -120,3 +120,9 @@ track-l:
 # extra. At 64-bit, so the estimate and the truth score the same cost matrices.
 track-o:
     JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.ope_calibration --out results
+
+# Track P -> results/track_p.{md,json}. Minutes: 300 runs per arm through each environment's own
+# step, a null's up to 10 000 decisions. Needs the `gym` extra. At 64-bit, so the plans' gains are
+# Track O's.
+track-p:
+    JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.drift_calibration --out results
