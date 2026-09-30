@@ -1,15 +1,29 @@
 """Track M v2, decisions: the quarter, a plan's worth and the best plan, checked apart from each
 other."""
 
+import dataclasses
+
 import jax
 import numpy as np
 import pytest
 from chc.allocation import allocate
-from chc.response import Channel, GeometricAdstock, Tanh
+from chc.response import Channel, GeometricAdstock, Tanh, Weibull
 from scipy.optimize import minimize
 
-from causaldyn_bench.endogenous_mmm import EndogenousMediaMix
-from causaldyn_bench.mmm_decision import PLANNED, Quarter, drawn, oracle, regret, worth
+from causaldyn_bench.endogenous_mmm import CURVES, EndogenousMediaMix
+from causaldyn_bench.mmm_decision import (
+    PLANNED,
+    Quarter,
+    _reaches,
+    _searched,
+    drawn,
+    oracle,
+    regret,
+    worth,
+)
+
+S_SHAPED = sorted(name for name, curve in CURVES.items() if not curve.concave)
+CONCAVE = sorted(name for name, curve in CURVES.items() if curve.concave)
 
 
 @pytest.fixture(scope="module")
@@ -159,3 +173,81 @@ def test_the_library_allocation_on_the_worlds_channels_is_the_oracle(worlds, x64
         np.testing.assert_allclose(plan.spend, best.weekly, rtol=1e-7, atol=1e-7)
         assert plan.worth == pytest.approx(best.worth, rel=1e-12)
         assert plan.price == pytest.approx(best.price, rel=1e-7)
+
+
+def _on(curve: str, seed: int):
+    world = dataclasses.replace(drawn(seed), curve=curve).simulate(seed)
+    return world, Quarter.after(world)
+
+
+@pytest.mark.parametrize("curve", CONCAVE)
+def test_the_search_finds_the_exact_plan_on_a_concave_curve(curve):
+    """The search the S-shaped curves need, where the bisection is exact: the two agree."""
+    for seed in range(3):
+        world, quarter = _on(curve, seed)
+        exact = oracle(world, quarter)
+        searched = _searched(quarter, _reaches(world, quarter))
+        assert searched.worth == pytest.approx(exact.worth, rel=1e-11)
+        np.testing.assert_allclose(searched.weekly, exact.weekly, rtol=1e-5, atol=1e-5)
+
+
+def _finest(world, quarter, points: int = 1201, along: int = 20_001) -> float:
+    """The best worth over every split of a grid, the third channel spending the rest, and over
+    a fine grid along each edge of the plans in the box, where one channel sits at an end of its
+    box, corners included, so a best plan at an edge or a corner is read to second order."""
+    reaches = _reaches(world, quarter)
+    rate = quarter.budget / PLANNED
+    low, high = quarter.lower, quarter.upper
+    first = np.linspace(low[0], high[0], points)[:, None]
+    second = np.linspace(low[1], high[1], points)[None, :]
+    third = rate - first - second
+    inside = (third >= low[2]) & (third <= high[2])
+    grid = reaches[0].worths(first[:, 0])[:, None] + reaches[1].worths(second[0])[None, :]
+    best = float(np.max(np.where(inside, grid + reaches[2].worths(third), -np.inf)))
+    for k in range(3):
+        i, j = (c for c in range(3) if c != k)
+        for end in (low[k], high[k]):
+            rest = rate - end  # what channels i and j spend together
+            start, stop = max(low[i], rest - high[j]), min(high[i], rest - low[j])
+            if start > stop:
+                continue
+            spend = np.empty((along, 3))
+            spend[:, k] = end
+            spend[:, i] = np.linspace(start, stop, along)
+            spend[:, j] = rest - spend[:, i]
+            total = sum(reaches[c].worths(spend[:, c]) for c in range(3))
+            best = max(best, float(np.max(total)))
+    return best
+
+
+@pytest.mark.parametrize("curve", S_SHAPED)
+def test_on_an_s_shaped_curve_no_plan_on_a_finer_grid_beats_the_oracle(curve):
+    """The searched plan against a finer grid of every split and of every edge of the box: none
+    better, and the best of them within a hundred-millionth of it, so the case bites."""
+    for seed in range(3):
+        world, quarter = _on(curve, seed)
+        best = oracle(world, quarter)
+        assert quarter.feasible(best.weekly)
+        assert best.worth == pytest.approx(worth(world, quarter, best.weekly), rel=1e-12)
+        finest = _finest(world, quarter)
+        assert finest <= best.worth * (1 + 1e-12)
+        assert finest >= best.worth * (1 - 1e-8)
+
+
+def test_a_plans_worth_on_an_s_shaped_curve_is_the_library_channels_return(x64):
+    world, quarter = _on("weibull-2", 4)
+    weekly = quarter.equal_split()
+    tail = np.zeros(world.kernel_length - 1)
+    expected = 0.0
+    for c, (alpha, lam, beta) in enumerate(
+        zip(world.retention, world.saturation, world.effect, strict=True)
+    ):
+        half = np.log(3.0) / lam
+        channel = Channel(
+            GeometricAdstock(alpha, length=6, normalized=True),
+            Weibull(half / np.sqrt(np.log(2.0)), 2.0),
+            beta,
+        )
+        spend = np.concatenate([world.spend[:, c], np.full(PLANNED, weekly[c]), tail])
+        expected += float(np.sum(np.asarray(channel(spend))[world.week.size :]))
+    assert worth(world, quarter, weekly) == pytest.approx(expected, rel=1e-12)

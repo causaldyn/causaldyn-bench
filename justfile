@@ -197,3 +197,14 @@ _track-m2-budgets work pilot shards:
     JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.budget_regret export --work {{work}} {{pilot}}
     for environment in drawn reference; do for k in $(seq 0 $(({{shards}} - 1))); do OMP_NUM_THREADS=1 uv run --no-project --python 3.12 --with-requirements scripts/pymc_marketing_arm.txt python -u scripts/pymc_marketing_arm.py --worlds {{work}}/$environment --out {{work}}/$environment/pymc --shard $k/{{shards}} & done; wait; done
     JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.budget_regret score --work {{work}} {{pilot}} --out results
+
+# Track M v2, families -> results/track_m2_families.{md,json}; `-pilot` runs the seeds the design
+# was set on into results/track_m2_families_pilot.{md,json}. Every world's channels carry one of six
+# curve families; each channel's tests are fitted under six candidate families, and the family AIC
+# picks is planned against the plan robust to every family the tests cannot reject, `workers`
+# processes at a time. At 64-bit, as the arms were piloted.
+track-m2-families workers="4":
+    JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.family_regret --workers {{workers}} --out results
+
+track-m2-families-pilot workers="4":
+    JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.family_regret --pilot --workers {{workers}} --out results

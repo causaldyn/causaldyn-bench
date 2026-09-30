@@ -37,13 +37,23 @@ import math
 from dataclasses import dataclass
 
 import numpy as np
-from scipy.optimize import brentq
+from scipy.optimize import brentq, minimize
 
-from causaldyn_bench.endogenous_mmm import YEAR, EndogenousMediaMix, MediaMixWorld, Series, Vector
+from causaldyn_bench.endogenous_mmm import (
+    CURVES,
+    YEAR,
+    Curve,
+    EndogenousMediaMix,
+    MediaMixWorld,
+    Series,
+    Vector,
+)
 
 PLANNED = 13  # weeks in the quarter planned
 BOX = (0.5, 2.0)  # a channel's weekly spend, as a multiple of its mean over the last year
 PARAMETER_STREAM = 7  # the channels' draw, apart from the world's own seed
+GRID = 401  # points a side of the searched oracle's grid over two channels' weekly spends
+STARTS = 8  # the grid's best points, apart from one another, that the search refines
 
 
 def drawn(seed: int, reference: EndogenousMediaMix | None = None) -> EndogenousMediaMix:
@@ -124,15 +134,20 @@ class _Reach:
     reach: Series
     saturation: float
     effect: float
+    curve: Curve
 
     def worth(self, weekly: float) -> float:
         adstock = self.carry + weekly * self.reach
-        return self.effect * float(np.sum(np.tanh(self.saturation * adstock / 2.0)))
+        return self.effect * float(np.sum(self.curve.value(adstock, self.saturation)))
+
+    def worths(self, weekly: Series) -> Series:
+        """:meth:`worth` at every entry of ``weekly``, whatever its shape."""
+        adstock = self.carry + np.asarray(weekly)[..., None] * self.reach
+        return self.effect * np.sum(self.curve.value(adstock, self.saturation), axis=-1)
 
     def slope(self, weekly: float) -> float:
         adstock = self.carry + weekly * self.reach
-        half = self.saturation / 2.0
-        return self.effect * half * float(np.sum(self.reach / np.cosh(half * adstock) ** 2))
+        return self.effect * float(np.sum(self.reach * self.curve.slope(adstock, self.saturation)))
 
 
 def _reaches(world: MediaMixWorld, quarter: Quarter) -> list[_Reach]:
@@ -152,7 +167,7 @@ def _reaches(world: MediaMixWorld, quarter: Quarter) -> list[_Reach]:
             return np.convolve(spend, kernel)[weeks : spend.size]
 
         carry = adstock(0.0)
-        reaches.append(_Reach(carry, adstock(1.0) - carry, lam, beta))
+        reaches.append(_Reach(carry, adstock(1.0) - carry, lam, beta, CURVES[world.curve]))
     return reaches
 
 
@@ -171,13 +186,16 @@ class Plan:
 def oracle(world: MediaMixWorld, quarter: Quarter) -> Plan:
     """The best plan in the box at the budget, on the world's own channels.
 
-    Each channel's worth is concave in its weekly spend, ``tanh`` of an affine adstock, and the
-    channels add, so the plan is exact: at a price ``mu`` per euro, each channel runs where its
-    slope over the quarter meets ``PLANNED * mu`` or sits at the end of its box, and ``mu`` is
-    found where the plan spends the budget. Written apart from every arm's planner, which this
-    scores.
+    Where the world's curve is concave, as his ``tanh`` is, each channel's worth is concave in its
+    weekly spend, the curve of an affine adstock, and the channels add, so the plan is exact: at a
+    price ``mu`` per euro, each channel runs where its slope over the quarter meets
+    ``PLANNED * mu`` or sits at the end of its box, and ``mu`` is found where the plan spends the
+    budget. An S-shaped curve's worth is not concave, and its plan is searched (:func:`_searched`).
+    Written apart from every arm's planner, which this scores.
     """
     reaches = _reaches(world, quarter)
+    if not CURVES[world.curve].concave:
+        return _searched(quarter, reaches)
 
     def weekly_at(price: float) -> Series:
         rates = []
@@ -203,6 +221,55 @@ def oracle(world: MediaMixWorld, quarter: Quarter) -> Plan:
         price = brentq(excess, 0.0, ceiling, xtol=1e-14, rtol=4 * np.finfo(float).eps)
     weekly = weekly_at(price)
     return Plan(weekly, worth(world, quarter, weekly), price)
+
+
+def _searched(quarter: Quarter, reaches: list[_Reach]) -> Plan:
+    """The best plan of three channels whose worths need not be concave: every split on a grid of
+    the first two channels' boxes, the third spending the rest, then SLSQP from the grid's best
+    points, each some cells from the others, and the best it reaches. Its price is the Lagrange
+    multiplier of the budget there, where the plan is interior; nan otherwise."""
+    if len(reaches) != 3:
+        raise ValueError(f"the searched plan takes three channels, not {len(reaches)}")
+    rate = quarter.budget / PLANNED
+    low, high = quarter.lower, quarter.upper
+    first = np.linspace(low[0], high[0], GRID)
+    second = np.linspace(low[1], high[1], GRID)
+    third = rate - first[:, None] - second[None, :]
+    inside = (third >= low[2]) & (third <= high[2])
+    grid = reaches[0].worths(first)[:, None] + reaches[1].worths(second)[None, :]
+    grid = np.where(inside, grid + reaches[2].worths(np.clip(third, low[2], high[2])), -np.inf)
+    starts: list[tuple[int, int]] = []
+    for flat in np.argsort(grid, axis=None)[::-1]:
+        i, j = (int(k) for k in np.unravel_index(flat, grid.shape))
+        if not np.isfinite(grid[i, j]) or len(starts) == STARTS:
+            break
+        if all(max(abs(i - a), abs(j - b)) > 4 for a, b in starts):
+            starts.append((i, j))
+
+    def total(weekly: Series) -> float:
+        return sum(r.worth(float(w)) for r, w in zip(reaches, weekly, strict=True))
+
+    def slopes(weekly: Series) -> Series:
+        return np.array([r.slope(float(w)) for r, w in zip(reaches, weekly, strict=True)])
+
+    weekly, best = quarter.status_quo, -math.inf
+    for i, j in starts:
+        solution = minimize(
+            lambda w: -total(w),
+            np.array([first[i], second[j], third[i, j]]),
+            jac=lambda w: -slopes(w),
+            method="SLSQP",
+            bounds=list(zip(low, high, strict=True)),
+            constraints=[{"type": "eq", "fun": lambda w: float(np.sum(w)) - rate}],
+            options={"ftol": 1e-15, "maxiter": 1000},
+        )
+        moved = quarter.project(solution.x)
+        value = total(moved)
+        if value > best:
+            weekly, best = moved, value
+    free = (weekly > low * (1 + 1e-9)) & (weekly < high * (1 - 1e-9))
+    price = float(np.mean(slopes(weekly)[free])) / PLANNED if free.any() else math.nan
+    return Plan(weekly, best, price)
 
 
 def regret(world: MediaMixWorld, quarter: Quarter, weekly: Series, best: Plan) -> float:

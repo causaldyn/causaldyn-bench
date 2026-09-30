@@ -35,15 +35,21 @@ each, added to the two.
 Where the paper leaves a detail open, the choice is named where it is made (``CHOICE``): the
 television burst weeks, the processes' starting values, the quarters' boundaries, the weeks
 before the bidding rule has ten weeks of history, and the price the measurement layer reads.
+
+Beyond the paper, ``curve`` puts another family in his curve's place (:data:`CURVES`), each at half
+its ceiling where his is, at ``ln 3 / lambda``, so a world can hold a curve its analyst's family is
+not. His is the default, and computed as he writes it.
 """
 
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import numpy as np
 from numpy.typing import NDArray
+from scipy.special import expit, logit
 
 Series = NDArray[np.float64]
 # a one-axis Series, typed so: iterated, its entries are scalars, where a Series leaves them open
@@ -66,6 +72,76 @@ TV_BURSTS: tuple[tuple[int, int, float], ...] = ((48, 52, 15.0), (23, 25, 8.0))
 YEAR = 52
 QUARTER = 13
 ELASTICITY = -0.9
+
+LN2, LN3 = math.log(2.0), math.log(3.0)
+STEEPNESS = 4.0  # the logistic curve's
+# the logistic's midpoint in half-saturations: there sigma(s (z - 1)) is (1 + sigma(-s)) / 2
+_MIDPOINT = 1.0 / (1.0 + float(logit((1.0 + expit(-STEEPNESS)) / 2.0)) / STEEPNESS)
+
+
+@dataclass(frozen=True)
+class Curve:
+    """A channel's curve on its adstock ``a``, given his ``lambda``: its value, rising from 0 to 1,
+    and its slope in ``a``."""
+
+    value: Callable[[Series, float], Series]
+    slope: Callable[[Series, float], Series]
+    concave: bool  # from zero adstock; otherwise S-shaped
+
+
+def _hill(a: Series, lam: float) -> Series:
+    z = a * lam / LN3
+    return z**2 / (1.0 + z**2)
+
+
+def _hill_slope(a: Series, lam: float) -> Series:
+    z = a * lam / LN3
+    return 2.0 * z / (1.0 + z**2) ** 2 * lam / LN3
+
+
+def _weibull(a: Series, lam: float) -> Series:
+    return -np.expm1(-LN2 * (a * lam / LN3) ** 2)
+
+
+def _weibull_slope(a: Series, lam: float) -> Series:
+    z = a * lam / LN3
+    return 2.0 * LN2 * z * np.exp(-LN2 * z**2) * lam / LN3
+
+
+def _logistic(a: Series, lam: float) -> Series:
+    z = a * lam / LN3 / _MIDPOINT
+    return (expit(STEEPNESS * (z - 1.0)) - expit(-STEEPNESS)) / expit(STEEPNESS)
+
+
+def _logistic_slope(a: Series, lam: float) -> Series:
+    z = a * lam / LN3 / _MIDPOINT
+    rise = expit(STEEPNESS * (z - 1.0))
+    return STEEPNESS * rise * (1.0 - rise) / expit(STEEPNESS) * lam / LN3 / _MIDPOINT
+
+
+# his curve, tanh(lambda a / 2), and five others, each written from its definition and at half its
+# ceiling where his is, at ln 3 / lambda: the exponential and Michaelis-Menten, concave from zero as
+# his is, and Hill of slope 2, Weibull of shape 2 and the logistic of steepness 4, S-shaped
+CURVES: dict[str, Curve] = {
+    "tanh": Curve(
+        lambda a, lam: np.tanh(lam * a / 2.0),
+        lambda a, lam: lam / 2.0 / np.cosh(lam * a / 2.0) ** 2,
+        concave=True,
+    ),
+    "exponential": Curve(
+        lambda a, lam: -np.expm1(-LN2 * a * lam / LN3),
+        lambda a, lam: LN2 * lam / LN3 * np.exp(-LN2 * a * lam / LN3),
+        concave=True,
+    ),
+    "michaelis-menten": Curve(
+        lambda a, lam: a / (LN3 / lam + a),
+        lambda a, lam: LN3 / lam / (LN3 / lam + a) ** 2,
+        concave=True,
+    ),
+    "hill-2": Curve(_hill, _hill_slope, concave=False),
+    "weibull-2": Curve(_weibull, _weibull_slope, concave=False),
+    "logistic-4": Curve(_logistic, _logistic_slope, concave=False),
+}
 
 
 @dataclass(frozen=True)
@@ -97,6 +173,7 @@ class MediaMixWorld:
     saturation: tuple[float, ...]
     effect: tuple[float, ...]
     kernel_length: int
+    curve: str = "tanh"  # every channel's, a key of CURVES
 
     @property
     def promotion_weeks(self) -> NDArray[np.bool_]:
@@ -133,6 +210,7 @@ class MediaMixWorld:
             self.saturation[column],
             self.effect[column],
             self.kernel_length,
+            self.curve,
         )
         gap = effect - self.media[:, column]
         rng = np.random.default_rng(seed)
@@ -193,6 +271,7 @@ class EndogenousMediaMix:
     anticipatory: bool = True
     bursts: bool = True
     bidding: bool = True
+    curve: str = "tanh"  # every channel's, a key of CURVES; his is tanh
 
     def __post_init__(self) -> None:
         sizes = {
@@ -209,6 +288,8 @@ class EndogenousMediaMix:
             raise ValueError(f"the bidding channel {self.bidding_channel!r} is not a channel")
         if self.weeks < 2 * QUARTER + 1:
             raise ValueError(f"{self.weeks} weeks leave the quarterly budget nothing to review")
+        if self.curve not in CURVES:
+            raise ValueError(f"the curve {self.curve!r} is not one of {sorted(CURVES)}")
 
     def simulate(self, seed: int = 0) -> MediaMixWorld:
         rng = np.random.default_rng(seed)
@@ -256,7 +337,7 @@ class EndogenousMediaMix:
 
         media = np.column_stack(
             [
-                _media(spend[:, c], alpha, lam, beta, self.kernel_length)
+                _media(spend[:, c], alpha, lam, beta, self.kernel_length, self.curve)
                 for c, (alpha, lam, beta) in enumerate(
                     zip(self.retention, self.saturation, self.effect, strict=True)
                 )
@@ -293,6 +374,7 @@ class EndogenousMediaMix:
             saturation=self.saturation,
             effect=self.effect,
             kernel_length=self.kernel_length,
+            curve=self.curve,
         )
 
 
@@ -363,10 +445,14 @@ def _bidding(premedia: Series) -> Series:
     return rho
 
 
-def _media(spend: Series, alpha: float, lam: float, beta: float, length: int) -> Series:
-    """Eq. 7-8 on one channel: the normalised geometric adstock through ``tanh(lam x / 2)``, with
-    nothing spent before the history."""
+def _media(
+    spend: Series, alpha: float, lam: float, beta: float, length: int, curve: str = "tanh"
+) -> Series:
+    """Eq. 7-8 on one channel: the normalised geometric adstock through ``tanh(lam x / 2)``, or
+    through ``curve``, with nothing spent before the history."""
     weights = alpha ** np.arange(length)
     weights = weights / weights.sum()
     adstock = np.convolve(spend, weights)[: spend.size]
-    return beta * (1.0 - np.exp(-lam * adstock)) / (1.0 + np.exp(-lam * adstock))
+    if curve == "tanh":  # Eq. 8 as he writes it, which the committed results were drawn with
+        return beta * (1.0 - np.exp(-lam * adstock)) / (1.0 + np.exp(-lam * adstock))
+    return beta * CURVES[curve].value(adstock, lam)
