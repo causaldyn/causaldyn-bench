@@ -224,6 +224,8 @@ just track-o                             # Track O, OPE coverage -> results/trac
 just track-p                             # Track P, drift false alarms -> results/track_p.{md,json}
 just track-q                             # Track Q, graph errors -> results/track_q.{md,json}
 just track-m2-lift                       # Track M v2, lift intervals -> results/track_m2_lift.{md,json}
+just track-m2-budgets-pilot              # Track M v2, budgets, the pilot -> results/track_m2_budgets_pilot.{md,json}
+just track-m2-budgets                    # Track M v2, budgets, pre-registered -> results/track_m2_budgets.{md,json}
 ```
 
 ### Paper tables

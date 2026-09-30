@@ -160,3 +160,17 @@ track-q:
 # reads the readouts at the precision the NumPy world draws them in.
 track-m2-lift:
     JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.lift_calibration --out results
+
+# Track M v2, budgets -> results/track_m2_budgets.{md,json}; `-pilot` runs the seeds the design was
+# set on into results/track_m2_budgets_pilot.{md,json}. The worlds and their geo tests are exported
+# for PyMC-Marketing, which fits them in its own pinned environment and never enters the lock, in
+# `shards` processes; a shard that dies leaves worlds without a record, and the scoring then refuses
+# to run. Then every arm's plan is scored against the oracle. At 64-bit, as the arms were piloted.
+track-m2-budgets shards="2": (_track-m2-budgets "outputs/track_m2_budgets" "" shards)
+
+track-m2-budgets-pilot shards="2": (_track-m2-budgets "outputs/track_m2_budgets_pilot" "--pilot" shards)
+
+_track-m2-budgets work pilot shards:
+    JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.budget_regret export --work {{work}} {{pilot}}
+    for environment in drawn reference; do for k in $(seq 0 $(({{shards}} - 1))); do OMP_NUM_THREADS=1 uv run --no-project --python 3.12 --with-requirements scripts/pymc_marketing_arm.txt python -u scripts/pymc_marketing_arm.py --worlds {{work}}/$environment --out {{work}}/$environment/pymc --shard $k/{{shards}} & done; wait; done
+    JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.budget_regret score --work {{work}} {{pilot}} --out results
