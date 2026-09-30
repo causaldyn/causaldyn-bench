@@ -206,7 +206,7 @@ wheels = [
 
 [[package]]
 name = "causal-hybrid-control"
-version = "0.7.0"
+version = "0.8.0"
 source = { editable = "../causal-hybrid-control" }
 dependencies = [
     { name = "diffrax" },
@@ -242,11 +242,13 @@ requires-dist = [
 provides-extras = ["trees"]
 
 [package.metadata.requires-dev]
+cuda = [{ name = "jax", extras = ["cuda13"], marker = "sys_platform == 'linux'" }]
 dev = [
     { name = "hypothesis", specifier = ">=6.100" },
     { name = "pandas", specifier = ">=2.0" },
     { name = "polars", specifier = ">=1.0" },
     { name = "pytest", specifier = ">=8" },
+    { name = "pytest-xdist", specifier = ">=3.8.0" },
     { name = "ruff", specifier = ">=0.6" },
     { name = "ty", specifier = ">=0.0.61" },
 ]
