@@ -162,6 +162,19 @@ his; at ten times it under-covers, 0.878, and 4 fits of 500 raise rather than co
 his noise the retention covers 0.918 (0.890-0.941), under the nominal; on television, 0.958. By
 construction the world is a reading of his paper (R19). See `results/track_m2_lift.md`.
 
+Its second score is the decision (`just track-m2-budgets`, `causaldyn_bench.budget_regret`,
+pre-registered in that module's docstring before any scored world ran): a quarter's budget over his
+channels, each world's channels drawn from the hull of his table, and each arm's regret per euro
+against the best plan in the box, carryover included. Over 200 drawn worlds CHC, reading each
+channel from its own four go-dark tests and planning with `chc.allocation`, loses **0.050** per euro
+[0.038, 0.062], PyMC-Marketing 1.2.0 with the same tests as lift measurements and its own optimiser
+**0.048** [0.038, 0.058], the status quo 0.209, the equal split 0.218, the fit to the history alone
+0.220 and the myopic plan 0.075. CHC beats every arm but PyMC-Marketing, each paired interval under
+nought; against PyMC-Marketing it ties, **+0.002** [-0.011, +0.015], lower in 79 worlds and higher
+in 78. The pre-registered gate, CHC below PyMC-Marketing, is not met, as predicted. On his reference
+instance, whose best plan is a corner, the myopic plan and PyMC-Marketing both beat CHC. In 554 of
+the 600 drawn channels the tests left the curve's bend unread. See `results/track_m2_budgets.md`.
+
 **Track K** (`causaldyn_bench.delay_identification`) is the only track whose payoff is
 *discontinuous*. Every other board scores a cost gap; here the closed loop is `x' = -K·x(t − τ)`,
 whose exact boundary is `K·τ = π/2`, so getting the delay wrong enough is a Hopf bifurcation rather
