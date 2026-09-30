@@ -208,3 +208,13 @@ track-m2-families workers="4":
 
 track-m2-families-pilot workers="4":
     JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.family_regret --pilot --workers {{workers}} --out results
+
+# Track M v2, the observational check -> results/track_m2_check.{md,json}; `-pilot` runs the seeds
+# the design was set on into results/track_m2_check_pilot.{md,json}. Each channel's lift fit checks
+# the world's own channel and the observational fit's, `workers` processes at a time. At 64-bit, as
+# the check was piloted.
+track-m2-check workers="4":
+    JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.observational_check --workers {{workers}} --out results
+
+track-m2-check-pilot workers="4":
+    JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.observational_check --pilot --workers {{workers}} --out results
