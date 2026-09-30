@@ -39,7 +39,7 @@ from dataclasses import dataclass
 import numpy as np
 from scipy.optimize import brentq
 
-from causaldyn_bench.endogenous_mmm import YEAR, EndogenousMediaMix, MediaMixWorld, Series
+from causaldyn_bench.endogenous_mmm import YEAR, EndogenousMediaMix, MediaMixWorld, Series, Vector
 
 PLANNED = 13  # weeks in the quarter planned
 BOX = (0.5, 2.0)  # a channel's weekly spend, as a multiple of its mean over the last year
@@ -74,8 +74,8 @@ class Quarter:
     the spend before the quarter. Weekly spends are ``(channels,)``, in thousands of euros."""
 
     budget: float  # over the quarter, every channel
-    lower: Series
-    upper: Series
+    lower: Vector
+    upper: Vector
     status_quo: Series
     history: Series  # (weeks, channels)
 

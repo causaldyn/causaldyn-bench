@@ -42,6 +42,7 @@ def test_save_results_writes_a_snapshot(tmp_path) -> None:
 
 @pytest.mark.parametrize("backend", ["pandas", "polars"])
 def test_to_frame_carries_the_same_records_into_either_backend(backend) -> None:
+    pytest.importorskip(backend)  # polars publishes no free-threaded wheels
     rows = [
         TrackResult("A-onestep", "m1", "rmse", 0.1),
         TrackResult("C-effect", "m2", "abs-error", 0.2, lower_is_better=False),

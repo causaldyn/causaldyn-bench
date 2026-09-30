@@ -241,6 +241,12 @@ just track-m2-budgets-pilot              # Track M v2, budgets, the pilot -> res
 just track-m2-budgets                    # Track M v2, budgets, pre-registered -> results/track_m2_budgets.{md,json}
 ```
 
+Every recipe runs on the CPU, the device the committed results came from; a GPU reproduces them to
+rounding, not bit for bit. `just sync` adds JAX's build for this machine's accelerator, CUDA 13 or
+12 as `nvidia-smi` reports the driver, and `just test` runs the tests on it. The accelerator
+extras, `cuda13`, `cuda12`, `cuda13-local`, `cuda12-local`, `rocm7-local`, `tpu` and `oneapi`, are
+the library's, which are JAX's. Python 3.11–3.15, the free-threaded 3.14t and 3.15t included.
+
 ### Paper tables
 
 Every table in papers P1 ("Debias every channel"), P2 ("Fold design for cross-fitting on networks

@@ -4,11 +4,29 @@
 # transcribed. `just types` checks the local `.venv`'s interpreter, with the `notebooks` group
 # synced; ci.yml runs it on every supported one, because uv.lock resolves a newer numpy from 3.12.
 
+# Every recipe runs on the CPU, the device the committed results came from: a GPU reproduces them
+# to rounding, not bit for bit. `JAX_PLATFORMS=cuda just track-q` asks for the GPU; `test` alone
+# takes whatever this machine has.
+export JAX_PLATFORMS := env("JAX_PLATFORMS", "cpu")
+
+# JAX's build for this machine's accelerator, as the extra that installs it: CUDA 13 where the
+# NVIDIA driver is 580 or newer and the GPU of compute capability 7.5 or newer, CUDA 12 from driver
+# 525, none otherwise. `sync` and `test` install it into `.venv`; CI never does. Override with
+# `just accelerator=cuda12 test`, or `just accelerator= test` for none.
+accelerator := `timeout 10 nvidia-smi --query-gpu=driver_version,compute_cap --format=csv,noheader 2>/dev/null | awk -F', ' 'NR == 1 { if ($1 + 0 >= 580 && $2 + 0 >= 7.5) print "cuda13"; else if ($1 + 0 >= 525) print "cuda12" }'`
+extra := if accelerator == "" { "" } else { "--extra " + accelerator }
+
 default:
     @just --list
 
 # The Python ladder, cheapest first. Stops at the first failure.
-check: fmt lint types test
+check: fmt lint types test-cpu
+
+# `.venv` exactly as the lock has it, with the extras the tracks need, the `notebooks` group `types`
+# reads and this machine's accelerator build. A plain `uv sync` removes the build again; `uv run`
+# leaves it in place.
+sync:
+    uv sync --extra trees --extra gym --group notebooks {{extra}}
 
 fmt:
     uv run ruff format --check .
@@ -19,8 +37,13 @@ lint:
 types:
     uv run ty check
 
-# addopts already carries -q; a second one suppresses the summary line entirely.
+# addopts already carries -q; a second one suppresses the summary line entirely. `test` runs on the
+# device the accelerator build gives jax -- the GPU, where there is one -- and `test-cpu` on the CPU
+# CI runs on, whatever is installed.
 test:
+    env -u JAX_PLATFORMS uv run {{extra}} pytest
+
+test-cpu:
     uv run pytest
 
 fix:

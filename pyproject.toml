@@ -3,7 +3,7 @@ name = "causaldyn-bench"
 version = "0.1.0"
 description = "A benchmark for causal, constrained, dynamical decision-making: it scores predictions and decisions, not just one-step error."
 readme = "README.md"
-requires-python = ">=3.11,<3.15"
+requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "Ilia Gradina", email = "ilia.gradina@gmail.com" }]
 classifiers = [
@@ -11,6 +11,10 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "Programming Language :: Python :: Free Threading :: 2 - Beta",
+    "Environment :: GPU :: NVIDIA CUDA :: 12",
+    "Environment :: GPU :: NVIDIA CUDA :: 13",
 ]
 dependencies = [
     "causal-hybrid-control",
@@ -22,6 +26,15 @@ trees = ["causal-hybrid-control[trees]"]  # tree baselines for Track A/B
 gym = [
     "gymnasium>=1.0",
 ]
+# JAX's build for an accelerator, through the library's extra of the same name, which is JAX's own.
+cpu = ["causal-hybrid-control[cpu]"]
+cuda13 = ["causal-hybrid-control[cuda13]"]
+cuda12 = ["causal-hybrid-control[cuda12]"]
+cuda13-local = ["causal-hybrid-control[cuda13-local]"]
+cuda12-local = ["causal-hybrid-control[cuda12-local]"]
+rocm7-local = ["causal-hybrid-control[rocm7-local]"]
+tpu = ["causal-hybrid-control[tpu]"]
+oneapi = ["causal-hybrid-control[oneapi]"]
 
 [dependency-groups]
 dev = [
@@ -44,6 +57,20 @@ notebooks = [
     "pandas>=2.0",
 ]
 
+[tool.uv]
+# One accelerator per environment: two plugins would both claim the device.
+conflicts = [
+    [
+        { extra = "cuda13" },
+        { extra = "cuda12" },
+        { extra = "cuda13-local" },
+        { extra = "cuda12-local" },
+        { extra = "rocm7-local" },
+        { extra = "tpu" },
+        { extra = "oneapi" },
+    ],
+]
+
 [tool.uv.sources]
 causal-hybrid-control = { path = "../causal-hybrid-control", editable = true }
 
@@ -62,6 +89,12 @@ extend-exclude = ["notebooks"]  # notebook sources carry cell magics / non-impor
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.ty.environment]
+# The interpreter `.python-version` pins, not the floor: ty reads the environment's stubs at this
+# version, and a target below the environment reads them on a branch they were never written for.
+# ci.yml's lint legs pass each interpreter's own.
+python-version = "3.14"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

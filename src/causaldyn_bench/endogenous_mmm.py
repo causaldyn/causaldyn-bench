@@ -46,6 +46,8 @@ import numpy as np
 from numpy.typing import NDArray
 
 Series = NDArray[np.float64]
+# a one-axis Series, typed so: iterated, its entries are scalars, where a Series leaves them open
+Vector = np.ndarray[tuple[int], np.dtype[np.float64]]
 
 # his Table I: first week of the year, last week, discount, elasticity multiplier
 PROMOTIONS: tuple[tuple[int, int, float, float], ...] = (

@@ -128,7 +128,8 @@ def transfer_constants(
 
     logs = np.log(curve.deltas)
     worst = 0.0
-    for index, order in enumerate(curve.orders):
+    orders: np.ndarray[tuple[int], np.dtype[np.float64]] = curve.orders
+    for index, order in enumerate(orders):
         predicted = 2.0 * order + _window_terms(logs, float(order), first, second)
         # what is left after two terms is bounded from above by the next one -- one more power of
         # `e = delta^p` on the first -- and from below by what double precision invents; whichever

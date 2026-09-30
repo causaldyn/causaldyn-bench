@@ -233,7 +233,9 @@ def best_response(
 def _grid_minimum(
     scm: DynamicSCM, t: int, prev: Slice, variables: ExplorationSet, axes: list[Array]
 ) -> tuple[Array, float]:
-    points = np.stack([mesh.ravel() for mesh in np.meshgrid(*axes, indexing="ij")], axis=1)
+    points: np.ndarray[tuple[int, int], np.dtype[np.float64]] = np.stack(
+        [mesh.ravel() for mesh in np.meshgrid(*axes, indexing="ij")], axis=1
+    )
     columns = dict(zip(variables, points.T, strict=True))
     with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
         outcome = scm.step(t, prev, do_x=columns.get("X"), do_z=columns.get("Z")).y

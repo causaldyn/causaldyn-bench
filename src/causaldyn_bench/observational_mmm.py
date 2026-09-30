@@ -25,7 +25,7 @@ from numpy.typing import NDArray
 from scipy.optimize import least_squares, lsq_linear
 from scipy.stats import gamma
 
-from causaldyn_bench.endogenous_mmm import YEAR, MediaMixWorld, Series
+from causaldyn_bench.endogenous_mmm import YEAR, MediaMixWorld, Series, Vector
 
 HARMONICS = 3
 RETENTION_BOX = (0.0, 0.95)
@@ -101,7 +101,8 @@ def fit_observational(
     floor = np.concatenate([np.full(controls.shape[1], -np.inf), np.zeros(count)])
 
     def design(z: Series) -> Series:
-        retention, scale = z[:count], np.exp(z[count:])
+        retention: Vector = z[:count]
+        scale: Vector = np.exp(z[count:])
         media = [
             np.tanh(_adstock(observed.spend[:, c], r, length) / k)
             for c, r, k in zip(unknown, retention, scale, strict=True)

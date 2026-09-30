@@ -31,10 +31,12 @@ jobs:
     runs-on: ubuntu-latest
     # Every supported interpreter, not the floor alone: uv.lock resolves a newer numpy from Python
     # 3.12, whose stubs type some calls differently, so a floor-only job never sees what they flag.
+    # ty checks each at its own version. A free-threaded build resolves as its twin with the GIL
+    # does -- no marker tells the two apart -- so it adds no leg here.
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.11", "3.12", "3.13", "3.14", "3.15"]
     defaults:
       run:
         working-directory: causaldyn-bench
@@ -60,14 +62,22 @@ jobs:
       - name: Format check
         run: uv run ruff format --check .
       - name: Type check
-        run: uv run ty check
+        run: uv run ty check --python-version ${{ matrix.python-version }}
 
+  # The free-threaded legs leave out polars, whose runtime is abi3 and publishes no free-threaded
+  # wheel, since uv.lock cannot: PEP 508 has no marker for the build. Its test skips without it, and
+  # `--no-sync` keeps `uv run` from installing it again.
   test:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.11", "3.12", "3.13", "3.14", "3.15"]
+        include:
+          - python-version: "3.14t"
+            without: --no-install-package polars --no-install-package polars-runtime-32
+          - python-version: "3.15t"
+            without: --no-install-package polars --no-install-package polars-runtime-32
     defaults:
       run:
         working-directory: causaldyn-bench
@@ -84,9 +94,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Sync dependencies
-        run: uv sync --group dev
+        run: uv sync --group dev ${{ matrix.without }}
       - name: Tests
-        run: uv run pytest
+        run: uv run --no-sync pytest
 
   test-x64:
     runs-on: ubuntu-latest
