@@ -42,6 +42,7 @@ from causaldyn_bench.endogenous_mmm import EndogenousMediaMix
 from causaldyn_bench.lift_calibration import (
     COOLDOWN,
     PRE,
+    STARTS,
     TEST,
     Setting,
     clopper_pearson,
@@ -62,6 +63,7 @@ def test_a_quiet_go_dark_test_reduces_to_its_gap_over_the_dark_weeks():
     experiment = world.geo_test("pla", quiet.starts, noise_share=1e-12, seed=1)
     assert rows.dropped == 0
     assert rows.channel == ("pla",) * len(quiet.starts)
+    assert rows.start == quiet.starts
     for k, start in enumerate(quiet.starts):
         gap = experiment.true_gap[experiment.readout(start)]
         assert rows.delta_y[k] == pytest.approx(np.sum(gap[PRE : PRE + TEST + COOLDOWN]) / TEST)
@@ -80,6 +82,8 @@ def test_a_test_whose_sales_did_not_fall_is_dropped_and_counted():
     assert rows.dropped == rose
     assert len(rows.channel) == len(tests) - rose
     assert np.all(rows.delta_y < 0.0)
+    fell = [s for s, t in zip(STARTS, tests, strict=True) if float(np.sum(t.difference[PRE:])) < 0]
+    assert rows.start == tuple(fell)
 
 
 def test_the_digest_reads_the_world_and_its_tests_and_nothing_else(world):
@@ -90,6 +94,12 @@ def test_the_digest_reads_the_world_and_its_tests_and_nothing_else(world):
     assert digest(other, lift_rows(experiments(other, 906))) != digest(world, rows)
     nudged = dataclasses.replace(rows, delta_y=rows.delta_y * (1.0 + 1e-12))
     assert digest(world, nudged) != digest(world, rows)
+
+
+def test_the_digest_is_the_one_the_pre_registered_records_were_fitted_under(world):
+    # computed at d6cf637, the commit the pre-registered PyMC-Marketing records ran from: a digest
+    # that moves orphans them, since the scoring refuses a record fitted to other data
+    assert digest(world, lift_rows(experiments(world, 905))) == "aba9555185e64d61"
 
 
 def test_export_writes_what_the_pymc_arm_reads(world, tmp_path):
@@ -104,6 +114,17 @@ def test_export_writes_what_the_pymc_arm_reads(world, tmp_path):
     np.testing.assert_array_equal(saved["lift_delta_y"], rows.delta_y)
     assert tuple(saved["lift_channel"]) == rows.channel
     assert tuple(saved["channels"]) == world.channels
+
+
+def test_export_dates_each_test_by_its_first_dark_week(world, tmp_path):
+    rows = lift_rows(experiments(world, 905))
+    saved = np.load(export(world, 905, rows, tmp_path))
+    assert int(saved["lift_weeks"]) == TEST
+    assert tuple(saved["lift_start"].tolist()) == rows.start
+    assert set(rows.start) <= set(STARTS)
+    for name, start, level in zip(rows.channel, rows.start, rows.x, strict=True):
+        dark = world.spend[start - 1 : start - 1 + TEST, world.channels.index(name)]
+        assert level == pytest.approx(float(np.mean(dark)))
 
 
 def _arms(world, pymc):

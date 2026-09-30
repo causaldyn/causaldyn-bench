@@ -230,9 +230,12 @@ def plans(
 @dataclass(frozen=True)
 class LiftRows:
     """Geo tests as PyMC-Marketing's lift measurements take them: a weekly spend ``x``, its change
-    ``delta_x`` and the weekly change in sales ``delta_y`` with its standard error ``sigma``."""
+    ``delta_x`` and the weekly change in sales ``delta_y`` with its standard error ``sigma``; and
+    each test's first dark week ``start``, numbered from 1 as the world's weeks are, which dates it
+    for a tool that calibrates on a test's window."""
 
     channel: tuple[str, ...]
+    start: tuple[int, ...]
     x: Series
     delta_x: Series
     delta_y: Series
@@ -250,7 +253,14 @@ def lift_rows(tests: dict[str, tuple[LiftTest, ...]]) -> LiftRows:
     needs a fall in sales for a cut in spend, so a test whose sales did not fall is dropped and
     counted.
     """
-    columns: dict[str, list] = {"channel": [], "x": [], "delta_x": [], "delta_y": [], "sigma": []}
+    columns: dict[str, list] = {
+        "channel": [],
+        "start": [],
+        "x": [],
+        "delta_x": [],
+        "delta_y": [],
+        "sigma": [],
+    }
     dropped = 0
     after = slice(PRE, PRE + TEST + COOLDOWN)
     for name, channel_tests in tests.items():
@@ -264,12 +274,15 @@ def lift_rows(tests: dict[str, tuple[LiftTest, ...]]) -> LiftRows:
                 dropped += 1
                 continue
             columns["channel"].append(name)
+            # the readout opens PRE weeks before the first dark week
+            columns["start"].append(test.control.history + PRE + 1)
             columns["x"].append(level)
             columns["delta_x"].append(-level)
             columns["delta_y"].append(change)
             columns["sigma"].append(noise * math.sqrt(TEST + COOLDOWN) / TEST)
     return LiftRows(
         channel=tuple(columns["channel"]),
+        start=tuple(columns["start"]),
         x=np.array(columns["x"]),
         delta_x=np.array(columns["delta_x"]),
         delta_y=np.array(columns["delta_y"]),
@@ -297,7 +310,9 @@ def digest(world: MediaMixWorld, rows: LiftRows) -> str:
 
 
 def export(world: MediaMixWorld, seed: int, rows: LiftRows, directory: Path) -> Path:
-    """What the PyMC-Marketing arm reads of one world, for a process in its own environment."""
+    """What an arm outside the bench reads of one world, for a process in its own environment:
+    PyMC-Marketing's lift rows, and each row's first dark week and the dark weeks' count, which
+    date a test for Robyn's calibration."""
     quarter = Quarter.after(world)
     path = directory / f"world_{seed}.npz"
     np.savez(
@@ -320,6 +335,8 @@ def export(world: MediaMixWorld, seed: int, rows: LiftRows, directory: Path) -> 
         lift_delta_y=rows.delta_y,
         lift_sigma=rows.sigma,
         lift_dropped=rows.dropped,
+        lift_start=np.array(rows.start, dtype=np.int64),
+        lift_weeks=TEST,
     )
     return path
 
