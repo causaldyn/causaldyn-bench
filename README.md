@@ -31,6 +31,7 @@ closed-loop decision. Built on
 | **M** allocation over time | media budget across channels **and** weeks, from a log whose planner chased the season | lift over doing nothing, audited on the true plant | *the identification axis* — and the horizon axis only when the two channel orderings conflict |
 | **L** sequential intervention | which variables to set, and to what, at each step of DCBO's three synthetic dynamic SCMs | regret vs the per-step oracle, each step against the arm's own history | *the reference methods, on their own ground* — the track says where CHC cannot follow, and where DCBO cannot |
 | **O** off-policy evaluation | does `evaluate_plan`'s 95% interval cover a feedback plan's online cost, estimated from another policy's logs, on two Gymnasium plants CHC did not write | interval coverage over 500 replicates, against ±2 points of nominal | *the interval, not a method* — the track is the 0.8.0 evidence gate |
+| **Q** graph errors | the graph handed to `prescribe` is wrong: does the logger check flag it before a plan or its evaluation fails silently | silent-failure rate, with the flag read as a stop, over 200 replicates of nine worlds | *the check, not a method* — it earns its stop on one error of eight |
 
 **Track L** (`causaldyn_bench.dcbo_track`) tests the "no analogues" claim in both directions
 against DCBO (Aglietti et al., NeurIPS 2021), the nearest academic statement of *which lever, how
@@ -80,6 +81,31 @@ the model's was caught on every run, after 96–101 decisions on average with th
 bound and 204–223 with it on the bound. Setting the clipped decisions' e-values to 0 instead, which
 is also valid, caught it on 0.7% and 2.0% of the runs within 4000 decisions. See
 `results/track_p.md`.
+
+**Track Q** (`causaldyn_bench.graph_errors`) hands `prescribe` a wrong graph and asks whether the
+logger check (ADR 0028, experimental) turns the error into a flag before a claim fails silently. On
+the lifecycle market, 400 units by 12 periods and 200 replicates a world (`just track-q`), a plan
+fails when its true mean path leaves the tolerance within the steps its certificate trusts, or when
+its true regret passes the certificate's bound by a tenth of the stakes; an evaluation fails when
+its interval misses. The check's size is 0.046 over 1600 true-graph panels, [0.036, 0.057]. It
+earns its stop, removing failures more often than it refuses sound claims over the true and the
+wrong graph (one-sided Fisher), on one error of eight: a persistent promotion the graph omits, which
+the logger reads and which moves supply, shows in the lever's own past and is flagged on every
+panel, and the stop removes the failures of 195 of 213 replicates while refusing 12 of 187 sound
+ones (`p = 2·10⁻⁷⁵`). Three errors fail silently on every replicate with the flag at its size: the
+same promotion drawn afresh each period (the check tests the columns the graph names, so an
+unnamed column is a hidden one); orders, a mediator the graph turns into a parent of the incentive,
+an orientation inside one Markov equivalence class, where the fitted channel reads −0.030 against
+0.080 and the plan's regret is 2.4 times doing nothing's; and sessions made a parent of the
+incentive while a latent that moves supply also drives them, where the channel reads 0.000 and the
+plan buys nothing, as it predicts. Where the flag fires on every panel it can cost: a logger that
+chases demand, one that keeps half its last incentive, and sessions whose other parent is adjusted
+too all leave the claims sound but one, and the stop refuses them all. A lever declared a
+non-ancestor is inert, since `prescribe` fits every lever it is given: that arm reads exactly as
+the oracle. Picking the adjustment set by fit ties the oracle in seven worlds and loses exactly
+where the wrong graph does. And the oracle fails too, on 9% of the persistent-promotion
+replicates: an adjustment covariate stays out of the fitted drift, where `chc.dynamics_id`'s scope
+note says a persistent driver belongs (R19: the worlds are CHC's). See `results/track_q.md`.
 
 **Track N** (`causaldyn_bench.fold_design`) is the only track that varies nothing but the
 cross-fitting split, and its result is an ordering whose useful half is negative. On `C_12` with two
@@ -179,6 +205,7 @@ just check                               # the ladder ci.yml runs: format, lint,
 just track-l                             # Track L against DCBO -> results/track_l.{md,json}
 just track-o                             # Track O, OPE coverage -> results/track_o.{md,json}
 just track-p                             # Track P, drift false alarms -> results/track_p.{md,json}
+just track-q                             # Track Q, graph errors -> results/track_q.{md,json}
 ```
 
 ### Paper tables

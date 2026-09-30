@@ -148,3 +148,9 @@ track-o:
 # Track O's.
 track-p:
     JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.drift_calibration --out results
+
+# Track Q -> results/track_q.{md,json}. 200 panels per world, three prescribe fits and an evaluation
+# on each, dealt to `--workers` processes. At 64-bit, so the fitted channel is the one the truth is
+# read against.
+track-q:
+    JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.graph_errors --out results
