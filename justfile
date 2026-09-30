@@ -96,6 +96,28 @@ boptest-prescribe-live url="http://127.0.0.1:8000":
     JAX_ENABLE_X64=1 timeout -s INT 14400 uv run python -u -m causaldyn_bench.boptest_prescribe \
         --url {{url}} --out results/boptest_prescribe
 
+# D21, L8.1 rerun with the band, the weather and the schedule stated: hours. The design's six
+# replicates are dealt to `workers` processes, one BOPTEST worker each (scale the service to match),
+# each resumable from its own journal; the last step collects them. The library runs from an archive
+# of its HEAD, so edits to the checkout cannot reach the run, and that commit is recorded.
+boptest-rerun-live url="http://127.0.0.1:8000" workers="3":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    lib=../causal-hybrid-control
+    commit=$(git -C "$lib" rev-parse --short=12 HEAD)
+    snapshot=$(mktemp -d)
+    trap 'rm -rf "$snapshot"' EXIT
+    git -C "$lib" archive "$commit" src | tar -x -C "$snapshot"
+    export PYTHONPATH="$snapshot/src" JAX_ENABLE_X64=1
+    pids=()
+    for w in $(seq 0 $(({{workers}} - 1))); do
+        timeout -s INT 43200 uv run python -u -m causaldyn_bench.boptest_rerun --url {{url}} \
+            --replicates $(seq "$w" {{workers}} 5) &
+        pids+=($!)
+    done
+    for pid in "${pids[@]}"; do wait "$pid"; done
+    uv run python -u -m causaldyn_bench.boptest_rerun --url {{url}} --chc-commit "$commit"
+
 # Hours, not minutes -- 8 horizons x (1 + 5 seeds x 3 widths x 2 optimisers) solves. Run it detached.
 paper-4:
     uv run python -u -m causaldyn_bench.paper_four --out results/paper4
