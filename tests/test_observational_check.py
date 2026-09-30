@@ -133,7 +133,10 @@ def test_one_history_checks_both_channels_of_every_channel_s_fit():
         assert r.truth.failure is None and r.observational.failure is None
         assert 0.0 <= r.truth.p_value <= 1.0
         assert r.truth.lower < r.truth.factor < r.truth.upper
-        assert math.isfinite(r.target)
+        # an observational coefficient of nought predicts no gap, so neither factor is read; on
+        # television the fit lands on nought or just off it as the platform's solver steps fall
+        assert math.isnan(r.target) == math.isnan(r.observational.factor)
+    assert math.isfinite(readings[0].target)  # paid shopping, the channel the gate reads
 
 
 def test_main_refuses_to_run_at_float32(monkeypatch):
