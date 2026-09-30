@@ -175,6 +175,20 @@ in 78. The pre-registered gate, CHC below PyMC-Marketing, is not met, as predict
 instance, whose best plan is a corner, the myopic plan and PyMC-Marketing both beat CHC. In 554 of
 the 600 drawn channels the tests left the curve's bend unread. See `results/track_m2_budgets.md`.
 
+Its third score is the check of an observational channel (`just track-m2-check`,
+`causaldyn_bench.observational_check`, pre-registered in that module's docstring):
+`chc.lift.check_observational` reads the channel his realistic specification fits to the history
+against the four go-dark tests of it, an F test of whether the tests' gaps could be its own and the
+factor of its predicted lift they read. Over 500 histories on paid shopping the F rejected the truth
+in **0.054** [0.036, 0.078], the factor's interval covered 1 in 0.938 and the observational
+channel's noise-free factor in 0.939, and the F rejected the observational channel in **0.998**:
+the pre-registered gate, the truth rejected in at most 0.07, both intervals covering in at least
+0.93 and the observational channel rejected in at least 0.90, is met. The pilot's F looked
+conservative, 0.030 of 100; over 500 it holds its level. The tests read a median factor of 0.505 of
+the observational channel's lift on paid shopping, a median least Γ of 2.75 at an effect-scale gap
+of 1, and of 0.181 on Meta, a Γ of 7.82: the history alone overstates the two about two- and
+fivefold. It reads no television in 430 of 500 histories. See `results/track_m2_check.md`.
+
 **Track K** (`causaldyn_bench.delay_identification`) is the only track whose payoff is
 *discontinuous*. Every other board scores a cost gap; here the closed loop is `x' = -K·x(t − τ)`,
 whose exact boundary is `K·τ = π/2`, so getting the delay wrong enough is a Hopf bifurcation rather
@@ -239,6 +253,8 @@ just track-q                             # Track Q, graph errors -> results/trac
 just track-m2-lift                       # Track M v2, lift intervals -> results/track_m2_lift.{md,json}
 just track-m2-budgets-pilot              # Track M v2, budgets, the pilot -> results/track_m2_budgets_pilot.{md,json}
 just track-m2-budgets                    # Track M v2, budgets, pre-registered -> results/track_m2_budgets.{md,json}
+just track-m2-check-pilot                # Track M v2, observational check, the pilot -> results/track_m2_check_pilot.{md,json}
+just track-m2-check                      # Track M v2, observational check, pre-registered -> results/track_m2_check.{md,json}
 ```
 
 Every recipe runs on the CPU, the device the committed results came from; a GPU reproduces them to
