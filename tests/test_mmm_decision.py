@@ -1,6 +1,7 @@
 """Track M v2, decisions: the quarter, a plan's worth and the best plan, checked apart from each
 other."""
 
+import jax
 import numpy as np
 import pytest
 from chc.allocation import allocate
@@ -17,7 +18,14 @@ def worlds():
     return reference + [drawn(seed).simulate(seed) for seed in range(5)]
 
 
-def test_a_plans_worth_is_the_library_channels_return_over_the_quarter_and_its_tail(worlds):
+@pytest.fixture
+def x64():
+    """The library's channels run in JAX; the agreement below is a float64 claim."""
+    with jax.enable_x64(True):
+        yield
+
+
+def test_a_plans_worth_is_the_library_channels_return_over_the_quarter_and_its_tail(worlds, x64):
     world = worlds[5]
     quarter = Quarter.after(world)
     weekly = quarter.equal_split()
@@ -128,7 +136,7 @@ def test_regret_refuses_a_plan_that_misses_the_budget(worlds):
         regret(world, quarter, 1.01 * quarter.status_quo, best)
 
 
-def test_the_library_allocation_on_the_worlds_channels_is_the_oracle(worlds):
+def test_the_library_allocation_on_the_worlds_channels_is_the_oracle(worlds, x64):
     """``chc.allocation.allocate``, which every planning arm calls, against the oracle written
     here without it."""
     for world in worlds:
