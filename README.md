@@ -145,6 +145,23 @@ channel is the worst carryover channel — `β/θ` of `(0.10, 8.00, 1.60)` at un
 myopic ordering is untouched by construction — and the CHC schedule wins **8 of 8** by `1.20…3.79`
 (`+9.5%`). The equal split then catches the optimiser, because concentration has become the error.
 
+**Track M v2** (`causaldyn_bench.endogenous_mmm`) is the media-mix world CHC did not write:
+Heusch's (2026b) generator, written clean-room from his paper (CC-BY-4.0; his code carries no
+licence and none of it was read), where spend follows the business. A quarterly budget follows
+sales, spend rises ahead of promotions, television bursts before Christmas, and paid shopping is bid
+up after good weeks, while every parameter is known. Its tests hold his reference instance's
+reported returns, shares and spend in distribution over 40 histories, and each media effect to
+`chc.response`'s `Channel`. The first thing it scores is `chc.lift` (`just track-m2-lift`,
+`causaldyn_bench.lift_calibration`): his (2026a) four go-dark tests of paid shopping, with noise of
+a percent of mean weekly sales in each group, on a fresh world each history. Over 500 histories the
+retention's 95% profile interval covered the truth in **0.954** (Clopper-Pearson 0.932-0.971), the
+gate being 0.95 ± 0.02; the scale's in 0.976 and the coefficient's in 0.978, the scale's mostly
+open upward, since his tests bend the curve little. The kill is measured, not argued: at three
+times the noise the retention still covers, 0.958, but 15% of its intervals close, against 81% at
+his; at ten times it under-covers, 0.878, and 4 fits of 500 raise rather than converge. On Meta at
+his noise the retention covers 0.918 (0.890-0.941), under the nominal; on television, 0.958. By
+construction the world is a reading of his paper (R19). See `results/track_m2_lift.md`.
+
 **Track K** (`causaldyn_bench.delay_identification`) is the only track whose payoff is
 *discontinuous*. Every other board scores a cost gap; here the closed loop is `x' = -K·x(t − τ)`,
 whose exact boundary is `K·τ = π/2`, so getting the delay wrong enough is a Hopf bifurcation rather
@@ -206,6 +223,7 @@ just track-l                             # Track L against DCBO -> results/track
 just track-o                             # Track O, OPE coverage -> results/track_o.{md,json}
 just track-p                             # Track P, drift false alarms -> results/track_p.{md,json}
 just track-q                             # Track Q, graph errors -> results/track_q.{md,json}
+just track-m2-lift                       # Track M v2, lift intervals -> results/track_m2_lift.{md,json}
 ```
 
 ### Paper tables

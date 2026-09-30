@@ -154,3 +154,9 @@ track-p:
 # read against.
 track-q:
     JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.graph_errors --out results
+
+# Track M v2, lift tests -> results/track_m2_lift.{md,json}. 500 histories of Heusch's world for each
+# of six settings, one chc.lift fit on each, dealt to `--workers` processes. At 64-bit, so the fit
+# reads the readouts at the precision the NumPy world draws them in.
+track-m2-lift:
+    JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.lift_calibration --out results
