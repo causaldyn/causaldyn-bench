@@ -230,6 +230,7 @@ trees = [
 [package.metadata]
 requires-dist = [
     { name = "catboost", marker = "extra == 'trees'", specifier = ">=1.2" },
+    { name = "diff-diff", marker = "extra == 'did'", specifier = ">=3.12,<4" },
     { name = "diffrax", specifier = ">=0.6" },
     { name = "equinox", specifier = ">=0.11.4" },
     { name = "jax", specifier = ">=0.4.30" },
@@ -239,11 +240,12 @@ requires-dist = [
     { name = "scikit-learn", marker = "extra == 'trees'", specifier = ">=1.4" },
     { name = "scipy", specifier = ">=1.13" },
 ]
-provides-extras = ["trees"]
+provides-extras = ["trees", "did"]
 
 [package.metadata.requires-dev]
 cuda = [{ name = "jax", extras = ["cuda13"], marker = "sys_platform == 'linux'" }]
 dev = [
+    { name = "diff-diff", specifier = ">=3.12,<4" },
     { name = "hypothesis", specifier = ">=6.100" },
     { name = "pandas", specifier = ">=2.0" },
     { name = "polars", specifier = ">=1.0" },
