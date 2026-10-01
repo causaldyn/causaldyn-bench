@@ -189,6 +189,23 @@ the observational channel's lift on paid shopping, a median least Γ of 2.75 at 
 of 1, and of 0.181 on Meta, a Γ of 7.82: the history alone overstates the two about two- and
 fivefold. It reads no television in 430 of 500 histories. See `results/track_m2_check.md`.
 
+Its fourth score is where a lift test runs (`just track-m2-geo`, `causaldyn_bench.geo_selection`,
+pre-registered in that module's docstring): a panel of 40 geos over his market, whose spend per
+head on paid shopping differs, so a set of heavy spenders reads the curve's bend and a set of light
+ones little more than its slope. Each arm picks a set holding a tenth of the population for his
+four go-dark tests, read against a synthetic control of the other geos, and the quarter is planned
+on the channel the tests fit. The regret arm picks the set whose test
+`chc.allocation.decision_weight` expects to leave the plan the least regret, its noise read on a
+pre-period window apart from the one the expectation reads. Over 500 worlds its plan loses
+**0.0050** per euro [0.0037, 0.0062], against **0.0143** for Abadie and Zhao's representative set,
+0.0164 for the set the synthetic control fits best, 0.0241 for a random set and 0.0289 for the
+heaviest spenders; paired, -0.0094 [-0.0128, -0.0059] against Abadie-Zhao's and -0.0191 [-0.0246,
+-0.0136] against random. It took Abadie-Zhao's set in 1% of worlds, and its tests' readings stayed
+within the placebo's band as often as a random set's, +0.004 [-0.004, +0.012]: the pre-registered
+gate is met and its kill does not fire. The regret it expected its tests to leave, 0.0028 per euro,
+under-states the 0.0050 they left. By construction the panel is this track's generator, not
+Heusch's (R19). See `results/track_m2_geo.md`.
+
 **Track K** (`causaldyn_bench.delay_identification`) is the only track whose payoff is
 *discontinuous*. Every other board scores a cost gap; here the closed loop is `x' = -K·x(t − τ)`,
 whose exact boundary is `K·τ = π/2`, so getting the delay wrong enough is a Hopf bifurcation rather
@@ -255,6 +272,8 @@ just track-m2-budgets-pilot              # Track M v2, budgets, the pilot -> res
 just track-m2-budgets                    # Track M v2, budgets, pre-registered -> results/track_m2_budgets.{md,json}
 just track-m2-check-pilot                # Track M v2, observational check, the pilot -> results/track_m2_check_pilot.{md,json}
 just track-m2-check                      # Track M v2, observational check, pre-registered -> results/track_m2_check.{md,json}
+just track-m2-geo-pilot                  # Track M v2, geo selection, the pilot -> results/track_m2_geo_pilot.{md,json}
+just track-m2-geo                        # Track M v2, geo selection, pre-registered -> results/track_m2_geo.{md,json}
 ```
 
 Every recipe runs on the CPU, the device the committed results came from; a GPU reproduces them to
