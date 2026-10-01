@@ -626,6 +626,9 @@ def score_world(seed: int) -> WorldScore:
     expected = np.array([d.screen**2 for d in designs]) * exposures
     finite = expected[np.isfinite(expected)]
     quartiles = np.percentile(finite, [25, 50, 75]) if finite.size else np.full(3, math.nan)
+    # the world's market channel carries its geos' weights as static fields, so no program JAX
+    # compiled for it serves another world, and its cache would keep every one, about 75 MB a world
+    jax.clear_caches()
     return WorldScore(
         seed=seed,
         budget=quarter.budget,
