@@ -228,3 +228,24 @@ track-m2-geo workers="4":
 
 track-m2-geo-pilot workers="4":
     JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.geo_selection --pilot --workers {{workers}} --out results
+
+# Track M v2, budgets, the external arms: Meridian and Robyn fit the same exported worlds, each in
+# an environment that never enters the lock, and write their records beside PyMC-Marketing's, in
+# `shards` processes. Meridian's environment is pinned in scripts/meridian_arm.txt; Robyn runs on a
+# scratch R library `rlib` and a Python environment `venv`, built as scripts/robyn_arm.lock.txt
+# records. The scoring does not read these records yet.
+track-m2-meridian shards="2": (_track-m2-meridian "outputs/track_m2_budgets" "" shards)
+
+track-m2-meridian-pilot shards="2": (_track-m2-meridian "outputs/track_m2_budgets_pilot" "--pilot" shards)
+
+_track-m2-meridian work pilot shards:
+    JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.budget_regret export --work {{work}} {{pilot}}
+    for environment in drawn reference; do for k in $(seq 0 $(({{shards}} - 1))); do JAX_PLATFORMS=cpu uv run --no-project --python 3.12 --with-requirements scripts/meridian_arm.txt python -u scripts/meridian_arm.py --worlds {{work}}/$environment --out {{work}}/$environment/meridian --shard $k/{{shards}} & done; wait; done
+
+track-m2-robyn rlib venv shards="2": (_track-m2-robyn "outputs/track_m2_budgets" "" rlib venv shards)
+
+track-m2-robyn-pilot rlib venv shards="2": (_track-m2-robyn "outputs/track_m2_budgets_pilot" "--pilot" rlib venv shards)
+
+_track-m2-robyn work pilot rlib venv shards:
+    JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.budget_regret export --work {{work}} {{pilot}}
+    for environment in drawn reference; do for k in $(seq 0 $(({{shards}} - 1))); do R_LIBS={{rlib}} R_LIBS_USER={{rlib}} RETICULATE_PYTHON={{venv}}/bin/python OMP_NUM_THREADS=1 timeout 7d Rscript --vanilla scripts/robyn_arm.R --worlds {{work}}/$environment --out {{work}}/$environment/robyn --shard $k/{{shards}} & done; wait; done
