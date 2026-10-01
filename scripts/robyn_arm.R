@@ -11,14 +11,17 @@
 #   weekly sales as revenue; each channel's spend as its paid media (no exposure metric);
 #   prophet's trend and season with no holidays; the observed promotion indicator and price as
 #   context variables; the modelling window the whole history;
-# * geometric adstock, every channel searched over the union of the demo's ranges: thetas 0-0.8,
-#   its rule of thumb for decay joined over the media genres (digital 0-0.3, OOH, print and radio
-#   0.1-0.4, TV 0.3-0.8), alphas 0.5-3 and gammas 0.3-1, its digital channels' (its offline ones'
-#   alphas, 0.5-1, lie inside); and the demo's train_size 0.5-0.8, inert with ts_validation off,
-#   as in the demo. CHOICE: the drawn worlds give every channel, whatever its genre, a retention
-#   drawn uniformly from 0.2 to 0.7, so the digital rule of thumb the demo gives its search and
-#   social channels would rule out four fifths of the range pla's and meta's retention is drawn
-#   from; the union holds every world's;
+# * geometric adstock, each channel searched over one of two settings of the demo's ranges, which
+#   --ranges names. `genre`: the demo's ranges for the demo channel each world channel stands for,
+#   pla a search channel (search_clicks_P's: alphas 0.5-3, gammas 0.3-1, thetas 0-0.3), meta a
+#   social one (facebook_I's, the same) and tv tv_S's (alphas 0.5-1, gammas 0.3-1, thetas 0.3-0.8),
+#   the thetas its rule of thumb for digital and TV decay. `union`: every channel over the union of
+#   the demo's ranges, thetas 0-0.8 (the rule of thumb joined over digital, OOH, print, radio and
+#   TV), alphas 0.5-3 and gammas 0.3-1. CHOICE: the drawn worlds give every channel, whatever its
+#   genre, a retention drawn uniformly from 0.2 to 0.7, four fifths of which the digital rule of
+#   thumb rules out for pla and meta and the union holds; the scored run takes the setting a pilot
+#   of both found better for Robyn, pre-registered in causaldyn_bench.external_arms. And the demo's
+#   train_size 0.5-0.8, inert with ts_validation off, as in the demo;
 # * every geo test the bench kept as one calibration_input row: the test's four dark weeks,
 #   liftStartDate the Monday of the first and liftEndDate the Monday of the last. CHOICE: Robyn
 #   scales its prediction by the lift's days over the days its decomposition covers, Monday to
@@ -55,7 +58,7 @@
 #
 #   R_LIBS=LIB R_LIBS_USER=LIB RETICULATE_PYTHON=VENV/bin/python \
 #       timeout SECONDS Rscript --vanilla scripts/robyn_arm.R --worlds DIR --out DIR \
-#       [--seeds FIRST:STOP] [--shard K/N]
+#       --ranges genre|union [--seeds FIRST:STOP] [--shard K/N]
 #
 # --seeds keeps the worlds from seed FIRST up to STOP, STOP left out, as Python's range, so a run
 # can fit a part of the worlds exported.
@@ -70,7 +73,14 @@ FIRST_MONDAY <- as.Date("2023-01-02")
 ITERATIONS <- 2000L
 TRIALS <- 10L
 CORES <- 4L
-RANGES <- list(alphas = c(0.5, 3), gammas = c(0.3, 1), thetas = c(0, 0.8)) # every channel's
+RANGES <- list(
+  genre = list(
+    pla = list(alphas = c(0.5, 3), gammas = c(0.3, 1), thetas = c(0, 0.3)), # search_clicks_P
+    meta = list(alphas = c(0.5, 3), gammas = c(0.3, 1), thetas = c(0, 0.3)), # facebook_I
+    tv = list(alphas = c(0.5, 1), gammas = c(0.3, 1), thetas = c(0.3, 0.8)) # tv_S
+  ),
+  union = list(alphas = c(0.5, 3), gammas = c(0.3, 1), thetas = c(0, 0.8)) # every channel's
+)
 PACKAGES <- c(
   "Robyn", "prophet", "rstan", "StanHeaders", "glmnet", "nloptr", "reticulate", "doRNG",
   "doParallel", "foreach", "dplyr", "jsonlite"
@@ -113,10 +123,12 @@ calibration <- function(world, dates) {
   )
 }
 
-hyperparameters <- function(channels) {
+hyperparameters <- function(channels, setting) {
   ranges <- list()
   for (name in channels) {
-    for (kind in names(RANGES)) ranges[[paste0(name, "_", kind)]] <- RANGES[[kind]]
+    own <- if (setting == "union") RANGES$union else RANGES$genre[[name]]
+    if (is.null(own)) stop("no ", setting, " ranges for channel ", name)
+    for (kind in names(own)) ranges[[paste0(name, "_", kind)]] <- own[[kind]]
   }
   ranges$train_size <- c(0.5, 0.8)
   ranges
@@ -143,7 +155,7 @@ timed <- function(expr) {
   list(value = value, seconds = proc.time()[["elapsed"]] - began)
 }
 
-plan_world <- function(path) {
+plan_world <- function(path, setting) {
   world <- read_world(path)
   seed <- as.integer(world$seed)
   set.seed(seed)
@@ -168,7 +180,7 @@ plan_world <- function(path) {
     window_start = as.character(dates[1]),
     window_end = as.character(dates[weeks]),
     adstock = "geometric",
-    hyperparameters = hyperparameters(channels),
+    hyperparameters = hyperparameters(channels, setting),
     calibration_input = lifts
   )
   fit <- timed({
@@ -277,7 +289,7 @@ plan_world <- function(path) {
     iterations = ITERATIONS,
     trials = TRIALS,
     cores = CORES,
-    ranges = RANGES,
+    ranges = RANGES[[setting]],
     lift_rows = length(world$lift_channel),
     lift_dropped = world$lift_dropped,
     error = NULL
@@ -309,6 +321,8 @@ main <- function() {
   worlds <- option(args, "--worlds")
   out <- option(args, "--out")
   shard <- as.integer(strsplit(option(args, "--shard", "0/1"), "/", fixed = TRUE)[[1]])
+  setting <- option(args, "--ranges")
+  if (!setting %in% names(RANGES)) stop("--ranges takes genre or union, not ", setting)
   library_path <- Sys.getenv("R_LIBS_USER")
   if (!nzchar(library_path) || Sys.getenv("R_LIBS") != library_path ||
     normalizePath(.libPaths()[1]) != normalizePath(library_path) ||
@@ -336,7 +350,7 @@ main <- function() {
     seen <- character()
     record <- tryCatch(
       withCallingHandlers(
-        plan_world(path),
+        plan_world(path, setting),
         error = function(e) calls <<- sys.calls(),
         warning = function(w) {
           seen <<- union(seen, conditionMessage(w))
