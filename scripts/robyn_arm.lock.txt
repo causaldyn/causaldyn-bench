@@ -1,0 +1,209 @@
+# The Robyn arm's environment, as built and run on 2026-10-01 (Fedora 44, x86_64). Nothing here
+# enters the bench's lock: R packages go into a scratch library SCRATCH/rlib and Python's nevergrad
+# into a throwaway environment SCRATCH/ngvenv; scripts/robyn_arm.R refuses to run unless R_LIBS and
+# R_LIBS_USER both name the library Robyn loads from. Each record also names the versions it ran on.
+#
+# System
+#   R 4.6.1 (2026-06-24): Fedora R-core-4.6.1-1.fc44 and R-core-devel-4.6.1-1.fc44; gcc-c++-16.2.1-2.fc44
+#   Python 3.13.15: Fedora python3.13-3.13.15-1.fc44, /usr/bin/python3.13, the base of SCRATCH/ngvenv.
+#   reticulate embeds libpython, and glibc 2.43 refuses uv's standalone libpython3.12.so, which asks
+#   for an executable stack ("cannot enable executable stack as shared object requires").
+#
+# Build flags, SCRATCH/Makevars (read through R_MAKEVARS_USER, so ~/.R/Makevars is not): Fedora's own
+# R flags less link-time optimisation, debug info and libstdc++ assertions, so rstan and prophet's
+# Stan model build in bounded memory; the hardened-cc1 spec stays, since R's LDFLAGS link executables
+# as PIE through the matching hardened-ld spec.
+#
+#   CFLAGS = -O2 -pipe -fexceptions -Wall -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection
+#   CXXFLAGS = -O2 -pipe -fexceptions -Wall -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection
+#   CXX17FLAGS = -O2 -pipe -fexceptions -Wall -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection
+#   CXX20FLAGS = -O2 -pipe -fexceptions -Wall -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection
+#   FFLAGS = -O2 -pipe -fexceptions -Wall -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection
+#   FCFLAGS = -O2 -pipe -fexceptions -Wall -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -m64 -march=x86-64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection
+#
+# Rebuild the R library, as run: Robyn's whole Depends/Imports/LinkingTo closure less base and
+# recommended packages, from CRAN's sources on 2026-10-01.
+#
+#   mkdir -p SCRATCH/rlib
+#   R_LIBS=SCRATCH/rlib R_LIBS_USER=SCRATCH/rlib R_MAKEVARS_USER=SCRATCH/Makevars MAKEFLAGS=-j2 \
+#     timeout 14400 Rscript --vanilla -e '
+#       options(repos = c(CRAN = "https://cloud.r-project.org"))
+#       lib <- Sys.getenv("R_LIBS_USER")
+#       stopifnot(normalizePath(.libPaths()[1]) == normalizePath(lib))
+#       ap <- available.packages()
+#       deps <- tools::package_dependencies("Robyn", db = ap, recursive = TRUE,
+#                                           which = c("Depends", "Imports", "LinkingTo"))[[1]]
+#       base <- rownames(installed.packages(priority = c("base", "recommended")))
+#       install.packages(sort(setdiff(c(deps, "Robyn"), base)), lib = lib, dependencies = FALSE,
+#                        Ncpus = 2)'
+#
+# CRAN moves, so a later rebuild installs later versions. This lists every package that differs
+# from the "R" lines below; install each listed one's locked version from CRAN's archive,
+# https://cloud.r-project.org/src/contrib/Archive/<package>/<package>_<version>.tar.gz:
+#
+#   R_LIBS=SCRATCH/rlib R_LIBS_USER=SCRATCH/rlib timeout 120 Rscript --vanilla -e '
+#     lock <- read.table(text = grep("^R ", readLines("scripts/robyn_arm.lock.txt"), value = TRUE))
+#     have <- installed.packages(lib.loc = Sys.getenv("R_LIBS_USER"))[, "Version"]
+#     print(lock[is.na(have[lock$V2]) | have[lock$V2] != lock$V3, 2:3])'
+#
+# Rebuild the Python environment from the pins below (uv pip compile of nevergrad and numpy for
+# Python 3.13):
+#
+#   grep -E "^[A-Za-z0-9._-]+==" scripts/robyn_arm.lock.txt > SCRATCH/nevergrad.txt
+#   uv venv --python /usr/bin/python3.13 SCRATCH/ngvenv
+#   uv pip install --python SCRATCH/ngvenv/bin/python -r SCRATCH/nevergrad.txt
+#
+# Run
+#
+#   R_LIBS=SCRATCH/rlib R_LIBS_USER=SCRATCH/rlib RETICULATE_PYTHON=SCRATCH/ngvenv/bin/python \
+#     OMP_NUM_THREADS=1 timeout <seconds> Rscript --vanilla scripts/robyn_arm.R --worlds DIR --out DIR
+#
+# R packages in SCRATCH/rlib, installed.packages(lib.loc = SCRATCH/rlib): package, version
+R abind 1.4-8
+R askpass 1.2.1
+R backports 1.5.1
+R base64enc 0.1-6
+R BH 1.90.0-1
+R bslib 0.12.0
+R cachem 1.1.0
+R callr 3.8.0
+R checkmate 2.3.4
+R cli 3.6.6
+R cpp11 0.5.5
+R curl 8.0.0
+R desc 1.4.3
+R digest 0.6.39
+R distributional 0.9.0
+R doParallel 1.0.17
+R doRNG 1.8.6.3
+R dplyr 1.2.1
+R dygraphs 1.1.1.6
+R evaluate 1.0.5
+R extraDistr 1.10.0.5
+R farver 2.1.2
+R fastmap 1.2.0
+R fontawesome 0.5.3
+R foreach 1.5.2
+R fs 2.1.0
+R generics 0.1.4
+R ggplot2 4.0.3
+R ggridges 0.5.7
+R glmnet 5.1
+R glue 1.8.1
+R gridExtra 2.3.1
+R gtable 0.3.6
+R here 1.0.2
+R highr 0.12
+R htmltools 0.5.9
+R htmlwidgets 1.6.4
+R httr 1.4.9
+R inline 0.3.21
+R isoband 0.3.0
+R iterators 1.0.14
+R jquerylib 0.1.4
+R jsonlite 2.0.0
+R knitr 1.52
+R labeling 0.4.3
+R lares 5.4.1
+R lifecycle 1.0.5
+R loo 2.10.1
+R lubridate 1.9.5
+R magrittr 2.0.5
+R matrixStats 1.5.0
+R memoise 2.0.1
+R mime 0.13
+R nloptr 2.2.1
+R numDeriv 2016.8-1.1
+R openssl 2.4.2
+R openxlsx 4.2.9
+R otel 0.2.0
+R patchwork 1.3.2
+R pillar 1.11.1
+R pkgbuild 1.4.8
+R pkgconfig 2.0.3
+R png 0.1-9
+R posterior 1.7.0
+R pROC 1.19.1
+R processx 3.9.0
+R prophet 1.1.7
+R ps 1.9.3
+R purrr 1.2.2
+R QuickJSR 1.11.0
+R R6 2.6.1
+R rappdirs 0.3.4
+R RColorBrewer 1.1-3
+R Rcpp 1.1.2
+R RcppArmadillo 15.6.0-1
+R RcppEigen 0.3.4.0.2
+R RcppParallel 6.2.1
+R RcppTOML 0.2.3
+R reticulate 1.47.0
+R rlang 1.3.0
+R rmarkdown 2.32
+R rngtools 1.5.2
+R Robyn 3.12.1
+R rpart.plot 3.1.5
+R rprojroot 2.1.1
+R rstan 2.32.7
+R rstantools 2.7.1
+R rvest 1.0.5
+R S7 0.2.2
+R sass 0.4.10
+R scales 1.4.0
+R selectr 0.8-0
+R shape 1.4.6.1
+R StanHeaders 2.39.1
+R stringi 1.8.9
+R stringr 1.6.0
+R sys 3.4.3
+R tensorA 0.36.2.1
+R tibble 3.3.1
+R tidyr 1.3.2
+R tidyselect 1.2.1
+R timechange 0.4.0
+R tinytex 0.61
+R utf8 1.2.6
+R vctrs 0.7.3
+R viridisLite 0.4.3
+R withr 3.0.3
+R xfun 0.61
+R xml2 1.6.0
+R xts 0.14.3
+R yaml 2.3.12
+R zip 3.0.2
+R zoo 1.9-1
+# Base and recommended packages in Robyn's closure, loaded from the system library: package,
+# version, priority, library
+system codetools 0.2-20 recommended /usr/local/lib/R/library
+system compiler 4.6.1 base /usr/lib64/R/library
+system graphics 4.6.1 base /usr/lib64/R/library
+system grDevices 4.6.1 base /usr/lib64/R/library
+system grid 4.6.1 base /usr/lib64/R/library
+system lattice 0.22-9 recommended /usr/local/lib/R/library
+system Matrix 1.7-5 recommended /usr/local/lib/R/library
+system methods 4.6.1 base /usr/lib64/R/library
+system parallel 4.6.1 base /usr/lib64/R/library
+system rpart 4.1.27 recommended /usr/lib64/R/library
+system splines 4.6.1 base /usr/lib64/R/library
+system stats 4.6.1 base /usr/lib64/R/library
+system stats4 4.6.1 base /usr/lib64/R/library
+system survival 3.8-6 recommended /usr/local/lib/R/library
+system tools 4.6.1 base /usr/lib64/R/library
+system utils 4.6.1 base /usr/lib64/R/library
+# Python packages in SCRATCH/ngvenv
+bayesian-optimization==1.4.0
+cloudpickle==3.1.2
+cma==4.5.0
+directsearch==1.1
+joblib==1.6.0
+narwhals==2.26.0
+nevergrad==1.0.12
+numpy==2.5.3
+pandas==3.0.6
+python-dateutil==2.9.0.post0
+scikit-learn==1.9.1
+scipy==1.18.1
+setuptools==84.0.0
+six==1.17.0
+threadpoolctl==3.7.0
+typing-extensions==4.16.0
