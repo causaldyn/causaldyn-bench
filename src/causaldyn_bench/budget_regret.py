@@ -315,8 +315,11 @@ def export(world: MediaMixWorld, seed: int, rows: LiftRows, directory: Path) -> 
     date a test for Robyn's calibration."""
     quarter = Quarter.after(world)
     path = directory / f"world_{seed}.npz"
+    # written aside and moved into place: two arms' recipes export the same worlds, and one may be
+    # reading a world while the other writes it again, which then reads the whole file, old or new
+    aside = directory / f".world_{seed}.{os.getpid()}.npz"
     np.savez(
-        path,
+        aside,
         seed=seed,
         digest=digest(world, rows),
         channels=np.array(world.channels),
@@ -338,6 +341,7 @@ def export(world: MediaMixWorld, seed: int, rows: LiftRows, directory: Path) -> 
         lift_start=np.array(rows.start, dtype=np.int64),
         lift_weeks=TEST,
     )
+    os.replace(aside, path)
     return path
 
 

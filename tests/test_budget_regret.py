@@ -106,6 +106,7 @@ def test_export_writes_what_the_pymc_arm_reads(world, tmp_path):
     rows = lift_rows(experiments(world, 905))
     quarter = Quarter.after(world)
     saved = np.load(export(world, 905, rows, tmp_path))
+    assert [path.name for path in tmp_path.iterdir()] == ["world_905.npz"]
     assert str(saved["digest"]) == digest(world, rows)
     assert float(saved["budget"]) == quarter.budget
     np.testing.assert_array_equal(saved["lower"], quarter.lower)
