@@ -206,6 +206,24 @@ gate is met and its kill does not fire. The regret it expected its tests to leav
 under-states the 0.0050 they left. By construction the panel is this track's generator, not
 Heusch's (R19). See `results/track_m2_geo.md`.
 
+Its fifth score is the curve's family (`just track-m2-families`, `causaldyn_bench.family_regret`,
+pre-registered in that module's docstring): the decision again, on worlds whose channels all follow
+one of six curves, tanh, the exponential and Michaelis-Menten, concave from zero, and Hill, Weibull
+and the logistic, S-shaped, each family on the same 100 seeds. Each channel's four go-dark tests are
+fitted under all six. One arm plans on each channel's least-AIC family; the robust arm keeps every
+family the tests cannot tell from the best and plans the split whose worst regret over them is
+least, `chc.allocation.minimax_allocate`. Both do worst on the logistic worlds, the robust plan at
+**0.389** per euro [0.308, 0.469] and AIC's at **0.370** [0.292, 0.448]; robust less AIC **+0.019**
+[-0.009, +0.055], bootstrapped over the seeds. The pre-registered gate, the robust plan's worst below
+AIC's, is not met; it was predicted met, narrowly. The robust plan's mean is above AIC's on all six
+families, and below the status quo's on all six, each of those intervals under nought. Not
+predicted: his tanh, planned whatever the world's curve, has the lowest mean of the arms on five
+families of six, the S-shaped Hill (0.126 against AIC's 0.206) and Weibull (0.229 against 0.302)
+among them; only on the logistic does AIC's choice do better (0.370 against 0.583). The run's first
+launch stopped before any score was written, on a degenerate S-shaped reading the hedge's linear
+program could not take; the library now builds that program in units of the largest best return,
+and the run was launched again whole. See `results/track_m2_families.md`.
+
 **Track K** (`causaldyn_bench.delay_identification`) is the only track whose payoff is
 *discontinuous*. Every other board scores a cost gap; here the closed loop is `x' = -K·x(t − τ)`,
 whose exact boundary is `K·τ = π/2`, so getting the delay wrong enough is a Hopf bifurcation rather
@@ -274,6 +292,8 @@ just track-m2-check-pilot                # Track M v2, observational check, the 
 just track-m2-check                      # Track M v2, observational check, pre-registered -> results/track_m2_check.{md,json}
 just track-m2-geo-pilot                  # Track M v2, geo selection, the pilot -> results/track_m2_geo_pilot.{md,json}
 just track-m2-geo                        # Track M v2, geo selection, pre-registered -> results/track_m2_geo.{md,json}
+just track-m2-families-pilot             # Track M v2, curve families, the pilot -> results/track_m2_families_pilot.{md,json}
+just track-m2-families                   # Track M v2, curve families, pre-registered -> results/track_m2_families.{md,json}
 ```
 
 Every recipe runs on the CPU, the device the committed results came from; a GPU reproduces them to
