@@ -297,7 +297,10 @@ just track-m2-families                   # Track M v2, curve families, pre-regis
 ```
 
 Every recipe runs on the CPU, the device the committed results came from; a GPU reproduces them to
-rounding, not bit for bit. `just sync` adds JAX's build for this machine's accelerator, CUDA 13 or
+rounding, not bit for bit. Track M v2's arms fitted outside the bench are tied to their worlds by a
+digest of the worlds' exact bits, which were exported on x86 without AVX-512: where numpy runs its
+AVX-512 kernels for float64 `exp`, `log` and `tanh`, the last bits differ (CI's faster runners), and
+the scoring refuses those records rather than score them on other worlds. `just sync` adds JAX's build for this machine's accelerator, CUDA 13 or
 12 as `nvidia-smi` reports the driver, and `just test` runs the tests on it. The accelerator
 extras, `cuda13`, `cuda12`, `cuda13-local`, `cuda12-local`, `rocm7-local`, `tpu` and `oneapi`, are
 the library's, which are JAX's. Python 3.11–3.15, the free-threaded 3.14t and 3.15t included.
