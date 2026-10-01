@@ -218,3 +218,13 @@ track-m2-check workers="4":
 
 track-m2-check-pilot workers="4":
     JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.observational_check --pilot --workers {{workers}} --out results
+
+# Track M v2, geo selection -> results/track_m2_geo.{md,json}; `-pilot` runs the seeds the design
+# was set on into results/track_m2_geo_pilot.{md,json}. A geo panel over each world's market, and a
+# go-dark test of paid shopping in the set of geos each arm chooses, read by a synthetic control,
+# fitted and planned on, `workers` processes at a time. At 64-bit, as the arms were piloted.
+track-m2-geo workers="4":
+    JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.geo_selection --workers {{workers}} --out results
+
+track-m2-geo-pilot workers="4":
+    JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.geo_selection --pilot --workers {{workers}} --out results

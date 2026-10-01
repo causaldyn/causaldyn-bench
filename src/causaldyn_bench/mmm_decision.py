@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import dataclasses
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
@@ -150,7 +151,12 @@ class _Reach:
         return self.effect * float(np.sum(self.reach * self.curve.slope(adstock, self.saturation)))
 
 
-def _reaches(world: MediaMixWorld, quarter: Quarter) -> list[_Reach]:
+def _reaches(
+    world: MediaMixWorld, quarter: Quarter, curves: Sequence[Curve] | None = None
+) -> list[_Reach]:
+    """Each channel's reach over the quarter, on the world's curve or on ``curves``, one a
+    channel, each read at the channel's ``lambda``."""
+    curves = curves or [CURVES[world.curve]] * len(world.channels)
     length = world.kernel_length
     weeks = quarter.history.shape[0]
     reaches = []
@@ -167,13 +173,16 @@ def _reaches(world: MediaMixWorld, quarter: Quarter) -> list[_Reach]:
             return np.convolve(spend, kernel)[weeks : spend.size]
 
         carry = adstock(0.0)
-        reaches.append(_Reach(carry, adstock(1.0) - carry, lam, beta, CURVES[world.curve]))
+        reaches.append(_Reach(carry, adstock(1.0) - carry, lam, beta, curves[c]))
     return reaches
 
 
-def worth(world: MediaMixWorld, quarter: Quarter, weekly: Series) -> float:
+def worth(
+    world: MediaMixWorld, quarter: Quarter, weekly: Series, curves: Sequence[Curve] | None = None
+) -> float:
     """What a plan's spend returns on the world's channels, carryover in and out included."""
-    return sum(r.worth(float(w)) for r, w in zip(_reaches(world, quarter), weekly, strict=True))
+    reaches = _reaches(world, quarter, curves)
+    return sum(r.worth(float(w)) for r, w in zip(reaches, weekly, strict=True))
 
 
 @dataclass(frozen=True)
@@ -183,8 +192,8 @@ class Plan:
     price: float  # the budget's shadow price: what one more euro of budget returns
 
 
-def oracle(world: MediaMixWorld, quarter: Quarter) -> Plan:
-    """The best plan in the box at the budget, on the world's own channels.
+def oracle(world: MediaMixWorld, quarter: Quarter, curves: Sequence[Curve] | None = None) -> Plan:
+    """The best plan in the box at the budget, on the world's own channels, or on ``curves``.
 
     Where the world's curve is concave, as his ``tanh`` is, each channel's worth is concave in its
     weekly spend, the curve of an affine adstock, and the channels add, so the plan is exact: at a
@@ -193,8 +202,8 @@ def oracle(world: MediaMixWorld, quarter: Quarter) -> Plan:
     budget. An S-shaped curve's worth is not concave, and its plan is searched (:func:`_searched`).
     Written apart from every arm's planner, which this scores.
     """
-    reaches = _reaches(world, quarter)
-    if not CURVES[world.curve].concave:
+    reaches = _reaches(world, quarter, curves)
+    if not all(r.curve.concave for r in reaches):
         return _searched(quarter, reaches)
 
     def weekly_at(price: float) -> Series:
@@ -220,7 +229,7 @@ def oracle(world: MediaMixWorld, quarter: Quarter) -> Plan:
     else:
         price = brentq(excess, 0.0, ceiling, xtol=1e-14, rtol=4 * np.finfo(float).eps)
     weekly = weekly_at(price)
-    return Plan(weekly, worth(world, quarter, weekly), price)
+    return Plan(weekly, worth(world, quarter, weekly, curves), price)
 
 
 def _searched(quarter: Quarter, reaches: list[_Reach]) -> Plan:
