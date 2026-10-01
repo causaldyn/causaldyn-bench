@@ -11,12 +11,14 @@
 #   weekly sales as revenue; each channel's spend as its paid media (no exposure metric);
 #   prophet's trend and season with no holidays; the observed promotion indicator and price as
 #   context variables; the modelling window the whole history;
-# * geometric adstock, and the demo's example hyperparameter ranges for the demo channel each
-#   world channel stands for. CHOICE: pla is a search channel, so it takes search_clicks_P's
-#   ranges (alphas 0.5-3, gammas 0.3-1, thetas 0-0.3); meta is social, so facebook_I's (the same);
-#   tv takes tv_S's (alphas 0.5-1, gammas 0.3-1, thetas 0.3-0.8), which are the demo's rule of
-#   thumb for digital and TV decay; and the demo's train_size 0.5-0.8, inert with ts_validation
-#   off, as in the demo;
+# * geometric adstock, every channel searched over the union of the demo's ranges: thetas 0-0.8,
+#   its rule of thumb for decay joined over the media genres (digital 0-0.3, OOH, print and radio
+#   0.1-0.4, TV 0.3-0.8), alphas 0.5-3 and gammas 0.3-1, its digital channels' (its offline ones'
+#   alphas, 0.5-1, lie inside); and the demo's train_size 0.5-0.8, inert with ts_validation off,
+#   as in the demo. CHOICE: the drawn worlds give every channel, whatever its genre, a retention
+#   drawn uniformly from 0.2 to 0.7, so the digital rule of thumb the demo gives its search and
+#   social channels would rule out four fifths of the range pla's and meta's retention is drawn
+#   from; the union holds every world's;
 # * every geo test the bench kept as one calibration_input row: the test's four dark weeks,
 #   liftStartDate the Monday of the first and liftEndDate the Monday of the last. CHOICE: Robyn
 #   scales its prediction by the lift's days over the days its decomposition covers, Monday to
@@ -31,10 +33,11 @@
 #   counts everything the channel returns inside the window, which, at the steady spend around a
 #   test, equals the whole return of the window's spend, since the carryover flowing in from
 #   before the window stands in for the carryover flowing out after it;
-# * robyn_run at the demo's settings: 2000 iterations, 5 trials, TwoPointsDE, ts_validation and
+# * robyn_run at the demo's settings: 2000 iterations, TwoPointsDE, ts_validation and
 #   add_penalty_factor off, seeded by the world's seed; cores 4. CHOICE: the demo takes every core
 #   but one, and nevergrad asks for as many candidates at a time as there are cores, so the count
-#   is part of the result and is fixed here;
+#   is part of the result and is fixed here. 10 trials, not the demo's 5: the demo runs 5 on its
+#   dummy data uncalibrated, and Robyn's own check asks a calibrated model for at least 10;
 # * model selection fixed before any score was read, Robyn's own: robyn_outputs with its
 #   defaults (Pareto fronts "auto", calibration_constraint 0.1, clusters on), then among the
 #   clusters' top models the one with the lowest error score, Robyn's normalised distance of
@@ -51,7 +54,11 @@
 #   spend (optmSpendUnit).
 #
 #   R_LIBS=LIB R_LIBS_USER=LIB RETICULATE_PYTHON=VENV/bin/python \
-#       timeout SECONDS Rscript --vanilla scripts/robyn_arm.R --worlds DIR --out DIR [--shard K/N]
+#       timeout SECONDS Rscript --vanilla scripts/robyn_arm.R --worlds DIR --out DIR \
+#       [--seeds FIRST:STOP] [--shard K/N]
+#
+# --seeds keeps the worlds from seed FIRST up to STOP, STOP left out, as Python's range, so a run
+# can fit a part of the worlds exported.
 #
 # scripts/robyn_arm.lock.txt records R, every package in the scratch library, the Python
 # environment's pins and the commands that rebuild them; each record names the versions it ran on
@@ -61,13 +68,9 @@ suppressPackageStartupMessages(library(Robyn))
 
 FIRST_MONDAY <- as.Date("2023-01-02")
 ITERATIONS <- 2000L
-TRIALS <- 5L
+TRIALS <- 10L
 CORES <- 4L
-DEMO_RANGES <- list(
-  pla = list(alphas = c(0.5, 3), gammas = c(0.3, 1), thetas = c(0, 0.3)), # search_clicks_P
-  meta = list(alphas = c(0.5, 3), gammas = c(0.3, 1), thetas = c(0, 0.3)), # facebook_I
-  tv = list(alphas = c(0.5, 1), gammas = c(0.3, 1), thetas = c(0.3, 0.8)) # tv_S
-)
+RANGES <- list(alphas = c(0.5, 3), gammas = c(0.3, 1), thetas = c(0, 0.8)) # every channel's
 PACKAGES <- c(
   "Robyn", "prophet", "rstan", "StanHeaders", "glmnet", "nloptr", "reticulate", "doRNG",
   "doParallel", "foreach", "dplyr", "jsonlite"
@@ -111,13 +114,9 @@ calibration <- function(world, dates) {
 }
 
 hyperparameters <- function(channels) {
-  unknown <- setdiff(channels, names(DEMO_RANGES))
-  if (length(unknown)) stop("no demo ranges for channel(s): ", paste(unknown, collapse = ", "))
   ranges <- list()
   for (name in channels) {
-    for (kind in c("alphas", "gammas", "thetas")) {
-      ranges[[paste0(name, "_", kind)]] <- DEMO_RANGES[[name]][[kind]]
-    }
+    for (kind in names(RANGES)) ranges[[paste0(name, "_", kind)]] <- RANGES[[kind]]
   }
   ranges$train_size <- c(0.5, 0.8)
   ranges
@@ -265,7 +264,7 @@ plan_world <- function(path) {
     lambda = model$lambda,
     channels = per_channel,
     lift_fit = lift_fit,
-    convergence = OutputModels$convergence$conv_msg,
+    convergence = I(OutputModels$convergence$conv_msg), # a list in the JSON, one message or many
     allocator = list(
       status = solver$status,
       message = solver$message,
@@ -278,6 +277,7 @@ plan_world <- function(path) {
     iterations = ITERATIONS,
     trials = TRIALS,
     cores = CORES,
+    ranges = RANGES,
     lift_rows = length(world$lift_channel),
     lift_dropped = world$lift_dropped,
     error = NULL
@@ -318,6 +318,13 @@ main <- function() {
   if (!nzchar(Sys.getenv("RETICULATE_PYTHON"))) stop("RETICULATE_PYTHON must name the venv's python")
   dir.create(out, recursive = TRUE, showWarnings = FALSE)
   paths <- sort(Sys.glob(file.path(worlds, "world_*.npz")), method = "radix")
+  seeds <- option(args, "--seeds", "")
+  if (nzchar(seeds)) {
+    span <- as.integer(strsplit(seeds, ":", fixed = TRUE)[[1]])
+    if (length(span) != 2L || anyNA(span)) stop("--seeds takes FIRST:STOP, not ", seeds)
+    seed <- as.integer(sub("^world_([0-9]+)\\.npz$", "\\1", basename(paths)))
+    paths <- paths[seed >= span[1] & seed < span[2]]
+  }
   paths <- paths[(seq_along(paths) - 1L) %% shard[2] == shard[1]]
   tools <- versions()
   for (path in paths) {
