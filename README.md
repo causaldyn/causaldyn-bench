@@ -224,6 +224,23 @@ launch stopped before any score was written, on a degenerate S-shaped reading th
 program could not take; the library now builds that program in units of the largest best return,
 and the run was launched again whole. See `results/track_m2_families.md`.
 
+Its sixth score places CHC among the tools (`just track-m2-external`,
+`causaldyn_bench.external_arms`, pre-registered in that module's docstring): Google's Meridian
+2.1.0 and Meta's Robyn 3.12.1 plan the budgets run's quarter on its worlds, each fitted outside the
+bench from the same export with the go-dark tests as its calibration, and each planning with its
+own optimiser. Over the 200 drawn worlds Meridian loses **0.120** per euro [0.108, 0.131], and over
+the first 100 Robyn **0.243** [0.196, 0.289]. CHC beats both, by -0.070 [-0.086, -0.054] and
+-0.182 [-0.229, -0.134], and so does PyMC-Marketing, by -0.072 [-0.085, -0.058] and -0.191 [-0.238,
+-0.145]: each as predicted. Meridian beats the status quo, -0.090 [-0.104, -0.075]; Robyn loses to
+it, +0.046 [+0.012, +0.080], higher in 55 of 100 worlds, where a tie was predicted. Meridian's plans
+keep inside the box where the best plan goes to its edges, 24 of 600 channel-plans on a bound
+against the oracle's 347, and 199 of them were moved into the box by at most 0.00032 of a week's
+budget. Robyn's own convergence check passed NRMSE in 54 of its fits and DECOMP.RSSD and MAPE in
+none. On his reference instance Meridian loses 0.087, above CHC's 0.028 and PyMC-Marketing's
+0.012. By construction (R19) two tools count less of a plan's carryover than the oracle scores:
+Meridian's optimiser nothing the quarter's spend returns after it, Robyn's plan one steady week
+whose carryover is the window's mean. See `results/track_m2_external.md`.
+
 **Track K** (`causaldyn_bench.delay_identification`) is the only track whose payoff is
 *discontinuous*. Every other board scores a cost gap; here the closed loop is `x' = -K·x(t − τ)`,
 whose exact boundary is `K·τ = π/2`, so getting the delay wrong enough is a Hopf bifurcation rather
@@ -294,6 +311,8 @@ just track-m2-geo-pilot                  # Track M v2, geo selection, the pilot 
 just track-m2-geo                        # Track M v2, geo selection, pre-registered -> results/track_m2_geo.{md,json}
 just track-m2-families-pilot             # Track M v2, curve families, the pilot -> results/track_m2_families_pilot.{md,json}
 just track-m2-families                   # Track M v2, curve families, pre-registered -> results/track_m2_families.{md,json}
+just track-m2-external-pilot genre       # Track M v2, external arms, the pilot -> results/track_m2_external_pilot_genre.{md,json}
+just track-m2-external                   # Track M v2, external arms, pre-registered -> results/track_m2_external.{md,json}
 ```
 
 Every recipe runs on the CPU, the device the committed results came from; a GPU reproduces them to
