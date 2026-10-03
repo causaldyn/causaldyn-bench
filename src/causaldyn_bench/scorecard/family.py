@@ -38,13 +38,30 @@ class Truth:
 
 
 class Family(Protocol[W]):
-    """One family of worlds; ``W`` is the type of its worlds."""
+    """One family of worlds; ``W`` is the type of its worlds. A family is read, never written."""
 
-    name: str
-    stream: int  # its variates' stream, ``100 + f`` for family ``f``
-    labels: tuple[str, ...]  # what its worlds hand some arm by construction
-    pilots: Mapping[str, range]  # each environment's pilot worlds, in their seeded order
-    scored: Mapping[str, range]  # each environment's scored worlds, in their seeded order
+    @property
+    def name(self) -> str: ...
+
+    @property
+    def stream(self) -> int:
+        """Its variates' stream, ``100 + f`` for family ``f``."""
+        ...
+
+    @property
+    def labels(self) -> tuple[str, ...]:
+        """What its worlds hand some arm by construction."""
+        ...
+
+    @property
+    def pilots(self) -> Mapping[str, range]:
+        """Each environment's pilot worlds, in their seeded order."""
+        ...
+
+    @property
+    def scored(self) -> Mapping[str, range]:
+        """Each environment's scored worlds, in their seeded order."""
+        ...
 
     def world(self, environment: str, seed: int) -> W:
         """The world of ``environment`` drawn from ``seed``."""
