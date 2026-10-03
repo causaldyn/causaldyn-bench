@@ -9,6 +9,8 @@ run at the status quo (:mod:`~causaldyn_bench.scorecard.continuation`).
 :mod:`~causaldyn_bench.scorecard.scoring` scores an arm's record of a world against it, and
 :mod:`~causaldyn_bench.scorecard.gate` reads two arms' paired scores against a margin at looks fixed
 before the run starts, stopping the comparison where its verdict is plain.
+:mod:`~causaldyn_bench.scorecard.mapping` reads an arm's fitted response as :mod:`chc.response`'s
+channels, once they reproduce the tool's own decomposition of the history.
 
 Family 0 is Track M v2 itself (:mod:`~causaldyn_bench.scorecard.track_m2`); family 1 lets each
 channel's effect drift (:mod:`~causaldyn_bench.scorecard.drift`).
