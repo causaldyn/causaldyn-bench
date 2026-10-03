@@ -214,15 +214,7 @@ class MediaMixWorld:
         treated = self.spend[:, column].copy()
         # once a week however many tests hold it; at 0 every product is +0.0, the go-dark's bits
         treated[weeks] *= multiplier
-        effect = _media(
-            treated,
-            self.retention[column],
-            self.saturation[column],
-            self.effect[column],
-            self.kernel_length,
-            self.curve,
-        )
-        gap = effect - self.media[:, column]
+        gap = self._effect_of(column, treated) - self.media[:, column]
         rng = np.random.default_rng(seed)
         noise = rng.normal(0.0, noise_share * float(np.mean(self.sales)), self.sales.size)
         return GeoExperiment(
@@ -234,6 +226,18 @@ class MediaMixWorld:
             sales_control=self.sales + noise,
             sales_treated=self.sales + gap - noise,
             true_gap=gap,
+        )
+
+    def _effect_of(self, column: int, spend: Series) -> Series:
+        """The effect of channel ``column`` in each week had it spent ``spend``, as :attr:`media`
+        holds its effect: a world whose effect moves over the weeks moves this with it."""
+        return _media(
+            spend,
+            self.retention[column],
+            self.saturation[column],
+            self.effect[column],
+            self.kernel_length,
+            self.curve,
         )
 
 
