@@ -63,7 +63,8 @@ def _moved(observed: Observation) -> dict[str, Observation]:
     """The observation with one thing an arm reads changed, for each thing."""
     o = observed
     replace = dataclasses.replace
-    lift = o.lift
+    lift, future = o.lift, o.future_controls
+    assert future is not None
     nudged = o.sales.copy()
     nudged[17] *= 1.0 + 1e-12
     return {
@@ -78,14 +79,11 @@ def _moved(observed: Observation) -> dict[str, Observation]:
         "control names": replace(
             o,
             controls={"promo": o.controls["promotion"], "price": o.controls["price"]},
-            future_controls={
-                "promo": o.future_controls["promotion"],
-                "price": o.future_controls["price"],
-            },
+            future_controls={"promo": future["promotion"], "price": future["price"]},
         ),
         "future controls": replace(
             o,
-            future_controls={**o.future_controls, "promotion": o.future_controls["promotion"] * 0},
+            future_controls={**future, "promotion": future["promotion"] * 0},
         ),
         "kernel length": replace(o, kernel_length=5),
         "budget": replace(o, budget=o.budget * (1 + 1e-12)),
