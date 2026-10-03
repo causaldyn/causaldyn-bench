@@ -77,6 +77,10 @@ class Cell:
     def worth(self, weekly: float) -> float:
         return float(self.worths(weekly))
 
+    def returns(self, weekly: float) -> Series:
+        """What the cell returns in each of its weeks at the weekly spend ``weekly``."""
+        return self.effect * self.curve.value(self.carry + weekly * self.reach, self.scale)
+
     def slope(self, weekly: float) -> float:
         adstock = self.carry + weekly * self.reach
         return float(np.sum(self.effect * self.reach * self.curve.slope(adstock, self.scale)))
