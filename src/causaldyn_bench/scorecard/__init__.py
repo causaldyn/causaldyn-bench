@@ -6,7 +6,9 @@ A *family* (:mod:`causaldyn_bench.scorecard.family`) draws a world from its own 
 (:mod:`~causaldyn_bench.scorecard.ladder`), and holds what the arm's plan is scored against: the
 quarter's best plan (:mod:`~causaldyn_bench.scorecard.truth`) and the quarter the world goes on to
 run at the status quo (:mod:`~causaldyn_bench.scorecard.continuation`).
-:mod:`~causaldyn_bench.scorecard.scoring` scores an arm's record of a world against it.
+:mod:`~causaldyn_bench.scorecard.scoring` scores an arm's record of a world against it, and
+:mod:`~causaldyn_bench.scorecard.gate` reads two arms' paired scores against a margin at looks fixed
+before the run starts, stopping the comparison where its verdict is plain.
 
 Family 0 is Track M v2 itself (:mod:`~causaldyn_bench.scorecard.track_m2`); family 1 lets each
 channel's effect drift (:mod:`~causaldyn_bench.scorecard.drift`).
