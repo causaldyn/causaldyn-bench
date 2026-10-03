@@ -45,7 +45,11 @@ Weeks are dated Mondays from 2023-01-02, as the PyMC-Marketing arm's.
 
 **Version 2.** A scorecard export (:mod:`causaldyn_bench.scorecard.observe`, ``version`` 2) names
 its controls and holds the quarter's status quo. It is fitted and planned as above, the controls
-read by name and the status quo the export's, and each record carries, beside the plan:
+read by name and the status quo the export's, with one change: ``max_lag`` is the kernel's length
+less 1. Meridian's window is ``max_lag + 1`` weeks, so version 1's ran a week past the world's
+kernel, a family that does not contain it, where PyMC-Marketing's ``l_max`` gives its arm the
+kernel's own; version 1 keeps it, as its committed results were fitted. Each record carries,
+beside the plan:
 
 * ``gain`` and ``gain_interval``: the posterior mean, and the 5 % and 95 % quantiles, of the plan's
   incremental outcome less the status quo's, each as the optimiser computes it: every channel's
@@ -423,7 +427,8 @@ def plan_second(path: Path, smoke: bool) -> dict[str, Any]:
     prior, calibration = roi_prior(world, channels)
     model_spec = spec.ModelSpec(
         prior=prior_distribution.PriorDistribution(roi_m=prior),
-        max_lag=int(world["kernel_length"]),
+        # Meridian's window is max_lag + 1 weeks, so this one is the world's kernel
+        max_lag=int(world["kernel_length"]) - 1,
         enable_aks=True,
     )
     mmm = model.Meridian(input_data=data, model_spec=model_spec)
@@ -499,7 +504,7 @@ def plan_second(path: Path, smoke: bool) -> dict[str, Any]:
         "review": health,
         "response": _response(mmm, analysis, channels),
         "settings": {
-            "max_lag": int(world["kernel_length"]),
+            "max_lag": int(mmm.model_spec.max_lag),
             "enable_aks": True,
             "prior_draws": SMOKE_PRIOR_DRAWS if smoke else PRIOR_DRAWS,
             "sampling": sampling,
