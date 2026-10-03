@@ -14,7 +14,7 @@ from causaldyn_bench.scorecard.track_m2 import TRACK_M2
 RETENTION = (0.3, 0.55, 0.8)
 LAM = (1.2, 2.5, 4.0)  # PyMC-Marketing's logistic saturation, on spend over the channel's max
 SLOPE = (0.8, 1.6, 2.9)  # Robyn's Hill alpha
-GAMMA = (0.3, 0.5, 0.9)  # Robyn's Hill gamma: the inflexion's place in the adstock's range
+GAMMA = (0.3, 0.5, 0.9)  # Robyn's Hill gamma: the inflexion over the adstock's largest week
 BETA = (0.4, 0.7, 1.1)
 HELD = (0, 2)
 
@@ -45,13 +45,12 @@ def _decayed(spend, theta):
 
 
 def _inflexion(spend, theta, gamma):
-    decayed = _decayed(spend, theta)
-    return (1 - gamma) * decayed.min() + gamma * decayed.max()
+    return gamma * _decayed(spend, theta).max()
 
 
 def _robyn(spend, theta, alpha, gamma, coefficient):
-    """Robyn's decomposition: Hill on the adstock with its inflexion at ``gamma`` of the adstock's
-    range, times the ridge coefficient."""
+    """Robyn's decomposition: Hill on the adstock with its inflexion at ``gamma`` times the
+    adstock's largest week, times the ridge coefficient."""
     decayed, inflexion = _decayed(spend, theta), _inflexion(spend, theta, gamma)
     return coefficient * decayed**alpha / (decayed**alpha + inflexion**alpha)
 
