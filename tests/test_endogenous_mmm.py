@@ -25,7 +25,7 @@ from chc.response import (
 )
 from scipy.optimize import brentq
 
-from causaldyn_bench.endogenous_mmm import CURVES, EndogenousMediaMix
+from causaldyn_bench.endogenous_mmm import CURVES, EndogenousMediaMix, _media
 
 SEEDS = range(40)
 
@@ -177,3 +177,109 @@ def test_a_geo_test_reads_the_world_s_curve() -> None:
 def test_a_curve_that_is_not_one_of_the_families_is_refused() -> None:
     with pytest.raises(ValueError, match="not one of"):
         EndogenousMediaMix(curve="gompertz")
+
+
+def _go_dark(world, channel: str, starts: tuple[int, ...], seed: int):
+    """His go-dark as the procedure ran before a test took a multiplier: the test weeks zeroed,
+    the channel's effect recomputed, and noise of opposite signs from the seed."""
+    column = world.channels.index(channel)
+    dark = world.spend[:, column].copy()
+    for start in starts:
+        dark[start - 1 : start - 1 + 4] = 0.0
+    alpha, lam, beta = world.retention[column], world.saturation[column], world.effect[column]
+    gap = _media(dark, alpha, lam, beta, world.kernel_length, world.curve) - world.media[:, column]
+    noise = np.random.default_rng(seed).normal(0.0, 0.01 * np.mean(world.sales), world.week.size)
+    return dark, gap, world.sales + noise, world.sales + gap - noise
+
+
+@pytest.mark.parametrize("curve", ["tanh", "hill-2"])
+def test_a_multiplier_of_nought_is_the_go_dark_bit_for_bit(curve) -> None:
+    """The default, and 0 asked for, give the committed records' tests exactly, overlapping
+    tests' weeks dark once."""
+    world = EndogenousMediaMix(curve=curve).simulate(5)
+    for channel, starts in (("pla", (20, 55, 100, 140)), ("tv", (30, 32))):
+        expected = _go_dark(world, channel, starts, seed=9)
+        for experiment in (
+            world.geo_test(channel, starts, seed=9),
+            world.geo_test(channel, starts, seed=9, multiplier=0.0),
+        ):
+            for got, want in zip(
+                (
+                    experiment.spend_treated,
+                    experiment.true_gap,
+                    experiment.sales_control,
+                    experiment.sales_treated,
+                ),
+                expected,
+                strict=True,
+            ):
+                np.testing.assert_array_equal(got, want)
+
+
+def test_a_multiplier_of_one_moves_nothing() -> None:
+    world = EndogenousMediaMix().simulate(6)
+    experiment = world.geo_test("meta", (20, 55, 100, 140), seed=2, multiplier=1.0)
+    np.testing.assert_array_equal(experiment.spend_treated, experiment.spend_control)
+    assert np.all(experiment.true_gap == 0.0)
+    np.testing.assert_allclose(
+        experiment.sales_treated + experiment.sales_control, 2.0 * world.sales
+    )
+
+
+@pytest.mark.parametrize("curve", sorted(name for name, c in CURVES.items() if c.concave))
+def test_on_a_concave_curve_the_gap_rises_with_the_multiplier_and_bends_down(curve) -> None:
+    """The treated adstock is affine in the multiplier and the curve rises, so every week's gap
+    rises with it, strictly in the test weeks; a concave curve makes it concave in it too."""
+    world = EndogenousMediaMix(curve=curve).simulate(7)
+    multipliers = np.linspace(0.0, 2.5, 11)
+    gaps = np.array([world.geo_test("pla", (20, 100), multiplier=m).true_gap for m in multipliers])
+    rises = np.diff(gaps, axis=0)
+    assert np.all(rises >= 0.0)
+    tested = np.r_[19:23, 99:103]
+    assert np.all(rises[:, tested] > 0.0)
+    scale = float(np.max(np.abs(gaps)))
+    assert np.all(np.diff(gaps, n=2, axis=0) <= 1e-12 * scale)
+
+
+def test_any_multiplier_scales_the_test_weeks_alone_and_the_library_channel_reads_the_gap() -> None:
+    """Over random multipliers: the treated spend is the multiple in the test weeks and the
+    control's elsewhere; the gap is nought before the first test week and once a test's carryover
+    is spent, signed as the multiplier less one in the test weeks, and the library's channel,
+    computed apart, reads it; the two universes' sales sum to twice the world's and the gap."""
+    world = EndogenousMediaMix().simulate(8)
+    starts, length = (20, 55, 100, 140), world.kernel_length
+    tested = np.zeros(world.week.size, dtype=bool)
+    for start in starts:
+        tested[start - 1 : start - 1 + 4] = True
+    reached = np.zeros(world.week.size, dtype=bool)  # weeks a test's spend can reach
+    for start in starts:
+        reached[start - 1 : start - 1 + 4 + length - 1] = True
+    alpha, lam, beta = world.retention[0], world.saturation[0], world.effect[0]
+    rng = np.random.default_rng(0)
+    with jax.enable_x64(True):
+        channel = Channel(
+            GeometricAdstock(alpha, length=length, normalized=True), Tanh(2 / lam), beta
+        )
+        control = np.asarray(channel(world.spend[:, 0]))
+        for m in rng.uniform(0.0, 3.0, 60):
+            experiment = world.geo_test("pla", starts, seed=3, multiplier=float(m))
+            spend = world.spend[:, 0]
+            np.testing.assert_array_equal(experiment.spend_treated[tested], m * spend[tested])
+            np.testing.assert_array_equal(experiment.spend_treated[~tested], spend[~tested])
+            gap = experiment.true_gap
+            assert np.all(gap[~reached] == 0.0)
+            assert np.all(np.sign(gap[tested]) == np.sign(m - 1.0))
+            treated = np.asarray(channel(experiment.spend_treated))
+            np.testing.assert_allclose(gap, treated - control, rtol=0.0, atol=1e-9 * beta)
+            np.testing.assert_allclose(
+                experiment.sales_treated + experiment.sales_control, 2.0 * world.sales + gap
+            )
+            overlapping = world.geo_test("pla", (30, 32), multiplier=float(m))
+            np.testing.assert_array_equal(overlapping.spend_treated[29:35], m * spend[29:35])
+
+
+@pytest.mark.parametrize("multiplier", [-0.5, math.inf, math.nan])
+def test_a_multiplier_below_nought_or_not_finite_is_refused(multiplier) -> None:
+    world = EndogenousMediaMix().simulate(1)
+    with pytest.raises(ValueError, match="multiplier"):
+        world.geo_test("pla", (20,), multiplier=multiplier)

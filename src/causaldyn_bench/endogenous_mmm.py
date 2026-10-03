@@ -30,7 +30,9 @@ has no observed counterpart.
 :meth:`MediaMixWorld.geo_test` is his Section V: two universes at the market's scale, the control
 as simulated and the treated one with the tested channel dark in the test weeks, its effect
 recomputed over the whole history, and noise of opposite signs, one percent of mean weekly sales
-each, added to the two.
+each, added to the two. Beyond the paper, its ``multiplier`` scales the tested channel's spend in
+the test weeks instead of zeroing it: a partial cut below 1, a heavy-up above; 0, the default, is
+his go-dark.
 
 Where the paper leaves a detail open, the choice is named where it is made (``CHOICE``): the
 television burst weeks, the processes' starting values, the quarters' boundaries, the weeks
@@ -191,21 +193,29 @@ class MediaMixWorld:
         test: int = 4,
         noise_share: float = 0.01,
         seed: int = 0,
+        multiplier: float = 0.0,
     ) -> GeoExperiment:
-        """His Section V: the tested channel dark in each test's weeks in the treated universe.
+        """His Section V: the tested channel's spend times ``multiplier`` in each test's weeks in
+        the treated universe, dark at the default 0, his go-dark; a partial cut below 1 and a
+        heavy-up above it.
 
         ``starts`` are the tests' first weeks, numbered from 1 as :attr:`week` is. Both universes
         stay at the market's scale; each gets noise ``N(0, (noise_share * mean sales)^2)``, of
         opposite signs, so the sum of the two is unchanged.
         """
+        if not 0.0 <= multiplier < math.inf:
+            raise ValueError(f"the multiplier {multiplier} is not a finite number of 0 or more")
         column = self.channels.index(channel)
-        dark = self.spend[:, column].copy()
+        weeks = np.zeros(self.week.size, dtype=bool)
         for start in starts:
             if not 1 <= start <= self.week.size - test + 1:
                 raise ValueError(f"a test from week {start} runs past the history")
-            dark[start - 1 : start - 1 + test] = 0.0
+            weeks[start - 1 : start - 1 + test] = True
+        treated = self.spend[:, column].copy()
+        # once a week however many tests hold it; at 0 every product is +0.0, the go-dark's bits
+        treated[weeks] *= multiplier
         effect = _media(
-            dark,
+            treated,
             self.retention[column],
             self.saturation[column],
             self.effect[column],
@@ -220,7 +230,7 @@ class MediaMixWorld:
             starts=starts,
             test=test,
             spend_control=self.spend[:, column].copy(),
-            spend_treated=dark,
+            spend_treated=treated,
             sales_control=self.sales + noise,
             sales_treated=self.sales + gap - noise,
             true_gap=gap,
