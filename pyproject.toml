@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "A benchmark for causal, constrained, dynamical decision-making: it scores predictions and decisions, not just one-step error."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = "Apache-2.0"
 authors = [{ name = "Ilia Gradina", email = "ilia.gradina@gmail.com" }]
 classifiers = [
     "Programming Language :: Python :: 3.11",

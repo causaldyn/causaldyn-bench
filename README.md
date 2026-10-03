@@ -1,7 +1,7 @@
 # causaldyn-bench
 
 [![ci](https://github.com/causaldyn/causaldyn-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/causaldyn/causaldyn-bench/actions/workflows/ci.yml)
-[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![license](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 [![doi](https://zenodo.org/badge/DOI/10.5281/zenodo.22139814.svg)](https://doi.org/10.5281/zenodo.22139814)
 
 A benchmark for **causal, constrained, dynamical decision-making** — it scores *predictions and
@@ -563,4 +563,4 @@ kpis = run_episode(
 
 ## License
 
-MIT © Ilia Gradina
+Apache-2.0 © Ilia Gradina, with a [`NOTICE`](NOTICE). Releases up to 0.1.0 stay under MIT.

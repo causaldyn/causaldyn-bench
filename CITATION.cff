@@ -10,7 +10,7 @@ authors:
 repository-code: "https://github.com/causaldyn/causaldyn-bench"
 # the concept DOI, which resolves to the newest release rather than to one version
 doi: "10.5281/zenodo.22139814"
-license: MIT
+license: Apache-2.0
 version: 0.1.0
 date-released: "2026-08-28"
 abstract: >-
