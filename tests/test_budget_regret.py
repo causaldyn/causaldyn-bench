@@ -96,27 +96,11 @@ def test_the_digest_reads_the_world_and_its_tests_and_nothing_else(world):
     assert digest(world, nudged) != digest(world, rows)
 
 
-def _other_kernels() -> str | None:
-    """Why numpy's float64 exp, log and tanh here are not the kernels the pre-registered worlds
-    were exported with, or None when they are. The export ran on x86 without AVX-512, where the
-    baseline and AVX2 kernels return the same bits; the AVX-512 kernels are other code, and the
-    digest reads the worlds' exact bits."""
-    try:
-        from numpy.lib.introspect import opt_func_info
-    except ImportError:  # numpy < 2 does not name the kernel it runs
-        return f"numpy {np.__version__} does not name its kernels"
-    found = opt_func_info(func_name="^(exp|expm1|log|log1p|tanh)$", signature="float64")
-    running = {name: kernels["dd"]["current"] for name, kernels in found.items()}
-    if all(k == "X86_V3" or k.startswith("baseline(X86") for k in running.values()):
-        return None
-    return f"numpy's float64 kernels here are {running}, not the exporting machine's"
-
-
-def test_the_digest_is_the_one_the_pre_registered_records_were_fitted_under(world):
+def test_the_digest_is_the_one_the_pre_registered_records_were_fitted_under(world, other_kernels):
     # computed at d6cf637, the commit the pre-registered PyMC-Marketing records ran from: a digest
     # that moves orphans them, since the scoring refuses a record fitted to other data
-    if (other := _other_kernels()) is not None:
-        pytest.skip(other)
+    if other_kernels is not None:
+        pytest.skip(other_kernels)
     assert digest(world, lift_rows(experiments(world, 905))) == "aba9555185e64d61"
 
 

@@ -230,7 +230,9 @@ def test_past_three_cells_no_search_from_random_plans_beats_the_programme(curves
         plan = oracle(on, box)
         assert box.feasible(plan.weekly)
         apart = _searched_apart(on, box, starts=40, seed=seed)
-        assert apart <= plan.worth * (1 + 1e-12)
+        # by less than a tie: both end in SLSQP, whose stop leaves the worth's last digits to the
+        # path it took, up to 2e-13 of it here and 1.6e-12 where numpy's exp is its AVX-512 kernel
+        assert apart <= plan.worth + TIE * box.budget
 
 
 def test_the_programmes_split_is_the_best_of_every_split_of_its_steps():

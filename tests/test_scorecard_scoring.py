@@ -169,7 +169,10 @@ def test_where_the_quarter_realises_another_path_the_plan_is_scored_on_it_too(wo
     best = score_arm(truth, observed, _plan(observed, truth.best.weekly))
     assert hindsight is not None and best.realised is not None
     assert abs(hindsight) <= TIE
-    assert best.realised >= 0.0 and abs(best.regret) <= TIE
+    # the box fixes this split, two channels at an end of it and the third spending the rest, so
+    # the best plan is the hindsight plan and its realised regret is 0 up to rounding: -4.3e-16
+    # where numpy's exp is its AVX-512 kernel
+    assert best.realised >= -TIE and abs(best.regret) <= TIE
     status_quo = score_arm(truth, observed, _plan(observed, quarter.status_quo, gain=0.0))
     expected = (truth.hindsight.worth - worth(truth.realised, quarter.status_quo)) / quarter.budget
     assert status_quo.realised == pytest.approx(expected)
@@ -249,11 +252,16 @@ def through():
 
 
 @pytest.mark.parametrize("name", ["track_m2_budgets", "track_m2_budgets_pilot"])
-def test_family_nought_reproduces_the_budgets_runs_oracle_status_quo_and_equal_split(through, name):
+def test_family_nought_reproduces_the_budgets_runs_oracle_status_quo_and_equal_split(
+    through, name, other_kernels
+):
     pilot, worlds = _committed(name)
     for environment, committed in worlds:
         scored = through[pilot, environment, committed["seed"]]
-        assert scored.budget == committed["budget"]
+        if other_kernels is None:
+            assert scored.budget == committed["budget"]
+        else:  # the budget is a drawn world's, and these kernels move its last bit
+            assert scored.budget == pytest.approx(committed["budget"], rel=1e-12, abs=0.0)
         assert abs(scored.best - committed["best"]) <= TIE * scored.budget
         for arm in BUILT_IN:
             assert abs(scored.arms[arm].regret - committed["regret"][arm]) <= TIE
