@@ -51,8 +51,8 @@ from causaldyn_bench.scorecard.truth import worth
 
 BUILT_IN = ("status quo", "equal split")  # the arms every world scores without a record
 AXES = ("regret", "realised", "uplift", "crps")  # an arm's axes a paired difference reads
-# what a score keeps of a record beside its numbers: neither the plan, nor the forecast its CRPS
-# reads, nor where it ran
+# what a score keeps of a record beside its numbers: neither the plan, nor the draws of its forecast
+# and its response, nor where it ran
 ASIDE = (
     "seed",
     "digest",
@@ -60,6 +60,7 @@ ASIDE = (
     "weekly",
     "quarter_spend",
     "forecast",
+    "response",
     "traceback",
     "python",
     "versions",
