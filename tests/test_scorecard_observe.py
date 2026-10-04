@@ -8,8 +8,9 @@ import numpy as np
 import pytest
 
 from causaldyn_bench.budget_regret import digest, experiments, export, lift_rows
-from causaldyn_bench.lift_calibration import STARTS
+from causaldyn_bench.lift_calibration import COOLDOWN, STARTS, TEST
 from causaldyn_bench.mmm_decision import PLANNED, Quarter
+from causaldyn_bench.scorecard import observe
 from causaldyn_bench.scorecard.observe import FIRST, VERSION, Observation, read
 from causaldyn_bench.scorecard.observe import export as archive
 from causaldyn_bench.scorecard.track_m2 import TRACK_M2
@@ -108,6 +109,17 @@ def test_the_digest_reads_everything_an_arm_reads(observed):
     stamps = {name: o.digest() for name, o in _moved(observed).items()}
     assert observed.digest() not in stamps.values()
     assert len(set(stamps.values())) == len(stamps)
+
+
+@pytest.mark.parametrize("name", ["TEST", "COOLDOWN"])
+def test_an_export_names_its_tests_readout_and_its_digest_reads_it(
+    observed, tmp_path, monkeypatch, name
+):
+    with np.load(archive(observed, tmp_path)) as saved:
+        assert (int(saved["lift_weeks"]), int(saved["lift_cooldown"])) == (TEST, COOLDOWN)
+    stamp = observed.digest()
+    monkeypatch.setattr(observe, name, getattr(observe, name) + 1)
+    assert observed.digest() != stamp
 
 
 def test_version_ones_digest_is_the_budgets_runs_and_reads_what_that_run_hashed(world, observed):

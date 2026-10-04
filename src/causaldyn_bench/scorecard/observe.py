@@ -5,8 +5,9 @@ An :class:`Observation` is all an arm may read of one world at one rung of the l
 (sales, spend and the named controls the measurement layer reads), the quarter it plans (the
 budget, each cell's box, the status quo, the controls' values over the quarter), the window a
 return is read over, and the lift tests, reduced as :func:`causaldyn_bench.budget_regret.lift_rows`
-reduces them. A geo family's sales and spend carry a geo axis, with each geo's share of the
-population beside them.
+reduces them, beside the weeks each test is dark and the weeks of cooldown its readout counts after
+them, which a model of the carryover reads a test's change in spend over. A geo family's sales and
+spend carry a geo axis, with each geo's share of the population beside them.
 
 **Version 2**, what :func:`export` writes, names the family, the environment and the rung, and its
 digest reads every array the export holds, so nothing an arm reads lies outside it. **Version 1**
@@ -34,7 +35,7 @@ import numpy as np
 
 from causaldyn_bench.budget_regret import LiftRows
 from causaldyn_bench.endogenous_mmm import YEAR, Series
-from causaldyn_bench.lift_calibration import STARTS, TEST
+from causaldyn_bench.lift_calibration import COOLDOWN, STARTS, TEST
 
 VERSION = 2
 FIRST = 1  # the version Track M v2's budgets run exported, read with family 0 at the top rung
@@ -144,6 +145,7 @@ def _fields(observation: Observation) -> dict[str, np.ndarray]:
         "lift_sigma": np.asarray(o.lift.sigma, dtype=float),
         "lift_dropped": np.array(o.lift.dropped),
         "lift_weeks": np.array(TEST),
+        "lift_cooldown": np.array(COOLDOWN),
     }
     if o.population is not None:
         fields["population"] = np.asarray(o.population, dtype=float)
