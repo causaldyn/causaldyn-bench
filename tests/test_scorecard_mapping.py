@@ -278,12 +278,12 @@ def _moving(observed, curves, *, paths):
     names, spend = observed.channels, observed.spend
     weeks, length = spend.shape[0], observed.kernel_length
     rng = np.random.default_rng(11)
-    listed = [curves[i % len(curves)] for i in range(3)]
-    parameters, total, weekly = {}, {}, {}
+    parameters, total, weekly, listed = {}, {}, {}, {}
     for c, name in enumerate(names):
+        listed[name] = [curves[(i + c) % len(curves)] for i in range(3)]
         columns = {key: [] for key in ("retention", "scale", "slope", "coefficient")}
         total[name], weekly[name] = [], []
-        for i, curve in enumerate(listed):
+        for i, curve in enumerate(listed[name]):
             retention, slope = RETENTION[(i + c) % 3], SLOPE[(i + c) % 3]
             scale = float(np.mean(spend[:, c])) * GAMMA[(i + c) % 3] * 3
             adstock = _adstock(spend[:, c], retention, length)
@@ -302,7 +302,7 @@ def _moving(observed, curves, *, paths):
             total[name].append(float(decomposed.sum()))
             if i in HELD:
                 weekly[name].append(decomposed.tolist())
-        if "Hill" not in listed:
+        if "Hill" not in listed[name]:
             del columns["slope"]
         parameters[name] = columns
     return {
@@ -333,14 +333,21 @@ def _first(response, key, value):
     return {**response, "parameters": {**response["parameters"], name: changed}}
 
 
-def test_a_draws_slope_is_its_curves_and_a_list_of_curves_is_one_a_draw(observed):
+def test_a_draws_slope_is_its_curves_and_each_channel_names_one_curve_a_draw(observed):
     mixed = _moving(observed, ("Tanh", "Hill"), paths=False)
+    first, curves = observed.channels[0], mixed["curve"]
+    assert curves[first][0] != curves[observed.channels[1]][0]  # a draw's channels differ
+    swapped = {**curves, first: ["Hill" if c == "Tanh" else "Tanh" for c in curves[first]]}
     with jax.enable_x64(True):
-        for slip in (_first(mixed, "slope", 1.5), {**mixed, "curve": ["Hill", "Hill", "Tanh"]}):
+        for slip in (_first(mixed, "slope", 1.5), {**mixed, "curve": swapped}):
             with pytest.raises(ValueError, match="slope is a number in a Hill draw"):
                 residual(slip, observed)
         with pytest.raises(ValueError, match="one value a draw"):
-            residual({**mixed, "curve": mixed["curve"][:2]}, observed)
+            residual({**mixed, "curve": {**curves, first: curves[first][:2]}}, observed)
+        with pytest.raises(ValueError, match="names curves for"):
+            residual({**mixed, "curve": {first: curves[first]}}, observed)
+        with pytest.raises(ValueError, match="each channel's list of names"):
+            residual({**mixed, "curve": curves[first]}, observed)
 
 
 def test_a_coefficient_walks_over_the_historys_weeks_and_is_held_past_them(observed):

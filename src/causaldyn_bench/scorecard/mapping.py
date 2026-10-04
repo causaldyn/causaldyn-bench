@@ -15,12 +15,12 @@ The record's ``response``, beside ``unmapped``:
 
 * ``kernel``, ``length`` and ``normalized``: the carryover kernel each channel's adstock goes
   through, ``GeometricAdstock``, and its fixed parameters;
-* ``curve``: ``Tanh`` or ``Hill``, applied to the adstock: one name for every draw, or a list of
-  one name a draw where a tool's draws mix curves;
+* ``curve``: ``Tanh`` or ``Hill``, applied to the adstock: one name for every draw of every
+  channel, or, where a tool's draws mix curves, for each channel a list of one name a draw;
 * ``parameters``: for each channel, each of ``retention``, the curve's ``scale`` (and ``slope``)
-  and ``coefficient``, a list over the draws. Where the draws mix curves, a draw whose curve takes
-  no ``slope`` has null there. A draw's ``coefficient`` is a number, or a list over the history's
-  weeks where the tool's coefficient moves over them;
+  and ``coefficient``, a list over the draws. Where a channel's draws mix curves, a draw whose
+  curve takes no ``slope`` has null there. A draw's ``coefficient`` is a number, or a list over
+  the history's weeks where the tool's coefficient moves over them;
 * ``decomposition``: what the tool says each channel returned over the history's weeks in each draw,
   ``total``, a list over the draws for each channel; and in each week for the draws ``held``,
   ``weekly``, one list of weeks for each held draw.
@@ -111,34 +111,41 @@ def drawn(response: Mapping[str, Any], names: Sequence[str]) -> dict[str, Drawn]
         raise ValueError(f"the response has no {missing}")
     if response["kernel"] != "GeometricAdstock":
         raise ValueError(f"no kernel {response['kernel']!r}: GeometricAdstock alone is mapped")
-    named = response["curve"]
-    listed = [named] if isinstance(named, str) else list(named)
-    for curve in listed:
-        if curve not in CURVES:
-            raise ValueError(f"no curve {curve!r}: one of {sorted(CURVES)}")
     parameters = response["parameters"]
     if sorted(parameters) != sorted(names):
         raise ValueError(f"the response maps {sorted(parameters)}, not {sorted(names)}")
-    kinds = sorted(set(listed))
-    takes = sorted({"retention", "coefficient", *(key for kind in kinds for key in CURVES[kind])})
+    named = response["curve"]
+    each = isinstance(named, Mapping)
+    if not (each or isinstance(named, str)):
+        raise ValueError(f"a curve is one name, or each channel's list of names, not {named!r}")
+    if each and sorted(named) != sorted(names):
+        raise ValueError(f"the response names curves for {sorted(named)}, not {sorted(names)}")
+    listed = {name: list(named[name]) if each else [named] for name in names}
+    for curve in {curve for curves in listed.values() for curve in curves}:
+        if curve not in CURVES:
+            raise ValueError(f"no curve {curve!r}: one of {sorted(CURVES)}")
     for name in names:
+        kinds = sorted(set(listed[name]))
+        takes = sorted(
+            {"retention", "coefficient", *(key for kind in kinds for key in CURVES[kind])}
+        )
         if sorted(parameters[name]) != takes:
             raise ValueError(
                 f"{name}'s parameters are {sorted(parameters[name])}; a {' or '.join(kinds)} "
                 f"channel takes {takes}"
             )
     draws = {len(values) for name in names for values in parameters[name].values()}
-    if not isinstance(named, str):
-        draws.add(len(listed))
+    if each:
+        draws |= {len(curves) for curves in listed.values()}
     if len(draws) != 1 or not 1 <= next(iter(draws)) <= DRAWS:
         raise ValueError(
-            f"every parameter, and a list of curves, takes one value a draw, 1 to {DRAWS}: "
-            f"{sorted(draws)}"
+            f"every parameter, and each channel's list of curves, takes one value a draw, 1 to "
+            f"{DRAWS}: {sorted(draws)}"
         )
     count = next(iter(draws))
-    curves = tuple(listed * count if isinstance(named, str) else listed)
     out = {}
     for name in names:
+        curves = tuple(listed[name] if each else listed[name] * count)
         columns = parameters[name]
         slopes = columns.get("slope", [None] * count)
         if any(

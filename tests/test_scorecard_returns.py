@@ -91,9 +91,9 @@ def _response(observed, draws, *, curves, paths=False, normalized=True):
     names, spend = observed.channels, observed.spend
     weeks = spend.shape[0]
     rng = np.random.default_rng(7)
-    listed = [curves[i % len(curves)] for i in range(draws)]
-    parameters = {}
+    parameters, listed = {}, {}
     for c, name in enumerate(names):
+        listed[name] = [curves[(i + c) % len(curves)] for i in range(draws)]
         level = float(np.mean(spend[:, c]))
         columns = {
             "retention": rng.uniform(0.0, 0.9, draws).tolist(),
@@ -103,7 +103,7 @@ def _response(observed, draws, *, curves, paths=False, normalized=True):
         if "Hill" in curves:
             slopes = rng.uniform(0.6, 3.5, draws)
             columns["slope"] = [
-                float(s) if k == "Hill" else None for s, k in zip(slopes, listed, strict=True)
+                float(s) if k == "Hill" else None for s, k in zip(slopes, listed[name], strict=True)
             ]
         if paths:
             walk = np.cumsum(rng.normal(0.0, 0.02, (draws, weeks)), axis=1)
@@ -115,7 +115,7 @@ def _response(observed, draws, *, curves, paths=False, normalized=True):
         "kernel": "GeometricAdstock",
         "length": observed.kernel_length if normalized else spend.shape[0],
         "normalized": normalized,
-        "curve": listed[0] if len(curves) == 1 else listed,
+        "curve": curves[0] if len(curves) == 1 else listed,
         "draws": draws,
         "parameters": parameters,
     }
