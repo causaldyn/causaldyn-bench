@@ -247,6 +247,9 @@ class Drifted(MediaMixWorld):
     def _effect_of(self, column: int, spend: Series) -> Series:
         return self.multiplier[:, column] * super()._effect_of(column, spend)
 
+    def effect_path(self) -> Series:
+        return super().effect_path() * self.multiplier
+
 
 def drift(history: MediaMixWorld, multiplier: Series) -> Drifted:
     """``history`` with each channel's media times ``multiplier``, and its sales with them."""

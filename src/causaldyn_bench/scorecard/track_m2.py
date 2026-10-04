@@ -26,6 +26,7 @@ from causaldyn_bench.scorecard import ladder
 from causaldyn_bench.scorecard.continuation import Shadow, shadow
 from causaldyn_bench.scorecard.family import Truth
 from causaldyn_bench.scorecard.observe import Observation
+from causaldyn_bench.scorecard.returns import true_returns
 from causaldyn_bench.scorecard.seeds import stream
 from causaldyn_bench.scorecard.truth import cells, oracle
 
@@ -51,13 +52,19 @@ def still(history: MediaMixWorld) -> Series:
     return np.repeat(np.asarray(history.effect, dtype=float)[:, None], horizon, axis=1)
 
 
+def window(history: MediaMixWorld) -> tuple[int, int]:
+    """The history's last year, its first and last weeks numbered from 1: the window a return is
+    read over."""
+    weeks = history.week.size
+    return (weeks - YEAR + 1, weeks)
+
+
 def observation(family: int, world: World, k: int) -> Observation:
     """All an arm reads of ``world`` at rung ``k``: the history as the measurement layer reads it,
     the quarter's budget, box and status quo, the quarter's promotion calendar and price as they
     will be read, last year's weeks as the window a return is read over, and the rung's tests."""
     history = world.history
     quarter = Quarter.after(history)
-    weeks = history.week.size
     return Observation(
         family=family,
         environment=world.environment,
@@ -80,14 +87,14 @@ def observation(family: int, world: World, k: int) -> Observation:
         lower=quarter.lower,
         upper=quarter.upper,
         status_quo=quarter.status_quo,
-        roi_window=(weeks - YEAR + 1, weeks),
+        roi_window=window(history),
         lift=lift_rows(ladder.rung(history, world.seed, k)),
     )
 
 
 def truth(world: World) -> Truth:
-    """The best plan on the expected path, the best on the realised one where it is another, and
-    the quarter's sales at the status quo."""
+    """The best plan on the expected path, the best on the realised one where it is another, the
+    quarter's sales at the status quo, and each channel's returns on last year's spend."""
     quarter = Quarter.after(world.history)
     expected = cells(world.history, quarter, world.expected)
     realised = hindsight = None
@@ -102,6 +109,7 @@ def truth(world: World) -> Truth:
         hindsight=hindsight,
         target=world.shadow.sales,
         scale=float(np.mean(world.history.sales)),
+        returns=true_returns(world.history, window(world.history)),
     )
 
 

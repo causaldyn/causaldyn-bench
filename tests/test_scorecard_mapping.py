@@ -8,7 +8,7 @@ import jax
 import numpy as np
 import pytest
 
-from causaldyn_bench.scorecard.mapping import DRAWS, TOLERANCE, channels, residual
+from causaldyn_bench.scorecard.mapping import DRAWS, TOLERANCE, Walking, channels, residual
 from causaldyn_bench.scorecard.track_m2 import TRACK_M2
 
 RETENTION = (0.3, 0.55, 0.8)
@@ -210,10 +210,19 @@ def test_a_decomposition_short_of_a_draw_or_a_week_is_refused(observed):
     decomposition, name = response["decomposition"], observed.channels[0]
     total = {**decomposition["total"], name: decomposition["total"][name][:-1]}
     weekly = {**decomposition["weekly"], name: [w[:-1] for w in decomposition["weekly"][name]]}
+    without = {k: v for k, v in decomposition.items() if k != "held"}
+    fewer = {
+        **decomposition,
+        "total": {k: v for k, v in decomposition["total"].items() if k != name},
+    }
     with jax.enable_x64(True):
         for short in ({**decomposition, "total": total}, {**decomposition, "weekly": weekly}):
             with pytest.raises(ValueError, match="decomposition is"):
                 residual({**response, "decomposition": short}, observed)
+        with pytest.raises(ValueError, match="the decomposition has no \\['held'\\]"):
+            residual({**response, "decomposition": without}, observed)
+        with pytest.raises(ValueError, match="the decomposition's total maps"):
+            residual({**response, "decomposition": fewer}, observed)
 
 
 def test_draws_are_one_count_for_every_parameter_and_at_most_the_cap(observed):
@@ -248,3 +257,111 @@ def test_a_geo_observation_is_not_read(observed):
     )
     with jax.enable_x64(True), pytest.raises(ValueError, match="geo"):
         residual(_record(observed, "pymc"), geo)
+
+
+def _adstock(spend, retention, length):
+    """A normalised geometric adstock, written as a sum over the lags."""
+    weights = retention ** np.arange(length)
+    weights /= weights.sum()
+    return np.array(
+        [
+            sum(weights[lag] * spend[t - lag] for lag in range(min(length, t + 1)))
+            for t in range(spend.size)
+        ]
+    )
+
+
+def _moving(observed, curves, *, paths):
+    """The ``response`` of a tool whose draws take ``curves`` in turn, Hill as ``1 / (1 + (x /
+    K)^-n)``, and whose coefficient walks over the weeks where ``paths``: three draws, its own
+    decomposition beside them."""
+    names, spend = observed.channels, observed.spend
+    weeks, length = spend.shape[0], observed.kernel_length
+    rng = np.random.default_rng(11)
+    listed = [curves[i % len(curves)] for i in range(3)]
+    parameters, total, weekly = {}, {}, {}
+    for c, name in enumerate(names):
+        columns = {key: [] for key in ("retention", "scale", "slope", "coefficient")}
+        total[name], weekly[name] = [], []
+        for i, curve in enumerate(listed):
+            retention, slope = RETENTION[(i + c) % 3], SLOPE[(i + c) % 3]
+            scale = float(np.mean(spend[:, c])) * GAMMA[(i + c) % 3] * 3
+            adstock = _adstock(spend[:, c], retention, length)
+            shape = (
+                np.tanh(adstock / scale)
+                if curve == "Tanh"
+                else 1 / (1 + (adstock / scale) ** -slope)
+            )
+            path = BETA[i] * 1000 * np.exp(np.cumsum(rng.normal(0.0, 0.03, weeks)))
+            coefficient = path if paths else BETA[i] * 1000
+            decomposed = coefficient * shape
+            columns["retention"].append(retention)
+            columns["scale"].append(scale)
+            columns["slope"].append(slope if curve == "Hill" else None)
+            columns["coefficient"].append(path.tolist() if paths else coefficient)
+            total[name].append(float(decomposed.sum()))
+            if i in HELD:
+                weekly[name].append(decomposed.tolist())
+        if "Hill" not in listed:
+            del columns["slope"]
+        parameters[name] = columns
+    return {
+        "kernel": "GeometricAdstock",
+        "length": length,
+        "normalized": True,
+        "curve": listed,
+        "draws": 3,
+        "parameters": parameters,
+        "decomposition": {"total": total, "held": list(HELD), "weekly": weekly},
+    }
+
+
+@pytest.mark.parametrize(
+    ("curves", "paths"),
+    [(("Tanh", "Hill"), False), (("Hill", "Tanh"), True), (("Tanh",), True), (("Hill",), True)],
+)
+def test_draws_that_mix_curves_or_walk_reproduce_their_tools_decomposition(observed, curves, paths):
+    with jax.enable_x64(True):
+        assert residual(_moving(observed, curves, paths=paths), observed) <= TOLERANCE
+
+
+def _first(response, key, value):
+    """``response`` with the first channel's ``key`` in its first draw set to ``value``."""
+    name = next(iter(response["parameters"]))
+    columns = response["parameters"][name]
+    changed = {**columns, key: [value, *columns[key][1:]]}
+    return {**response, "parameters": {**response["parameters"], name: changed}}
+
+
+def test_a_draws_slope_is_its_curves_and_a_list_of_curves_is_one_a_draw(observed):
+    mixed = _moving(observed, ("Tanh", "Hill"), paths=False)
+    with jax.enable_x64(True):
+        for slip in (_first(mixed, "slope", 1.5), {**mixed, "curve": ["Hill", "Hill", "Tanh"]}):
+            with pytest.raises(ValueError, match="slope is a number in a Hill draw"):
+                residual(slip, observed)
+        with pytest.raises(ValueError, match="one value a draw"):
+            residual({**mixed, "curve": mixed["curve"][:2]}, observed)
+
+
+def test_a_coefficient_walks_over_the_historys_weeks_and_is_held_past_them(observed):
+    walking = _moving(observed, ("Tanh",), paths=True)
+    name = observed.channels[0]
+    columns = walking["parameters"][name]
+    path = columns["coefficient"][0]
+    weeks = len(path)
+    short = {**columns, "coefficient": [p[:-1] for p in columns["coefficient"]]}
+    with jax.enable_x64(True):
+        with pytest.raises(ValueError, match=f"run {weeks - 1} weeks, not the history's {weeks}"):
+            residual({**walking, "parameters": {**walking["parameters"], name: short}}, observed)
+        for slip, match in ((path[:-1], "of one length"), (1.0, "a number a draw or a path")):
+            with pytest.raises(ValueError, match=match):
+                residual(_first(walking, "coefficient", slip), observed)
+        channel = channels(walking, observed.channels)[0][0]
+        assert isinstance(channel, Walking)
+        spend = np.concatenate([observed.spend[:, 0], np.zeros(5)])
+        returns = np.asarray(channel(spend))
+        still = np.asarray(channel.channel(spend))
+    np.testing.assert_allclose(returns[weeks:], path[-1] * still[weeks:], rtol=1e-15, atol=0.0)
+    np.testing.assert_allclose(
+        returns[:weeks], np.array(path) * still[:weeks], rtol=1e-15, atol=0.0
+    )

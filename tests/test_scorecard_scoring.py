@@ -63,11 +63,12 @@ def _status_quo_regret(truth):
 
 def test_a_plan_inside_the_box_is_scored_on_the_worlds_own_channels(truth, observed):
     quarter = truth.quarter
-    response = {"curve": "Tanh", "draws": 400}
+    response = {"unmapped": "a time-varying multiplier"}
     record = _plan(observed, quarter.status_quo, divergences=0, response=response)
     arm = score_arm(truth, observed, record)
     assert arm.regret == pytest.approx(_status_quo_regret(truth), abs=1e-15)
-    assert (arm.failure, arm.moved, arm.realised, arm.uplift, arm.crps) == (None,) * 5
+    assert (arm.failure, arm.moved, arm.realised, arm.uplift, arm.crps, arm.roi) == (None,) * 6
+    assert arm.unread == "unmapped: a time-varying multiplier"
     assert arm.record == {"error": None, "divergences": 0}
     assert arm.bounds == on_bounds(quarter, quarter.status_quo)
 

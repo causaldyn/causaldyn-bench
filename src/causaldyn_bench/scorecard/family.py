@@ -18,6 +18,7 @@ from typing import Protocol, TypeVar
 from causaldyn_bench.endogenous_mmm import Series
 from causaldyn_bench.mmm_decision import Plan, Quarter
 from causaldyn_bench.scorecard.observe import Observation
+from causaldyn_bench.scorecard.returns import Returns
 from causaldyn_bench.scorecard.seeds import TRACK_M2
 from causaldyn_bench.scorecard.truth import Cell
 
@@ -35,6 +36,7 @@ class Truth:
     hindsight: Plan | None  # the best plan on the realised path
     target: Series  # the quarter's sales at the status quo, an arm's forecast's target
     scale: float  # mean weekly sales over the history, the unit a forecast's score is read in
+    returns: Returns  # each channel's ROI and mROI on the window an export names
 
 
 class Family(Protocol[W]):

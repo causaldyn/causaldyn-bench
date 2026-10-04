@@ -185,6 +185,11 @@ class MediaMixWorld:
         """Each channel's true return per euro over the history: its effect over its spend."""
         return self.media.sum(axis=0) / self.spend.sum(axis=0)
 
+    def effect_path(self) -> Series:
+        """Each channel's effect in each week, ``(weeks, channels)``: its media there per unit of
+        its curve. It holds still here; a world whose effect moves moves it."""
+        return np.broadcast_to(np.asarray(self.effect, dtype=float), self.spend.shape).copy()
+
     def geo_test(
         self,
         channel: str,
