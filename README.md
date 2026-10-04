@@ -539,7 +539,8 @@ physics for A/B/E, a confounded linear system for C, the CHC oracle-regret tasks
 **adaptive-CV-compute** task for D). A **BOPTEST** (HVAC control) client + control episode ship in
 `causaldyn_bench.boptest`, gated on a running BOPTEST service (`BOPTEST_URL`). The CHC identification +
 forecast-MPC (`causaldyn_bench.boptest_chc`) is **validated live** on `bestest_hydronic_heat_pump`: it
-beats the tuned built-in baseline on *every* KPI at once — a clean Pareto win (see `results/boptest.md`).
+beats the tuned built-in baseline on discomfort, energy, cost and emissions at once, with a peak
+electrical demand 2% higher (see `results/boptest.md`).
 **Track D-causal** (`causaldyn_bench.boptest_causal`) adds the falsifiable 2×2 that the randomised-only
 harness could not ask, plus a physics-off black-box arm planning through the identical MPC —
 `results/boptest_causal.md`.

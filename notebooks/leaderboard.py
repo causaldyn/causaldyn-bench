@@ -177,8 +177,8 @@ plt.show()
 # %% [markdown]
 # The forecast-MPC's modulation ramps up *before* the evening comfort return, so its temperature line
 # stays in the band while the naive controller — tracking the relaxed daytime setpoint — coasts down and
-# is caught cold. On the standard KPIs this is not a trade-off but a **domination**: less discomfort *and*
-# less energy at once.
+# is caught cold. Against the baseline, discomfort and energy are not a trade-off but a
+# **domination**: less of both at once, at a peak demand 2% higher.
 
 # %%
 names = ["baseline", "chc-naive", "chc-mpc"]
@@ -216,6 +216,7 @@ for k in ("tdis_tot", "ener_tot", "cost_tot", "emis_tot"):
 # partly *by construction of the data-generating processes* — a strong **demonstration and regression
 # harness** and a clean statement of the *framing* (score decisions, not one-step error), but not a moat
 # on their own. The **BOPTEST** section is the first step past that: a real, method-agnostic emulator the
-# authors do not control, where the CHC forecast-MPC dominates the tuned baseline on every KPI. What is
+# authors do not control, where the CHC forecast-MPC beats the tuned baseline on discomfort, energy,
+# cost and emissions, with a peak demand 2% higher. What is
 # still owed for a full moat is **external adoption** and more real tasks; the framing and the
 # reproducible, multi-competitor comparison are the defensible contribution today.

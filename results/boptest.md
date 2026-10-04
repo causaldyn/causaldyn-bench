@@ -16,9 +16,12 @@ T_next = 0.980·T + 0.243·u + 5.76      (u = heat-pump modulation ∈ [0, 1])
 | `ener_tot` (energy) | 0.393 | 0.201 | **0.354** |
 | `cost_tot` | 0.100 | 0.051 | **0.090** |
 | `emis_tot` (emissions) | 0.066 | 0.034 | **0.059** |
+| `pele_tot` (peak electrical demand) | 0.0190 | 0.0188 | 0.0194 |
 
-**The forecast-driven comfort MPC beats the tuned baseline on every KPI at once** — less discomfort,
-less energy, lower cost, fewer emissions. A clean Pareto win on a real emulator, not a synthetic task.
+**The forecast-driven comfort MPC beats the tuned baseline on discomfort, energy, cost and
+emissions at once**, on a real emulator, not a synthetic task. It is not a win on every KPI: its
+peak electrical demand is 2.0% above the baseline's (`pele_tot` 0.0194 against 0.0190), and
+neither controller incurs indoor-air-quality discomfort (`idis_tot` 0 for both).
 
 ## How the honest win was earned (each step was a real failure fixed at its root)
 
