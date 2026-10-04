@@ -27,15 +27,23 @@ it stops a comparison it would not show sooner and shows fewer of the rest
 **A claim over many comparisons**, every arm on every family, is an intersection-union test (Berger
 1982): it holds only where each comparison shows its own at level ``alpha``, so it holds at
 ``alpha`` with no adjustment for how many it needs.
+
+**A list over many comparisons**, the losses printed beside the unadjusted verdicts, is adjusted
+instead, by :func:`holm` on each comparison's sequential level (:meth:`Gate.level`): the least
+``alpha`` at which a look it read crosses that look's boundary solved at that ``alpha``. That is
+Maurer and Bretz's (2013) graphical procedure for group sequential designs, with Holm's weights,
+looking back at every look read. It holds the familywise error at ``alpha`` under any dependence
+between the comparisons, since every boundary falls as ``alpha`` rises; the move to Student's t
+holds it as nearly as it holds one comparison's size.
 """
 
 from __future__ import annotations
 
 import math
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from functools import cache, cached_property
-from typing import Literal
+from typing import Literal, TypeVar
 
 import numpy as np
 from scipy.optimize import brentq
@@ -50,8 +58,10 @@ ALPHA = 0.025  # one-sided: a paired 95 % interval's upper end
 REACH = 10.0  # standard deviations the grid runs from its mean where no boundary cuts it
 PER_SD = 16  # Simpson intervals a standard deviation of the narrowest Gaussian the grid integrates
 CHUNK = 1 << 22  # kernel entries evaluated at once, bounding a convolution's memory at 32 MiB
+FLOOR = 1e-12  # the least sequential level read; a comparison that crosses below it reads it
 
 Verdict = Literal["shown", "futile", "continue", "not shown"]
+K = TypeVar("K")
 
 
 def spent(t: float, alpha: float = ALPHA) -> float:
@@ -173,6 +183,54 @@ class Gate:
                 yield worlds, worlds * environments, difference.mean, difference.sd
 
         return _reading(seen(), self.bounds, margin, self.futility)
+
+    def level(self, looks: Sequence[Look]) -> float:
+        """The least one-sided ``alpha`` in ``[FLOOR, 1/2)`` at which one of ``looks``, a reading
+        of this gate, crosses its look's boundary solved at that ``alpha`` and moved to Student's t
+        as at the gate's own: the comparison's sequential level. ``FLOOR`` where one crosses there
+        already, and 1 where none crosses below 1/2 or nothing was read.
+
+        A reading stops at its first verdict, so the level reads only the looks before it, and a
+        look left unread could only have lowered it: the level errs high, which keeps its
+        guarantee.
+
+        Raises:
+            ValueError: on more looks than the gate has.
+        """
+        if len(looks) > len(self.looks):
+            raise ValueError(f"{len(looks)} looks read on a gate of {len(self.looks)}")
+        # each statistic on the normal scale at the same tail, which a boundary crosses as the
+        # Student move would
+        scaled = [float(norm.isf(student.sf(look.statistic, look.n - 1))) for look in looks]
+
+        def excess(log_alpha: float) -> float:
+            bounds = boundaries(self.fractions, math.exp(log_alpha))
+            return max(z - bound for z, bound in zip(scaled, bounds, strict=False))
+
+        low, high = math.log(FLOOR), math.log(math.nextafter(0.5, 0.0))
+        if not scaled or excess(high) < 0.0:
+            return 1.0
+        if excess(low) >= 0.0:
+            return FLOOR
+        return math.exp(brentq(excess, low, high, xtol=1e-12))
+
+
+def holm(levels: Mapping[K, float], alpha: float = ALPHA) -> frozenset[K]:  # noqa: UP047 -- CI runs 3.11
+    """The comparisons Holm's (1979) step-down shows at familywise ``alpha``: in order of their
+    levels, ties by key, each while its level is at most ``alpha`` over the number not yet shown.
+
+    Raises:
+        ValueError: on an ``alpha`` outside (0, 1/2).
+    """
+    if not 0.0 < alpha < 0.5:
+        raise ValueError(f"a one-sided alpha lies in (0, 1/2), not {alpha}")
+    ordered = sorted(levels, key=lambda key: (levels[key], str(key)))
+    shown: list[K] = []
+    for rank, key in enumerate(ordered):
+        if levels[key] > alpha / (len(ordered) - rank):
+            break
+        shown.append(key)
+    return frozenset(shown)
 
 
 def _check(fractions: Sequence[float], alpha: float) -> None:

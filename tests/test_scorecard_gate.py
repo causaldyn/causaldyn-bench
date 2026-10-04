@@ -243,6 +243,74 @@ def test_differences_that_do_not_spread_show_a_gap_plainly_and_no_gap_not_at_all
     assert (outside.statistic, outside.verdict) == (-math.inf, "futile")
 
 
+def test_one_look_s_level_is_student_s_p_value():
+    (look,) = Gate((40,)).read(_records(-0.02 + _noise(2, 40, 6)), "a", "b", margin=0.0)
+    assert Gate((40,)).level((look,)) == pytest.approx(
+        float(student.sf(look.statistic, look.n - 1)), rel=1e-9, abs=0.0
+    )
+
+
+@pytest.mark.parametrize("seed", range(8))
+@pytest.mark.parametrize("shift", [-0.03, -0.015, 0.0])
+def test_a_reading_shows_its_claim_exactly_where_its_level_is_at_most_alpha(seed, shift):
+    gate_ = Gate(QUARTERS, futility=-0.5)
+    looks = gate_.read(_records(shift + _noise(2, 100, 10 + seed)), "a", "b", margin=0.0)
+    assert (gate_.level(looks) <= ALPHA) == (looks[-1].verdict == "shown")
+
+
+@pytest.mark.parametrize(
+    "statistics", [(3.1, 2.2, 2.9, 1.0), (0.5, 1.4, 1.9, 2.3), (4.0,), (1.0, -0.4, 0.1)]
+)
+def test_a_level_is_the_least_alpha_at_which_a_look_read_crosses(statistics):
+    gate_ = Gate(QUARTERS)
+    looks = [
+        gate.Look(25 * (k + 1), 50 * (k + 1), 0.0, 1.0, s, 0.0, "continue")
+        for k, s in enumerate(statistics)
+    ]
+    level = gate_.level(looks)
+    scaled = [norm.isf(student.sf(look.statistic, look.n - 1)) for look in looks]
+
+    def crossed(alpha):
+        bounds = boundaries(gate_.fractions, alpha)
+        return max(z - b for z, b in zip(scaled, bounds, strict=False))
+
+    assert abs(crossed(level)) < 1e-9
+    assert crossed(level * (1.0 - 1e-6)) < 0.0
+
+
+def test_a_level_reads_floor_where_a_look_crosses_there_and_one_where_none_crosses_below_half():
+    gate_ = Gate(QUARTERS)
+    plain = [gate.Look(25, 50, 0.0, 1.0, math.inf, 0.0, "shown")]
+    lost = [
+        gate.Look(25 * (k + 1), 50 * (k + 1), 0.0, 1.0, -3.0, 0.0, "continue") for k in range(4)
+    ]
+    assert gate_.level(plain) == gate.FLOOR
+    assert gate_.level(lost) == 1.0
+    assert gate_.level([]) == 1.0
+    with pytest.raises(ValueError, match="5 looks read on a gate of 4"):
+        gate_.level(lost + lost[:1])
+
+
+@pytest.mark.parametrize(
+    ("levels", "shown"),
+    [
+        ({"a": 0.001, "b": 0.01, "c": 0.012, "d": 0.3}, {"a"}),
+        ({"a": 0.004, "b": 0.008, "c": 0.0125, "d": 0.3}, {"a", "b", "c"}),
+        ({"a": 0.004, "b": 0.008, "c": 0.0125, "d": 0.025}, {"a", "b", "c", "d"}),
+        ({"a": 0.007, "b": 0.001}, {"a", "b"}),
+        ({"a": 0.02, "b": 0.02}, set()),
+        ({}, set()),
+    ],
+)
+def test_holm_steps_down_while_each_level_is_within_alpha_over_those_left(levels, shown):
+    assert gate.holm(levels) == frozenset(shown)
+
+
+def test_holm_refuses_an_alpha_outside_one_side():
+    with pytest.raises(ValueError, match="alpha lies in"):
+        gate.holm({"a": 0.01}, alpha=0.5)
+
+
 @pytest.mark.parametrize(
     ("make", "match"),
     [
