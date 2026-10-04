@@ -204,7 +204,9 @@ def test_the_exposure_reads_the_weight_against_the_test_s_covariance_at_unit_noi
     exposed = exposure(panel, chosen, draws, blocks, 100.0)
     slopes = jacobian(panel, chosen, theta)
     covariance = np.linalg.inv(slopes.T @ slopes)
-    assert exposed == pytest.approx(0.5 * np.sum(blocks[0] * covariance) / 2 / 100.0, rel=1e-6)
+    assert exposed == pytest.approx(
+        0.5 * np.sum(blocks[0] * covariance) / 2 / 100.0, rel=1e-6, abs=0.0
+    )
     louder = dataclasses.replace(chosen, screen=3.0 * chosen.screen, placebo=2.0 * chosen.placebo)
     assert exposure(panel, louder, draws, blocks, 100.0) == exposed
     assert exposure(panel, chosen, draws, np.zeros((2, 3, 3)), 100.0) == 0.0

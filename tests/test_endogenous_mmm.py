@@ -136,7 +136,7 @@ def test_every_curve_is_the_library_s_family_at_half_its_ceiling_where_his_is(cu
         slope = np.asarray(jax.vmap(jax.grad(lambda a: library(a)))(jnp.asarray(adstock)))
     np.testing.assert_allclose(CURVES[curve].value(adstock, lam), value, rtol=1e-12, atol=1e-15)
     np.testing.assert_allclose(CURVES[curve].slope(adstock, lam), slope, rtol=1e-10, atol=1e-15)
-    assert float(CURVES[curve].value(np.array(half), lam)) == pytest.approx(0.5, rel=1e-12)
+    assert float(CURVES[curve].value(np.array(half), lam)) == pytest.approx(0.5, rel=1e-12, abs=0.0)
     assert CURVES[curve].concave == (library.inflection() == 0.0)
 
 

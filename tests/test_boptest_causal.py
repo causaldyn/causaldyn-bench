@@ -526,7 +526,7 @@ def test_the_audit_reads_the_forecast_row_belonging_to_the_step_it_prices() -> N
     for k in (0, 7, 15):
         priced = float(field(0.5 * k, jnp.asarray([21.0]), jnp.asarray([0.3]))[0])
         expected = float(fit.rate(jnp.asarray(21.0), covariates[k], jnp.asarray(0.3)))
-        assert priced == pytest.approx(expected, rel=1e-12)
+        assert priced == pytest.approx(expected, rel=1e-12, abs=0.0)
 
 
 def test_the_sensitivity_level_and_the_radius_are_one_convention_not_two() -> None:
