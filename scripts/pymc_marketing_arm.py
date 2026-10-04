@@ -42,13 +42,14 @@ test's date. CHOICE: the Monday of its first dark week. Each record carries, bes
   The arm checks that the plan's mean is the response the optimiser maximised;
 * ``flags``: the divergences, the draws that reached the largest tree depth, and the largest R-hat
   and smallest bulk ESS over the free variables, the quantities PyMC's own convergence check reads;
-* ``response``: on the static setting, up to 400 draws of each channel mapped onto
-  ``chc.response`` (:mod:`causaldyn_bench.scorecard.mapping`): the kernel ``GeometricAdstock``
-  over ``l_max`` weeks, normalised; the curve ``Tanh`` at ``2 s / lam`` for the channel's scale
-  ``s``, the largest spend of the history; the coefficient ``beta`` times the target's scale, the
-  largest sales of the history. Beside them, ``channel_contribution`` in the outcome's units, the
-  decomposition the bench checks them against. A time-varying setting multiplies each week's
-  contribution by its latent process, which no ``chc.response`` channel holds: ``unmapped``;
+* ``response``: up to 400 draws of each channel mapped onto ``chc.response``
+  (:mod:`causaldyn_bench.scorecard.mapping`): the kernel ``GeometricAdstock`` over ``l_max`` weeks,
+  normalised; the curve ``Tanh`` at ``2 s / lam`` for the channel's scale ``s``, the largest spend
+  of the history; the coefficient ``beta`` times the target's scale, the largest sales of the
+  history. A time-varying setting multiplies each week's contribution by its latent process,
+  ``media_temporal_latent_multiplier``, so there each draw's coefficient is a path over the
+  history's weeks, that coefficient times the process in each week. Beside them,
+  ``channel_contribution`` in the outcome's units, the decomposition the bench checks them against;
 * ``settings``, ``versions`` and ``cost``, the wall and CPU seconds of the whole arm.
 
 ``--smoke`` samples 2 chains of 100 tuning and 100 kept draws to check the plumbing; its records
@@ -224,21 +225,26 @@ def _flags(trace: Any, model: Any) -> dict[str, Any]:
 
 def _response(model: Any, trace: Any, channels: list[str]) -> dict[str, Any]:
     """Up to :data:`DRAWS` draws of each channel as ``chc.response`` reads it, beside the tool's
-    own decomposition of the history, ``channel_contribution`` in the outcome's units."""
+    own decomposition of the history, ``channel_contribution`` in the outcome's units. Where the
+    media's effect moves over the weeks, each draw's coefficient is its path over them."""
     posterior = trace.posterior.to_dataset().stack(sample=("chain", "draw"))
     kept = _kept(posterior.sizes["sample"], DRAWS)
     held = _kept(kept.size, HELD)
     target = float(model.scalers["_target"])
     contribution = posterior["channel_contribution"].transpose("sample", "date", "channel")
+    process = posterior.get("media_temporal_latent_multiplier")
     parameters, total, weekly = {}, {}, {}
     for name in channels:
         lam = posterior["saturation_lam"].sel(channel=name).values[kept]
-        beta = posterior["saturation_beta"].sel(channel=name).values[kept]
+        coefficient = posterior["saturation_beta"].sel(channel=name).values[kept] * target
+        if process is not None:  # one process for every channel, or one a channel
+            at = process.sel(channel=name) if "channel" in process.dims else process
+            coefficient = coefficient[:, None] * at.transpose("sample", "date").values[kept]
         series = contribution.sel(channel=name).values[kept] * target
         parameters[name] = {
             "retention": posterior["adstock_alpha"].sel(channel=name).values[kept].tolist(),
             "scale": (2.0 * float(model.scalers["_channel"].sel(channel=name)) / lam).tolist(),
-            "coefficient": (beta * target).tolist(),
+            "coefficient": coefficient.tolist(),
         }
         total[name] = series.sum(axis=1).tolist()
         weekly[name] = series[held].tolist()
@@ -331,13 +337,6 @@ def plan_second(path: Path, setting: str, smoke: bool) -> dict[str, Any]:
     forecast = predicted["y"].transpose("sample", "date").values * float(model.scalers["_target"])
 
     posterior = trace.posterior.to_dataset()
-    if setting == "static":
-        response = _response(model, trace, channels)
-    else:
-        response = {
-            "unmapped": "a time-varying setting multiplies each week's channel contribution by its "
-            "latent process, which no chc.response channel holds"
-        }
     return {
         "version": SECOND,
         "seed": seed,
@@ -354,7 +353,7 @@ def plan_second(path: Path, setting: str, smoke: bool) -> dict[str, Any]:
             float(np.quantile(gain, (1.0 + LEVEL) / 2.0)),
         ],
         "flags": _flags(trace, model),
-        "response": response,
+        "response": _response(model, trace, channels),
         "settings": {
             "setting": setting,
             "media": SETTINGS[setting],
