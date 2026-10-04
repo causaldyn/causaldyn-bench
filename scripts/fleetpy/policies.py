@@ -5,8 +5,12 @@ fare, by half for every request per idle vehicle above one: ``1 + (u - 1) / 2``,
 zone's requests over the last period per vehicle idle in it now, held to ``[1, 2]``. It never
 discounts.
 
-The logger adds a Gaussian dither to the status quo. The dither is drawn ahead for the whole day
-from its own stream, so the draw a period gets does not depend on what ran before it.
+The logger is the status quo's rule held three dither scales under the box's top, plus a Gaussian
+dither: at the top itself half its draws would leave the box, and a clipped draw is no longer
+Gaussian. The rule never goes under 1, so a scale of at most a third of the 0.4 between the box's
+floor and 1 keeps three scales at that end too, and a draw leaves the box less than once in 700
+wherever the rule sits. The dither is drawn ahead for the whole day from its own stream, so the draw
+a period gets does not depend on what ran before it.
 
 Only numpy is needed here, so the bench's tests read this file without FleetPy.
 """
@@ -48,23 +52,31 @@ class Constant:
 
 @dataclass
 class Surge:
+    top: float = BOX[1]
+
     def __call__(self, period: int, book: Book) -> np.ndarray:
-        return np.clip(1.0 + (utilisation(period, book) - 1.0) / 2.0, 1.0, BOX[1])
+        return np.clip(1.0 + (utilisation(period, book) - 1.0) / 2.0, 1.0, self.top)
 
 
 @dataclass
 class Dithered:
-    """The status quo plus ``scale`` N(0, 1), held to the box. ``base`` and ``clipped`` keep, per
-    period, the status quo's factor and where the dither left the box, for the log."""
+    """The status quo's rule under ``2 - 3 scale``, plus ``scale`` N(0, 1), held to the box.
+    ``base`` and ``clipped`` keep, per period, the rule's factor and where a draw left the box."""
 
     scale: float
     draws: np.ndarray  # (PERIODS, zones) standard normals
-    status_quo: Surge = field(default_factory=Surge)
     base: dict = field(default_factory=dict)
     clipped: dict = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        if not 0.0 < self.scale <= (1.0 - BOX[0]) / 3.0:
+            raise ValueError(
+                f"a dither scale of {self.scale} is not within three of the box's floor"
+            )
+        self.rule = Surge(top=BOX[1] - 3.0 * self.scale)
+
     def __call__(self, period: int, book: Book) -> np.ndarray:
-        base = self.status_quo(period, book)
+        base = self.rule(period, book)
         wanted = base + self.scale * self.draws[period]
         self.base[period] = base
         self.clipped[period] = (wanted < BOX[0]) | (wanted > BOX[1])
