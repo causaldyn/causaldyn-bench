@@ -103,9 +103,9 @@ TABLE = "simmmulator_worlds.json"  # beside this module: each recorded world's S
 DIGESTS: Mapping[int, str] = MappingProxyType(
     {
         int(seed): digest
-        for seed, digest in json.loads(files(__package__).joinpath(TABLE).read_text())[
-            "worlds"
-        ].items()
+        for seed, digest in json.loads(
+            files("causaldyn_bench.scorecard").joinpath(TABLE).read_text()
+        )["worlds"].items()
     }
 )
 
