@@ -27,7 +27,7 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
-from causaldyn_bench.endogenous_mmm import CURVES, MediaMixWorld, Series
+from causaldyn_bench.endogenous_mmm import MediaMixWorld, Series
 from causaldyn_bench.scorecard.mapping import drawn
 from causaldyn_bench.scorecard.observe import Observation
 
@@ -84,19 +84,16 @@ def _window_returns(
 def true_returns(history: MediaMixWorld, window: tuple[int, int]) -> Returns:
     """Each channel's ROI and mROI on ``window`` in ``history``: through its own kernel and curve,
     at its effect in each week."""
-    curve = CURVES[history.curve]
     effects = history.effect_path()
-    lags = np.arange(history.kernel_length)
     roi, marginal = [], []
-    for c, (alpha, lam) in enumerate(zip(history.retention, history.saturation, strict=True)):
-        weights = alpha**lags
+    for c, (curve, lam) in enumerate(zip(history.curves(), history.saturation, strict=True)):
         one, slope = _window_returns(
             history.spend[:, c],
             window,
-            (weights / weights.sum())[None, :],
+            history.kernel(c)[None, :],
             effects[None, :, c],
-            lambda a, lam=lam: curve.value(a, lam),
-            lambda a, along, lam=lam: curve.slope(a, lam) * along,
+            lambda a, curve=curve, lam=lam: curve.value(a, lam),
+            lambda a, along, curve=curve, lam=lam: curve.slope(a, lam) * along,
         )
         roi.append(float(one[0]))
         marginal.append(float(slope[0]))

@@ -190,6 +190,17 @@ class MediaMixWorld:
         its curve. It holds still here; a world whose effect moves moves it."""
         return np.broadcast_to(np.asarray(self.effect, dtype=float), self.spend.shape).copy()
 
+    def kernel(self, column: int) -> Series:
+        """Channel ``column``'s carryover kernel from lag 0: the normalised geometric one at the
+        kernel's length here; a world of another form has its own."""
+        weights = self.retention[column] ** np.arange(self.kernel_length)
+        return weights / weights.sum()
+
+    def curves(self) -> tuple[Curve, ...]:
+        """Each channel's curve, read at its :attr:`saturation`: the world's one curve here; a
+        world of another form has its own."""
+        return (CURVES[self.curve],) * len(self.channels)
+
     def geo_test(
         self,
         channel: str,

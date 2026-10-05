@@ -40,7 +40,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 from scipy.optimize import brentq, minimize
 
-from causaldyn_bench.endogenous_mmm import CURVES, Curve, MediaMixWorld, Series
+from causaldyn_bench.endogenous_mmm import Curve, MediaMixWorld, Series
 from causaldyn_bench.mmm_decision import GRID, PLANNED, STARTS, Plan, Quarter
 
 STEPS = 2_000  # the dynamic programme's steps of the budget above the cells' floors
@@ -93,10 +93,11 @@ def cells(
     curves: Sequence[Curve] | None = None,
 ) -> tuple[Cell, ...]:
     """Each of ``world``'s channels as a cell over the quarter after ``quarter.history``: the
-    history's carryover and the reach of a unit a week through the channel's normalised geometric
-    kernel, nothing spent after the quarter; on the world's curve, or on ``curves``, one a channel,
-    each at the channel's ``lambda``; and the channel's constant effect, or ``effect``, a path a
-    channel over the quarter and the kernel's tail, ``(channels, 13 + L - 1)``."""
+    history's carryover and the reach of a unit a week through the channel's kernel, the world's
+    own (:meth:`MediaMixWorld.kernel`), nothing spent after the quarter; on the world's curves, or
+    on ``curves``, one a channel, each at the channel's ``saturation``, his ``lambda``; and the
+    channel's constant effect, or ``effect``, a path a channel over the quarter and the kernel's
+    tail, ``(channels, 13 + L - 1)``."""
     length = world.kernel_length
     horizon = PLANNED + length - 1
     history = quarter.history
@@ -113,11 +114,10 @@ def cells(
     )
     if paths.shape != (channels, horizon):
         raise ValueError(f"an effect path is {(channels, horizon)}, not {paths.shape}")
-    curves = curves or [CURVES[world.curve]] * channels
+    curves = curves or world.curves()
     out = []
-    for c, (alpha, lam) in enumerate(zip(world.retention, world.saturation, strict=True)):
-        kernel = alpha ** np.arange(length)
-        kernel = kernel / kernel.sum()
+    for c, lam in enumerate(world.saturation):
+        kernel = world.kernel(c)
         spent = np.where(before, history[np.minimum(source, weeks - 1), c], 0.0)
         out.append(Cell(spent @ kernel, during @ kernel, curves[c], lam, paths[c]))
     return tuple(out)
