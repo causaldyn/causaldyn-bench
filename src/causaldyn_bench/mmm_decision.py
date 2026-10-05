@@ -45,6 +45,7 @@ from causaldyn_bench.endogenous_mmm import (
     YEAR,
     Curve,
     EndogenousMediaMix,
+    Market,
     MediaMixWorld,
     Series,
     Vector,
@@ -91,7 +92,7 @@ class Quarter:
     history: Series  # (weeks, channels)
 
     @classmethod
-    def after(cls, world: MediaMixWorld) -> Quarter:
+    def after(cls, world: Market) -> Quarter:
         mean = world.spend[-YEAR:].mean(axis=0)
         return cls(
             budget=PLANNED * float(mean.sum()),

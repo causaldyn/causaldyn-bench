@@ -20,7 +20,7 @@ from types import MappingProxyType
 import numpy as np
 
 from causaldyn_bench.budget_regret import ENVIRONMENTS, PILOTS, lift_rows
-from causaldyn_bench.endogenous_mmm import YEAR, EndogenousMediaMix, MediaMixWorld, Series
+from causaldyn_bench.endogenous_mmm import YEAR, EndogenousMediaMix, Market, MediaMixWorld, Series
 from causaldyn_bench.mmm_decision import PLANNED, Quarter
 from causaldyn_bench.scorecard import ladder
 from causaldyn_bench.scorecard.continuation import Shadow, shadow
@@ -52,7 +52,7 @@ def still(history: MediaMixWorld) -> Series:
     return np.repeat(np.asarray(history.effect, dtype=float)[:, None], horizon, axis=1)
 
 
-def window(history: MediaMixWorld) -> tuple[int, int]:
+def window(history: Market) -> tuple[int, int]:
     """The history's last year, its first and last weeks numbered from 1: the window a return is
     read over."""
     weeks = history.week.size

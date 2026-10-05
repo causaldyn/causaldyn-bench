@@ -14,5 +14,7 @@ channels, once they reproduce the tool's own decomposition of the history.
 
 Family 0 is Track M v2 itself (:mod:`~causaldyn_bench.scorecard.track_m2`); family 1 lets each
 channel's effect drift (:mod:`~causaldyn_bench.scorecard.drift`); family 14 is Robyn's home ground,
-its media in Robyn's own form (:mod:`~causaldyn_bench.scorecard.robyn`).
+its media in Robyn's own form (:mod:`~causaldyn_bench.scorecard.robyn`); family 15 is siMMMulator's
+own worlds, Meta's simulator run as its documentation's demo
+(:mod:`~causaldyn_bench.scorecard.simmmulator`).
 """

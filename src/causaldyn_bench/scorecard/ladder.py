@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from chc.lift import LiftTest
 
-from causaldyn_bench.endogenous_mmm import MediaMixWorld
+from causaldyn_bench.endogenous_mmm import Market
 from causaldyn_bench.lift_calibration import STARTS, Setting, lift_tests
 
 RUNGS = tuple(range(len(STARTS) + 1))  # the tests a channel may get: none to all of his four
@@ -28,7 +28,7 @@ def starts(k: int) -> tuple[int, ...]:
     return STARTS[len(STARTS) - k :]
 
 
-def rung(world: MediaMixWorld, seed: int, k: int) -> dict[str, tuple[LiftTest, ...]]:
+def rung(world: Market, seed: int, k: int) -> dict[str, tuple[LiftTest, ...]]:
     """Rung ``k``'s tests on ``world``, drawn from ``seed``: each channel's latest ``k``."""
     weeks = starts(k)
     if not weeks:

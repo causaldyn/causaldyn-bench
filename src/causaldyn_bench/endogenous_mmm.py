@@ -46,6 +46,7 @@ not. His is the default, and computed as he writes it.
 from __future__ import annotations
 
 import math
+from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -146,8 +147,67 @@ CURVES: dict[str, Curve] = {
 }
 
 
+class Market(ABC):
+    """A market's weekly history as a geo test reads it: each week's sales and each channel's spend
+    and effect, ``(weeks, channels)``. A world of any form is one through :meth:`_effect_of`."""
+
+    channels: tuple[str, ...]
+    week: NDArray[np.int64]  # 1, 2, ..., weeks
+    sales: Series
+    media: Series  # (weeks, channels) each channel's true effect
+    spend: Series  # (weeks, channels)
+
+    def geo_test(
+        self,
+        channel: str,
+        starts: tuple[int, ...],
+        *,
+        test: int = 4,
+        noise_share: float = 0.01,
+        seed: int = 0,
+        multiplier: float = 0.0,
+    ) -> GeoExperiment:
+        """His Section V: the tested channel's spend times ``multiplier`` in each test's weeks in
+        the treated universe, dark at the default 0, his go-dark; a partial cut below 1 and a
+        heavy-up above it.
+
+        ``starts`` are the tests' first weeks, numbered from 1 as :attr:`week` is. Both universes
+        stay at the market's scale; each gets noise ``N(0, (noise_share * mean sales)^2)``, of
+        opposite signs, so the sum of the two is unchanged.
+        """
+        if not 0.0 <= multiplier < math.inf:
+            raise ValueError(f"the multiplier {multiplier} is not a finite number of 0 or more")
+        column = self.channels.index(channel)
+        weeks = np.zeros(self.week.size, dtype=bool)
+        for start in starts:
+            if not 1 <= start <= self.week.size - test + 1:
+                raise ValueError(f"a test from week {start} runs past the history")
+            weeks[start - 1 : start - 1 + test] = True
+        treated = self.spend[:, column].copy()
+        # once a week however many tests hold it; at 0 every product is +0.0, the go-dark's bits
+        treated[weeks] *= multiplier
+        gap = self._effect_of(column, treated) - self.media[:, column]
+        rng = np.random.default_rng(seed)
+        noise = rng.normal(0.0, noise_share * float(np.mean(self.sales)), self.sales.size)
+        return GeoExperiment(
+            channel=channel,
+            starts=starts,
+            test=test,
+            spend_control=self.spend[:, column].copy(),
+            spend_treated=treated,
+            sales_control=self.sales + noise,
+            sales_treated=self.sales + gap - noise,
+            true_gap=gap,
+        )
+
+    @abstractmethod
+    def _effect_of(self, column: int, spend: Series) -> Series:
+        """The effect of channel ``column`` in each week had it spent ``spend``, as :attr:`media`
+        holds its effect."""
+
+
 @dataclass(frozen=True)
-class MediaMixWorld:
+class MediaMixWorld(Market):
     """One simulated history, with its ground truth beside what an analyst would observe.
 
     Money is in thousands of euros. Every series runs over the weeks; ``spend`` and ``media`` are
@@ -200,49 +260,6 @@ class MediaMixWorld:
         """Each channel's curve, read at its :attr:`saturation`: the world's one curve here; a
         world of another form has its own."""
         return (CURVES[self.curve],) * len(self.channels)
-
-    def geo_test(
-        self,
-        channel: str,
-        starts: tuple[int, ...],
-        *,
-        test: int = 4,
-        noise_share: float = 0.01,
-        seed: int = 0,
-        multiplier: float = 0.0,
-    ) -> GeoExperiment:
-        """His Section V: the tested channel's spend times ``multiplier`` in each test's weeks in
-        the treated universe, dark at the default 0, his go-dark; a partial cut below 1 and a
-        heavy-up above it.
-
-        ``starts`` are the tests' first weeks, numbered from 1 as :attr:`week` is. Both universes
-        stay at the market's scale; each gets noise ``N(0, (noise_share * mean sales)^2)``, of
-        opposite signs, so the sum of the two is unchanged.
-        """
-        if not 0.0 <= multiplier < math.inf:
-            raise ValueError(f"the multiplier {multiplier} is not a finite number of 0 or more")
-        column = self.channels.index(channel)
-        weeks = np.zeros(self.week.size, dtype=bool)
-        for start in starts:
-            if not 1 <= start <= self.week.size - test + 1:
-                raise ValueError(f"a test from week {start} runs past the history")
-            weeks[start - 1 : start - 1 + test] = True
-        treated = self.spend[:, column].copy()
-        # once a week however many tests hold it; at 0 every product is +0.0, the go-dark's bits
-        treated[weeks] *= multiplier
-        gap = self._effect_of(column, treated) - self.media[:, column]
-        rng = np.random.default_rng(seed)
-        noise = rng.normal(0.0, noise_share * float(np.mean(self.sales)), self.sales.size)
-        return GeoExperiment(
-            channel=channel,
-            starts=starts,
-            test=test,
-            spend_control=self.spend[:, column].copy(),
-            spend_treated=treated,
-            sales_control=self.sales + noise,
-            sales_treated=self.sales + gap - noise,
-            true_gap=gap,
-        )
 
     def _effect_of(self, column: int, spend: Series) -> Series:
         """The effect of channel ``column`` in each week had it spent ``spend``, as :attr:`media`

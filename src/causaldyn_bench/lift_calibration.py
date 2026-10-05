@@ -50,7 +50,7 @@ from chc.lift import GeoArm, LiftFit, LiftTest, fit_lift
 from chc.response import Channel, GeometricAdstock, Tanh
 from scipy.stats import beta
 
-from causaldyn_bench.endogenous_mmm import EndogenousMediaMix, MediaMixWorld
+from causaldyn_bench.endogenous_mmm import EndogenousMediaMix, Market
 
 TRACK = "M2-lift-calibration"
 NOMINAL = 0.95
@@ -85,7 +85,7 @@ SETTINGS: tuple[Setting, ...] = (
 )
 
 
-def lift_tests(world: MediaMixWorld, setting: Setting, seed: int) -> tuple[LiftTest, ...]:
+def lift_tests(world: Market, setting: Setting, seed: int) -> tuple[LiftTest, ...]:
     """The setting's go-dark tests on ``world``, each cut to its readout, spend history included."""
     experiment = world.geo_test(
         setting.channel, setting.starts, test=TEST, noise_share=setting.noise_share, seed=seed

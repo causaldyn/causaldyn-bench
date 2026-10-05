@@ -1,7 +1,7 @@
 """Where the scorecard's worlds and their variates are drawn from: blocks of seeds and streams of
 their own, apart from every seed and stream a committed run of the bench drew from.
 
-Family ``f``, 1 to 14, owns the stream ``100 + f`` and the block of world seeds from
+Family ``f``, 1 to 15, owns the stream ``100 + f`` and the block of world seeds from
 ``200 000 + 20 000 f``: environment ``e``'s pilots from ``200 000 + 20 000 f + 100 e``, in the
 block's first thousand, and its scored worlds from ``200 000 + 20 000 f + 1 000 (e + 1)``. Family 0,
 Track M v2 itself, keeps the committed runs' seeds and owns the stream 100 for the variates the
@@ -31,7 +31,7 @@ from enum import IntEnum
 
 import numpy as np
 
-FAMILIES = 14  # the families with blocks of their own; family 0 keeps Track M v2's seeds
+FAMILIES = 15  # the families with blocks of their own; family 0 keeps Track M v2's seeds
 FIRST = 200_000  # family f's block starts at FIRST + BLOCK f
 BLOCK = 20_000
 PILOTS = 100  # pilot worlds an environment's pilot block holds
