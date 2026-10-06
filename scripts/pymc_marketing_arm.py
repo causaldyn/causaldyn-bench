@@ -50,6 +50,12 @@ test's date. CHOICE: the Monday of its first dark week. Each record carries, bes
   ``media_temporal_latent_multiplier``, so there each draw's coefficient is a path over the
   history's weeks, that coefficient times the process in each week. Beside them,
   ``channel_contribution`` in the outcome's units, the decomposition the bench checks them against;
+* ``multiplier``, in a time-varying setting, None in the static one: the latent process as the
+  optimiser evaluates it on the history's last week and the quarter's weeks, the HSGP extended to
+  those weeks, at the draws ``response`` keeps. For each channel and week, the draws' mean, their
+  5 % and 95 % quantiles, and their correlation with the history's last week; beside them the
+  lengthscale's mean and quantiles, in weeks. The optimiser's graph draws nothing, so no other
+  number of the record moves;
 * ``settings``, ``versions`` and ``cost``, the wall and CPU seconds of the whole arm.
 
 ``--smoke`` samples 2 chains of 100 tuning and 100 kept draws to check the plumbing; its records
@@ -259,6 +265,49 @@ def _response(model: Any, trace: Any, channels: list[str]) -> dict[str, Any]:
     }
 
 
+def _correlation(first: np.ndarray, second: np.ndarray) -> float | None:
+    """Pearson's correlation of two weeks' draws, None where either does not vary."""
+    if not (np.std(first) > 0.0 and np.std(second) > 0.0):
+        return None
+    return float(np.corrcoef(first, second)[0, 1])
+
+
+def _multiplier(
+    optimiser: Any, plan: Any, trace: Any, channels: list[str], dates: pd.DatetimeIndex
+) -> dict[str, Any] | None:
+    """The time-varying media's latent process on ``dates`` as the optimiser evaluates it,
+    summarised over the draws :func:`_response` keeps, with the HSGP's lengthscale; None for
+    static media."""
+    posterior = trace.posterior.to_dataset().stack(sample=("chain", "draw"))
+    if "media_temporal_latent_multiplier" not in posterior:
+        return None
+    kept = _kept(posterior.sizes["sample"], DRAWS)
+    with warnings.catch_warnings():  # the process does not read the plan, and says so
+        warnings.simplefilter("ignore", UserWarning)
+        process = optimiser.evaluate_response_distribution(
+            {"channel_data": plan}, response_variable="media_temporal_latent_multiplier"
+        ).sel(date=dates)
+    tail = (1.0 - LEVEL) / 2.0
+    summary = {}
+    for name in channels:
+        at = process.sel(channel=name) if "channel" in process.dims else process
+        path = at.transpose("sample", "date").values[kept]
+        summary[name] = {
+            "mean": path.mean(axis=0).tolist(),
+            "interval": np.quantile(path, [tail, 1.0 - tail], axis=0).T.tolist(),
+            "correlation": [_correlation(path[:, 0], path[:, h]) for h in range(dates.size)],
+        }
+    scale = posterior.get("media_temporal_latent_multiplier_raw_ls")
+    lengthscale = None
+    if scale is not None:
+        drawn = scale.values[kept]
+        lengthscale = {
+            "mean": float(drawn.mean()),
+            "interval": np.quantile(drawn, [tail, 1.0 - tail]).tolist(),
+        }
+    return {"weeks": int(dates.size), "lengthscale": lengthscale, "channels": summary}
+
+
 def plan_second(path: Path, setting: str, smoke: bool) -> dict[str, Any]:
     """A version-2 export's plan, with what the scorecard reads beside it."""
     world = np.load(path)
@@ -354,6 +403,7 @@ def plan_second(path: Path, setting: str, smoke: bool) -> dict[str, Any]:
         ],
         "flags": _flags(trace, model),
         "response": _response(model, trace, channels),
+        "multiplier": _multiplier(optimiser, result.budgets, trace, channels, dates[weeks - 1 :]),
         "settings": {
             "setting": setting,
             "media": SETTINGS[setting],
