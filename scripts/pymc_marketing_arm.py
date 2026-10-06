@@ -69,6 +69,13 @@ statically and in full.
 ``scripts/pymc_marketing_arm.txt`` pins the whole environment, and each record names the versions
 it ran on and echoes the world's digest, so the bench scores a plan only on the data it was fitted
 to.
+
+PyTensor compiles the model without numba's file cache. With it, the compiled code depends on what
+the cache held when the model was compiled, and so do the draws: one world fitted from one seed drew
+three different chains from three states of the cache, whose gradients of the log density differed
+by about 1e-13 at ordinary points before the sampler's chaos grew the difference. Without it, two
+fits of that world were the same bit for bit, at the cost of compiling every function in every
+process.
 """
 
 from __future__ import annotations
@@ -87,6 +94,7 @@ from typing import Any
 import arviz as az  # ty: ignore[unresolved-import]
 import numpy as np
 import pandas as pd
+import pytensor  # ty: ignore[unresolved-import]
 import xarray as xr  # ty: ignore[unresolved-import]
 from pymc_marketing.hsgp_kwargs import HSGPKwargs  # ty: ignore[unresolved-import]
 from pymc_marketing.mmm import (  # ty: ignore[unresolved-import]
@@ -95,6 +103,8 @@ from pymc_marketing.mmm import (  # ty: ignore[unresolved-import]
     LogisticSaturation,
 )
 from pymc_marketing.mmm.tvp import create_hsgp_from_config  # ty: ignore[unresolved-import]
+
+pytensor.config.numba__cache = False
 
 FIRST_MONDAY = "2023-01-02"
 HARMONICS = 3
