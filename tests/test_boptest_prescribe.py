@@ -170,9 +170,14 @@ class _Spy(_Building):
 def test_each_step_applies_the_first_action_of_a_fresh_prescription(x64) -> None:
     """Receding horizon: the plant gets the first action of the call made from the state it is
     in. From 19.5 C towards 20 C the plan heats hard and then holds, so its first and last
-    actions differ and applying any other than the first is visible."""
+    actions differ and applying any other than the first is visible.
+
+    That needs a log that fixes the channel's sign and a horizon that reaches 20 C on it. On 192
+    steps the channel at 19.5 C read from -0.29 to +0.27 over twelve draws of the cross-fitting
+    folds, and four steps on a weak channel heat at full power throughout. On the plant's whole
+    week and twelve steps, the first and last actions differed on each of 36 draws."""
     plant = _building()
-    log = log_episode(plant, HEAT_PUMP, policy="reset", seed=0, steps=192, step_s=_STEP_S)
+    log = log_episode(plant, HEAT_PUMP, policy="reset", seed=0, steps=336, step_s=_STEP_S)
     panel = panel_from_log(log, seed=0)
     spy = _Spy(
         model=plant.model,
@@ -182,13 +187,14 @@ def test_each_step_applies_the_first_action_of_a_fresh_prescription(x64) -> None
         noise=plant.noise,
         step_s=_STEP_S,
     )
-    run_arm_episode(spy, panel, "adjusted", -1.0, replace(_SMALL, control_steps=3), start_day=4.0)
+    design = replace(_SMALL, control_steps=3, horizon=12)
+    run_arm_episode(spy, panel, "adjusted", -1.0, design, start_day=4.0)
     assert len(spy.applied) == 3
     for temp, action in spy.applied:  # the bound is 21 C all morning, so the target is 20 C
-        plan = prescription(panel, "adjusted", temp=temp, target=20.0, design=_SMALL)
+        plan = prescription(panel, "adjusted", temp=temp, target=20.0, design=design)
         magnitudes = np.asarray(plan.schedule.magnitudes)[:, 0]
         assert math.isclose(action, float(magnitudes[0]), rel_tol=1e-9)  # K round trip only
-    first = prescription(panel, "adjusted", temp=spy.applied[0][0], target=20.0, design=_SMALL)
+    first = prescription(panel, "adjusted", temp=spy.applied[0][0], target=20.0, design=design)
     assert not np.isclose(first.schedule.magnitudes[0, 0], first.schedule.magnitudes[-1, 0])
 
 
