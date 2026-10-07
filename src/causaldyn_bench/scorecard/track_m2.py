@@ -9,11 +9,15 @@ its exports (version 1) is scored here unchanged.
 
 The worlds of other families that are built on Track M v2's are read the same way:
 :func:`observation` is what an arm reads of such a world and :func:`truth` what its plan is scored
-against, whatever moved the world's effect.
+against, whatever moved the world's effect. Where a channel's tests ran in the market whose history
+an arm reads, an overlapping rung (:func:`causaldyn_bench.scorecard.ladder.overlap`), the arm reads
+:func:`overlapping`'s observation, and :func:`truth` reads the returns on the history as it ran
+them.
 """
 
 from __future__ import annotations
 
+import dataclasses
 from dataclasses import dataclass
 from types import MappingProxyType
 
@@ -21,11 +25,12 @@ import numpy as np
 
 from causaldyn_bench.budget_regret import ENVIRONMENTS, PILOTS, lift_rows
 from causaldyn_bench.endogenous_mmm import YEAR, EndogenousMediaMix, Market, MediaMixWorld, Series
+from causaldyn_bench.lift_calibration import TEST
 from causaldyn_bench.mmm_decision import PLANNED, Quarter
 from causaldyn_bench.scorecard import ladder
 from causaldyn_bench.scorecard.continuation import Shadow, shadow
 from causaldyn_bench.scorecard.family import Truth
-from causaldyn_bench.scorecard.observe import Observation
+from causaldyn_bench.scorecard.observe import Held, Observation
 from causaldyn_bench.scorecard.returns import true_returns
 from causaldyn_bench.scorecard.seeds import stream
 from causaldyn_bench.scorecard.truth import cells, oracle
@@ -92,9 +97,33 @@ def observation(family: int, world: World, k: int) -> Observation:
     )
 
 
-def truth(world: World) -> Truth:
+def overlapping(family: int, world: World, held: ladder.Overlap) -> Observation:
+    """All an arm reads of ``world`` where ``held``'s tests ran in the market whose history it
+    reads (:func:`causaldyn_bench.scorecard.ladder.overlap`): the history's sales and spend as that
+    market ran them, the tests' rows at the rung of their count, and where the history holds them
+    (:class:`~causaldyn_bench.scorecard.observe.Held`). The rest is :func:`observation`'s, the
+    quarter's budget, box and status quo among it read off the history as planned, so that the
+    quarter is the one the ladder's rungs plan."""
+    rows = lift_rows(held.tests)
+    (tests,) = held.tests.values()
+    first = np.asarray(rows.start, dtype=np.int64) - 1
+    planned = held.planned[first[:, None] + np.arange(TEST)].reshape(first.size, TEST)
+    return dataclasses.replace(
+        observation(family, world, 0),
+        k=len(tests),
+        sales=held.history.sales,
+        spend=held.history.spend,
+        lift=rows,
+        held=Held(held.share, planned),
+    )
+
+
+def truth(world: World, held: ladder.Overlap | None = None) -> Truth:
     """The best plan on the expected path, the best on the realised one where it is another, the
-    quarter's sales at the status quo, and each channel's returns on last year's spend."""
+    quarter's sales at the status quo, and each channel's returns on last year's spend: on the
+    history as planned, or, where ``held``'s tests ran in the market, on the history as it ran
+    them. The quarter's carryover is the same, since a test's darkness is over before the kernel
+    reaches the quarter."""
     quarter = Quarter.after(world.history)
     expected = cells(world.history, quarter, world.expected)
     realised = hindsight = None
@@ -109,7 +138,9 @@ def truth(world: World) -> Truth:
         hindsight=hindsight,
         target=world.shadow.sales,
         scale=float(np.mean(world.history.sales)),
-        returns=true_returns(world.history, window(world.history)),
+        returns=true_returns(
+            world.history if held is None else held.history, window(world.history)
+        ),
     )
 
 

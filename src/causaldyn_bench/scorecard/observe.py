@@ -9,6 +9,11 @@ reduces them, beside the weeks each test is dark and the weeks of cooldown its r
 them, which a model of the carryover reads a test's change in spend over. A geo family's sales and
 spend carry a geo axis, with each geo's share of the population beside them.
 
+The ladder's tests run in universes of their own, so the history holds none of them. Where it does
+hold them, at an overlapping rung (:func:`causaldyn_bench.scorecard.ladder.overlap`), the
+observation says so (:class:`Held`): the share of the market that ran them, and each test's
+channel's spend as planned over its dark weeks, which the history no longer shows.
+
 **Version 2**, what :func:`export` writes, names the family, the environment and the rung, and its
 digest reads every array the export holds, so nothing an arm reads lies outside it. **Version 1**
 is what Track M v2's budgets run exported; :func:`read` reads it as an observation of family 0 at
@@ -43,10 +48,22 @@ LEGACY_CONTROLS = ("promotion", "price")  # the controls version 1 exported, und
 
 
 @dataclass(frozen=True, eq=False)
+class Held:
+    """The lift tests the history holds: ``share``, the share of the market that ran them, and
+    ``planned``, each lift row's channel's spend as planned over the row's dark weeks, ``(rows,
+    weeks dark)``. The history's sales and spend are the market's as it ran the tests, so its
+    spend over a row's dark weeks is the share's spend as tested beside the rest's as planned."""
+
+    share: float
+    planned: Series
+
+
+@dataclass(frozen=True, eq=False)
 class Observation:
     """One world at one rung, as an arm reads it. Weeks are numbered from 1; ``sales`` is
     ``(weeks,)`` and ``spend`` ``(weeks, channels)``, each with a geo axis before the channels where
-    ``population`` is given; the box and the status quo hold a weekly spend for each cell."""
+    ``population`` is given; the box and the status quo hold a weekly spend for each cell.
+    ``held`` is given where the history holds the lift tests, and None where they ran apart."""
 
     family: int
     environment: str
@@ -66,6 +83,7 @@ class Observation:
     roi_window: tuple[int, int]  # the first and the last week a return is read over
     lift: LiftRows
     population: Series | None = None  # each geo's share, where the world has a geo axis
+    held: Held | None = None
     version: int = VERSION
 
     def __post_init__(self) -> None:
@@ -94,6 +112,15 @@ class Observation:
         first, last = self.roi_window
         if not 1 <= first <= last <= weeks:
             raise ValueError(f"the window {self.roi_window} lies outside weeks 1 to {weeks}")
+        held = self.held
+        if held is not None:
+            rows = (len(self.lift.channel), TEST)
+            if not 0.0 < held.share <= 1.0:
+                raise ValueError(f"the tests ran in a share {held.share} of the market, not (0, 1]")
+            if np.shape(held.planned) != rows:
+                raise ValueError(f"the planned dark weeks are {rows}, not {np.shape(held.planned)}")
+            if not (np.isfinite(held.planned).all() and (np.asarray(held.planned) >= 0.0).all()):
+                raise ValueError("the planned spend over the dark weeks is finite and at least 0")
 
     def digest(self, version: int | None = None) -> str:
         """The hash an arm's record must echo: by ``version``'s rule, this observation's own by
@@ -149,6 +176,9 @@ def _fields(observation: Observation) -> dict[str, np.ndarray]:
     }
     if o.population is not None:
         fields["population"] = np.asarray(o.population, dtype=float)
+    if o.held is not None:
+        fields["held_share"] = np.array(float(o.held.share))
+        fields["held_planned"] = np.asarray(o.held.planned, dtype=float)
     return fields
 
 
@@ -265,6 +295,11 @@ def _second(saved: Mapping[str, np.ndarray]) -> Observation:
         roi_window=(int(saved["roi_window"][0]), int(saved["roi_window"][1])),
         lift=_lift(saved),
         population=saved.get("population"),
+        held=(
+            Held(float(saved["held_share"]), saved["held_planned"])
+            if "held_share" in saved
+            else None
+        ),
     )
 
 

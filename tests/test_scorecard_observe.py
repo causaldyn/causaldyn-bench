@@ -1,6 +1,7 @@
 """What an arm reads of a world: the export it runs on, written once and read back bit for bit, the
 digest that covers every array of it, and the budgets run's version-1 exports, still read and
-still digested by that run's rule."""
+still digested by that run's rule. An overlapping rung's export says where its history holds the
+tests, and the digest reads that too."""
 
 import dataclasses
 
@@ -10,10 +11,10 @@ import pytest
 from causaldyn_bench.budget_regret import digest, experiments, export, lift_rows
 from causaldyn_bench.lift_calibration import COOLDOWN, STARTS, TEST
 from causaldyn_bench.mmm_decision import PLANNED, Quarter
-from causaldyn_bench.scorecard import observe
-from causaldyn_bench.scorecard.observe import FIRST, VERSION, Observation, read
+from causaldyn_bench.scorecard import ladder, observe
+from causaldyn_bench.scorecard.observe import FIRST, VERSION, Held, Observation, read
 from causaldyn_bench.scorecard.observe import export as archive
-from causaldyn_bench.scorecard.track_m2 import TRACK_M2
+from causaldyn_bench.scorecard.track_m2 import TRACK_M2, overlapping, truth
 
 
 @pytest.fixture(scope="module")
@@ -36,6 +37,9 @@ def _same(a: Observation, b: Observation) -> None:
             assert list(left) == list(right)
             for name in left:
                 np.testing.assert_array_equal(left[name], right[name])
+        elif field.name == "held" and left is not None:
+            assert left.share == right.share
+            np.testing.assert_array_equal(left.planned, right.planned)
         else:
             np.testing.assert_array_equal(left, right)
 
@@ -185,3 +189,80 @@ def test_a_geo_axis_is_exported_with_its_population(observed, tmp_path):
 def test_a_malformed_observation_is_refused(observed, change, match):
     with pytest.raises(ValueError, match=match):
         dataclasses.replace(observed, **change)
+
+
+@pytest.fixture(scope="module")
+def held(world):
+    return ladder.overlap(world.history, world.seed, len(STARTS), "pla", 1.0)
+
+
+def test_an_overlapping_export_holds_the_market_s_history_and_where_it_holds_the_tests(
+    world, observed, held, tmp_path
+):
+    over = overlapping(0, world, held)
+    assert over.k == len(STARTS)
+    np.testing.assert_array_equal(over.sales, held.history.sales)
+    np.testing.assert_array_equal(over.spend, held.history.spend)
+    rows = lift_rows(held.tests)
+    assert over.lift.channel == rows.channel == ("pla",) * len(STARTS)
+    np.testing.assert_array_equal(over.lift.delta_y, rows.delta_y)
+    assert over.held is not None and over.held.share == 1.0
+    for row, start in enumerate(over.lift.start):
+        dark = slice(start - 1, start - 1 + TEST)
+        np.testing.assert_array_equal(over.held.planned[row], world.history.spend[dark, 0])
+        np.testing.assert_array_equal(over.spend[dark, 0], np.zeros(TEST))
+        assert np.mean(over.held.planned[row]) == pytest.approx(
+            over.lift.x[row], rel=1e-12, abs=0.0
+        )
+    # the quarter is the one the ladder's rungs plan, read off the history as planned
+    for name in ("budget", "lower", "upper", "status_quo", "future_controls", "roi_window"):
+        np.testing.assert_equal(getattr(over, name), getattr(observed, name))
+    back = read(archive(over, tmp_path))
+    _same(back, over)
+    assert back.digest() == over.digest() != observed.digest()
+
+
+def test_an_export_without_held_tests_keeps_the_fields_it_had(observed):
+    assert observed.held is None
+    assert not {"held_share", "held_planned"} & set(observe._fields(observed))
+
+
+def test_the_digest_reads_where_the_history_holds_the_tests(world, held):
+    over = overlapping(0, world, held)
+    assert over.held is not None
+    nudged = over.held.planned.copy()
+    nudged[1, 2] *= 1.0 + 1e-12
+    moved = {
+        "share": dataclasses.replace(over, held=Held(0.5, over.held.planned)),
+        "planned": dataclasses.replace(over, held=Held(1.0, nudged)),
+        "none": dataclasses.replace(over, held=None),
+    }
+    stamps = {name: o.digest() for name, o in moved.items()}
+    assert over.digest() not in stamps.values()
+    assert len(set(stamps.values())) == len(stamps)
+
+
+def test_the_truth_reads_the_returns_on_the_history_the_market_ran(world, held):
+    planned, ran = truth(world), truth(world, held)
+    assert ran.best.worth == planned.best.worth
+    np.testing.assert_array_equal(ran.best.weekly, planned.best.weekly)
+    np.testing.assert_array_equal(ran.returns.roi[1:], planned.returns.roi[1:])
+    assert ran.returns.roi[0] != planned.returns.roi[0]
+
+
+@pytest.mark.parametrize(
+    ("share", "planned", "match"),
+    [
+        (0.0, None, "share 0.0"),
+        (1.5, None, "share 1.5"),
+        (1.0, np.zeros((3, TEST)), "planned dark weeks"),
+        (1.0, -np.ones((len(STARTS), TEST)), "finite and at least 0"),
+        (1.0, np.full((len(STARTS), TEST), np.nan), "finite and at least 0"),
+    ],
+)
+def test_malformed_held_tests_are_refused(world, held, share, planned, match):
+    over = overlapping(0, world, held)
+    assert over.held is not None
+    planned = over.held.planned if planned is None else planned
+    with pytest.raises(ValueError, match=match):
+        dataclasses.replace(over, held=Held(share, planned))
