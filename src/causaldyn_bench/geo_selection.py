@@ -107,7 +107,7 @@ about 0.008 and 0.003 either side.
   a local quadratic at independent weekly errors, where the synthetic control's errors are
   autocorrelated and a line reading is not local.
 
-By construction (R19): the panel is a generator written here, not Heusch's: the geos, their spend
+By construction: the panel is a generator written here, not Heusch's: the geos, their spend
 per head, factors and noise are this track's choices, and the market's channel is the geos'
 mixture. The regret arm's draws come from the ranges the world draws paid shopping's parameters
 from, so it averages over the distribution the truth came from, as no analyst can. Every arm plans
@@ -115,10 +115,10 @@ with the other channels known, and fits with each geo's spend per head and popul
 coverage reads the generator's own gaps. Of the prior's draws 0.54 hold paid shopping at an end
 of its box in the pilot, where the weight is nought.
 
-Not in this run: choosing the channel, the spend change or the length of the test, MM6's other
-questions; an augmented synthetic control, tried in a scratch prototype on three worlds and set
-aside for the classic one; a prior read from the history, whose fit of paid shopping the prototype
-found at a coefficient of nought or pinned at an end of the box.
+Not in this run: the test design's other questions, choosing the channel, the spend change or the
+length of the test; an augmented synthetic control, tried in a scratch prototype on three worlds
+and set aside for the classic one; a prior read from the history, whose fit of paid shopping the
+prototype found at a coefficient of nought or pinned at an end of the box.
 
 Precision: ``JAX_ENABLE_X64=1``. The worlds are dealt to ``--workers`` processes; each is scored
 apart from the others, so the split moves no number.

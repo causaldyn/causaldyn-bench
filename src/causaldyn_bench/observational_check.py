@@ -36,13 +36,13 @@ his four go-dark tests on every channel, the noise a percent of mean weekly sale
 needs: it lies at or under the one the noise-free factor needs whenever the factor's interval
 covers that factor.
 
-**The gate** (the library's MM5, second half): on paid shopping, the channel his tests ran on,
-over 500 histories, the check is valid and has power. The ``F`` rejects the truth in at most 7
-percent, five and two points of Monte Carlo error; the factor's interval covers in at least 93
-percent, on both channels; and the ``F`` rejects the observational channel in at least 90
-percent. Validity is read one-sided: an ``F`` that rejects the truth less often than its level
-has lost power, not validity, which the observational channel's rejections measure. Meta and
-television are reported.
+**The gate** (the second half of the library's lift-test verification): on paid shopping, the
+channel his tests ran on, over 500 histories, the check is valid and has power. The ``F`` rejects
+the truth in at most 7 percent, five and two points of Monte Carlo error; the factor's interval
+covers in at least 93 percent, on both channels; and the ``F`` rejects the observational channel
+in at least 90 percent. Validity is read one-sided: an ``F`` that rejects the truth less often
+than its level has lost power, not validity, which the observational channel's rejections
+measure. Meta and television are reported.
 
 **The sample**: 500 histories from seed 40 000. A rate near five percent then carries a Monte
 Carlo error near 0.010, and one near 95 percent the same, so each threshold sits two errors from
@@ -61,7 +61,7 @@ its nominal value.
 * the observational fit reads no television in most histories (pilot: 90 of 100), so its factor
   is read over the few that remain.
 
-By construction (R19): the world is a reading of Heusch's paper, and his geo test's two universes
+By construction: the world is a reading of Heusch's paper, and his geo test's two universes
 differ in the channel alone, so the gap is the lift equation exactly, with the one noise scale the
 check assumes. A lift fit or an observational fit that raises is counted, and its checks are
 not read. An observational channel of coefficient nought predicts no gap: the ``F`` tests it, and

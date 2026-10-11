@@ -1,6 +1,6 @@
 """Track F: causal-structure recovery under confounding + autocorrelation.
 
-`chc.discovery` vs naive marginal screening, on the two axes plans/17 cares about: **F-structure**
+`chc.discovery` vs naive marginal screening, on two axes: **F-structure**
 -- F1 of recovering a confounded VAR's true lagged edges (naive over-links via indirect paths); and
 **F-payoff** -- the decision that structure *enables*, i.e. the ATE error when the *discovered*
 adjustment set is used versus the unadjusted (confounded) estimate. Scoring discovery on the

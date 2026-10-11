@@ -164,35 +164,35 @@
       "mass": 11.280000000000003,
       "predicted_mass": 11.272712408362501,
       "gap_in_caps": 0.2429197212500493,
-      "result_56_over_delivered": 1.053580785361324
+      "leading_over_delivered": 1.053580785361324
     },
     "ramp up 0.01->0.05": {
       "block_rounds": 767.0,
       "mass": 10.608344586146536,
       "predicted_mass": 10.601930538766132,
       "gap_in_caps": 0.3631569513555005,
-      "result_56_over_delivered": 1.1202870685776547
+      "leading_over_delivered": 1.1202870685776547
     },
     "ramp down 0.05->0.01": {
       "block_rounds": 236.0,
       "mass": 11.522630657664418,
       "predicted_mass": 11.504014197422482,
       "gap_in_caps": 0.39069653375757046,
-      "result_56_over_delivered": 1.0313956605882086
+      "leading_over_delivered": 1.0313956605882086
     },
     "dead first third": {
       "block_rounds": 1632.0,
       "mass": 8.970000000000002,
       "predicted_mass": 8.95572242082705,
       "gap_in_caps": 0.4759193057651009,
-      "result_56_over_delivered": 1.3249042652035379
+      "leading_over_delivered": 1.3249042652035379
     },
     "uniform noise U(0, 0.06)": {
       "block_rounds": 352.0,
       "mass": 11.30645465605327,
       "predicted_mass": 11.311014828005511,
       "gap_in_caps": 0.4999928596436474,
-      "result_56_over_delivered": 1.0511156344233026
+      "leading_over_delivered": 1.0511156344233026
     }
   },
   "table4": {

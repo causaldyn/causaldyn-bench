@@ -17,7 +17,7 @@ over-assumed one pays a premium that shows up as a *worse* worst case than the c
 The score is therefore non-monotone in ``Gamma`` -- "more pessimism is better" is a claim this track
 is built to refute.
 
-The method lives in ``chc.regret`` (Results 32-38); this track scores it.
+The method lives in ``chc.regret``; this track scores it.
 """
 
 from __future__ import annotations

@@ -1,10 +1,11 @@
-"""P3.3 after its gate: three premises of Theorem 5, asked of the live plant. POST HOC.
+"""The capped block after its gate: three premises of Theorem 5, asked of the live plant. POST
+HOC.
 
 Nothing here was pre-registered. It was written while the scored run was under way, after the
 interim pairs in its journal had been read; it reads the finished ``results.json`` and cannot change
 the verdict printed beside it. The verdict says how the block and the taper ordered on the live
-plant, not why, and the greedy fill's optimality (Result 72(d)) rests on premises the plant can be
-asked about directly. ``just paper-3-live-posthoc`` runs::
+plant, not why, and the greedy fill's optimality rests on premises the plant can be asked about
+directly. ``just paper-3-live-posthoc`` runs::
 
     JAX_ENABLE_X64=1 timeout -s INT 7200 uv run python -u \\
         -m causaldyn_bench.boptest_capped_posthoc --url http://127.0.0.1:8000
@@ -336,7 +337,7 @@ def markdown(post: Mapping[str, Any]) -> str:
     """The post-hoc file, every number in it read off ``post``."""
     paired, summary = post["paired"], post["summary"]
     lines = [
-        "# P3.3 after the gate -- POST HOC, not pre-registered",
+        "# The capped block after the gate -- POST HOC, not pre-registered",
         "",
         "Produced by `causaldyn_bench.boptest_capped_posthoc` from the scored run's",
         f"`results.json` (its verdict: **{post['decision']}**, precision "

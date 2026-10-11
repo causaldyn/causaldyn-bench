@@ -99,30 +99,32 @@ paper-3-smoke:
         --horizons 1000 10000 --mass-horizons 10000 100000 --seeds 11 \
         --out results/paper3-smoke
 
-# P3.3 on the live emulator: hours on the service's single worker, resumable from its journal. Needs
-# the BOPTEST stack up. SIGINT rather than TERM, so an interrupted episode still stops its test.
+# The capped block on the live emulator: hours on the service's single worker, resumable from its
+# journal. Needs the BOPTEST stack up. SIGINT rather than TERM, so an interrupted episode still
+# stops its test.
 paper-3-live url="http://127.0.0.1:8000":
     JAX_ENABLE_X64=1 timeout -s INT 18000 uv run python -u -m causaldyn_bench.boptest_capped \
         --url {{url}} --out results/boptest_capped
 
-# P3.3's post-hoc questions, NOT pre-registered: reads the scored run's results.json, then reruns
-# fixed-estimate and frozen-learning probe episodes in all seven windows on the service's single
-# worker. Needs the stack up.
+# The capped block's post-hoc questions, NOT pre-registered: reads the scored run's results.json,
+# then reruns fixed-estimate and frozen-learning probe episodes in all seven windows on the
+# service's single worker. Needs the stack up.
 paper-3-live-posthoc url="http://127.0.0.1:8000":
     JAX_ENABLE_X64=1 timeout -s INT 7200 uv run python -u \
         -m causaldyn_bench.boptest_capped_posthoc --url {{url}}
 
-# L8.1, the heat pump through chc.prescribe: hours on the service's single worker, resumable from
+# The heat pump through chc.prescribe: hours on the service's single worker, resumable from
 # its journal. Needs the BOPTEST stack up. SIGINT rather than TERM, so an interrupted episode still
 # stops its test.
 boptest-prescribe-live url="http://127.0.0.1:8000":
     JAX_ENABLE_X64=1 timeout -s INT 14400 uv run python -u -m causaldyn_bench.boptest_prescribe \
         --url {{url}} --out results/boptest_prescribe
 
-# D21, L8.1 rerun with the band, the weather and the schedule stated: hours. The design's six
-# replicates are dealt to `workers` processes, one BOPTEST worker each (scale the service to match),
-# each resumable from its own journal; the last step collects them. The library runs from an archive
-# of its HEAD, so edits to the checkout cannot reach the run, and that commit is recorded.
+# The heat pump through chc.prescribe again, with the band, the weather and the schedule stated:
+# hours. The design's six replicates are dealt to `workers` processes, one BOPTEST worker each
+# (scale the service to match), each resumable from its own journal; the last step collects them.
+# The library runs from an archive of its HEAD, so edits to the checkout cannot reach the run, and
+# that commit is recorded.
 boptest-rerun-live url="http://127.0.0.1:8000" workers="3":
     #!/usr/bin/env bash
     set -euo pipefail

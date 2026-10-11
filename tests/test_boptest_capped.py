@@ -1,4 +1,5 @@
-"""P3.3's protocol offline, on a surrogate plant; the live run is the experiment, not a test."""
+"""The capped block's protocol offline, on a surrogate plant; the live run is the experiment, not a
+test."""
 
 import json
 import math
@@ -141,7 +142,7 @@ def test_the_gate_reads_the_interval(gaps: list[float], decision: str) -> None:
 
 
 def test_a_lazy_arm_that_competes_voids_the_verdict() -> None:
-    """R12: if never exploring is as good as the block, the experiment is not testing exploration,
+    """If never exploring is as good as the block, the experiment is not testing exploration,
     and a CONFIRMED read off it would be the lazy arm's win, not the schedule's."""
     result = verdict(
         _pairs([0.5, 0.6, 0.4, 0.55]), [{"regret": 0.9}], replace(Design(), bootstrap=500)

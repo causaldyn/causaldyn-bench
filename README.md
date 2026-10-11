@@ -105,11 +105,12 @@ non-ancestor is inert, since `prescribe` fits every lever it is given: that arm 
 the oracle. Picking the adjustment set by fit ties the oracle in seven worlds and loses exactly
 where the wrong graph does. And the oracle fails too, on 9% of the persistent-promotion
 replicates: an adjustment covariate stays out of the fitted drift, where `chc.dynamics_id`'s scope
-note says a persistent driver belongs (R19: the worlds are CHC's). See `results/track_q.md`.
+note says a persistent driver belongs (by construction, the worlds are CHC's). See
+`results/track_q.md`.
 
 **Track N** (`causaldyn_bench.fold_design`) is the only track that varies nothing but the
 cross-fitting split, and its result is an ordering whose useful half is negative. On `C_12` with two
-clusters, over 120 draws: the Result 52 design **ties** the graph-blind split that keeps units
+clusters, over 120 draws: the variance-optimal design **ties** the graph-blind split that keeps units
 intact, while the two splits a practitioner reaches for first cost **+37%** MSE (contiguous graph
 blocks) and **+66%** (Emmenegger-style neighbour exclusion). One number explains all three — the
 fraction of edges left inside a fold: `0.50` designed, `0.46` random units, `0.83` contiguous.
@@ -160,7 +161,7 @@ open upward, since his tests bend the curve little. The kill is measured, not ar
 times the noise the retention still covers, 0.958, but 15% of its intervals close, against 81% at
 his; at ten times it under-covers, 0.878, and 4 fits of 500 raise rather than converge. On Meta at
 his noise the retention covers 0.918 (0.890-0.941), under the nominal; on television, 0.958. By
-construction the world is a reading of his paper (R19). See `results/track_m2_lift.md`.
+construction the world is a reading of his paper. See `results/track_m2_lift.md`.
 
 Its second score is the decision (`just track-m2-budgets`, `causaldyn_bench.budget_regret`,
 pre-registered in that module's docstring before any scored world ran): a quarter's budget over his
@@ -204,7 +205,7 @@ heaviest spenders; paired, -0.0094 [-0.0128, -0.0059] against Abadie-Zhao's and 
 within the placebo's band as often as a random set's, +0.004 [-0.004, +0.012]: the pre-registered
 gate is met and its kill does not fire. The regret it expected its tests to leave, 0.0028 per euro,
 under-states the 0.0050 they left. By construction the panel is this track's generator, not
-Heusch's (R19). See `results/track_m2_geo.md`.
+Heusch's. See `results/track_m2_geo.md`.
 
 Its fifth score is the curve's family (`just track-m2-families`, `causaldyn_bench.family_regret`,
 pre-registered in that module's docstring): the decision again, on worlds whose channels all follow
@@ -237,7 +238,7 @@ keep inside the box where the best plan goes to its edges, 24 of 600 channel-pla
 against the oracle's 347, and 199 of them were moved into the box by at most 0.00032 of a week's
 budget. Robyn's own convergence check passed NRMSE in 54 of its fits and DECOMP.RSSD and MAPE in
 none. On his reference instance Meridian loses 0.087, above CHC's 0.028 and PyMC-Marketing's
-0.012. By construction (R19) two tools count less of a plan's carryover than the oracle scores:
+0.012. By construction two tools count less of a plan's carryover than the oracle scores:
 Meridian's optimiser nothing the quarter's spend returns after it, Robyn's plan one steady week
 whose carryover is the window's mean. See `results/track_m2_external.md`.
 

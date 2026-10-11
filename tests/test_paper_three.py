@@ -11,8 +11,8 @@ from causaldyn_bench.paper_three import (
     _schedules,
     exact_mass,
     explore_then_commit,
+    leading_mass,
     plant_constants,
-    result_56_mass,
     table_five,
 )
 
@@ -57,14 +57,14 @@ def test_the_closed_form_root_solves_the_balance_the_library_iterates_to() -> No
 
 
 def test_the_leading_form_over_states_the_mass_and_never_by_more_than_the_ceiling() -> None:
-    """Result 66 (f), which is the content of Table 4: the gap is positive at every finite horizon
+    """The content of Table 4: the gap is positive at every finite horizon
     and is bounded by ``K/(2 A c cap)``. A gap that crossed either way would make the table's
     "rises to the ceiling and stops" a coincidence of the grid."""
     k = plant_constants()
     for cap in (0.3, 0.1, 0.03, 0.01, 0.003):
         ceiling = k.numerator / (2.0 * k.curvature * k.info_rate * cap)
         gaps = [
-            result_56_mass(horizon, k) - exact_mass(horizon, k=k, cap=cap)
+            leading_mass(horizon, k) - exact_mass(horizon, k=k, cap=cap)
             for horizon in (10**4, 10**5, 10**6, 10**7, 10**8)
         ]
         assert all(0.0 < gap < ceiling for gap in gaps)

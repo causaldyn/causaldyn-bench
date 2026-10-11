@@ -35,7 +35,7 @@ environment's exact linearisation as a control; ``"mis"``, ``"dr"`` and ``"fqe"`
 ``model_error`` 0 (the model's smoothing correction trusted) or 1 (the default, which carries the
 whole correction in the interval and so over-covers by design wherever the model is right).
 
-**The gate** (plans/26, 0.8.0) is read on the nominal design, the fitted model and
+**The gate** (from the 0.8.0 release) is read on the nominal design, the fitted model and
 ``model_error = 0``: coverage within two points of 0.95 over 500 replicates. The default is
 reported beside it and is required not to undercover.
 

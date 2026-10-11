@@ -1,21 +1,21 @@
-"""D21 -- L8.1 rerun: the BOPTEST heat pump through ``chc.prescribe``, now able to state the band,
-the weather and the schedule. Pre-registered.
+"""The BOPTEST heat pump through ``chc.prescribe`` again, now able to state the band, the weather
+and the schedule. Pre-registered.
 
-L8.1 (:mod:`causaldyn_bench.boptest_prescribe`) found three things the façade could not state on
-this building, and its pre-registered verdict did not stand. Since then ``prescribe`` states all
-three: a :class:`chc.Constraint` on the steered column held inside the solve, exogenous
+The first run (:mod:`causaldyn_bench.boptest_prescribe`) found three things the façade could not
+state on this building, and its pre-registered verdict did not stand. Since then ``prescribe``
+states all three: a :class:`chc.Constraint` on the steered column held inside the solve, exogenous
 :class:`chc.Driver` columns in the drift with their forecast in the plan, and a :class:`chc.Target`
-whose level moves inside the horizon. This module asks L8.1's question again with the three stated.
-This docstring is the pre-registration. It was committed before any scored episode ran; the scored
-run is :func:`main` at the defaults of :class:`Design`, and changing a default afterwards is a new
-experiment.
+whose level moves inside the horizon. This module asks the first run's question again with the
+three stated. This docstring is the pre-registration. It was committed before any scored episode
+ran; the scored run is :func:`main` at the defaults of :class:`Design`, and changing a default
+afterwards is a new experiment.
 
-**Design.** L8.1's, unchanged: replicate ``k = 0..5`` logs 960 half-hour steps of Track D-causal's
-``reset`` policy (seed ``k``) from day ``7k``, and the scored window is the 7 days (336 steps) that
-follow it, each episode started after BOPTEST's own controller has run the day before. The emulator
-is deterministic, so the logs are L8.1's, and each replicate's panel fingerprint is reported beside
-L8.1's. In each window run BOPTEST's built-in baseline once, then both arms at each target offset;
-the offsets are the pilot's, below.
+**Design.** The first run's, unchanged: replicate ``k = 0..5`` logs 960 half-hour steps of Track
+D-causal's ``reset`` policy (seed ``k``) from day ``7k``, and the scored window is the 7 days (336
+steps) that follow it, each episode started after BOPTEST's own controller has run the day before.
+The emulator is deterministic, so the logs are the first run's, and each replicate's panel
+fingerprint is reported beside the first run's. In each window run BOPTEST's built-in baseline
+once, then both arms at each target offset; the offsets are the pilot's, below.
 
 **Arms.** At every step both arms make the same call, from the zone temperature just measured, with
 BOPTEST's forecasts over the plan's 16 steps (17 points, the first one now)::
@@ -28,12 +28,12 @@ BOPTEST's forecasts over the plan's 16 steps (17 points, the first one now)::
 
 and apply only the schedule's first action. ``lower`` and ``upper`` are the comfort band
 (``LowerSetp[1]``, ``UpperSetp[1]``) in Celsius, ``outdoor`` and ``solar`` the forecast's
-``TDryBul`` in Celsius and ``HGloHor`` in kW/m2, the panel's own units. ``adjusted`` passes L8.1's
-graph, which the façade resolves to ``{outdoor, solar, bound}``; ``naive`` passes ``()``. Nothing
-else differs.
+``TDryBul`` in Celsius and ``HGloHor`` in kW/m2, the panel's own units. ``adjusted`` passes the
+first run's graph, which the façade resolves to ``{outdoor, solar, bound}``; ``naive`` passes
+``()``. Nothing else differs.
 
-- *The target* is the lower bound step by step, plus the offset, where L8.1 held the highest bound
-  in view for the whole plan.
+- *The target* is the lower bound step by step, plus the offset, where the first run held the
+  highest bound in view for the whole plan.
 - *The band's upper edge* is held at the lowest upper bound in view. Its lower edge is not held:
   the offsets below it are how an arm trades comfort for energy.
 - *The weather* enters the drift as drivers, with BOPTEST's forecast, which is the weather file
@@ -44,18 +44,18 @@ ends of every driver into the channel's nuisance covariates, whatever ``adjustme
 the naive arm is adjusted for the weather too, and the two arms differ only in ``bound``: the
 comfort feedback of the logging policy, and the occupancy behind it. On an unscored log (days
 300-320) the naive arm's channel came back ``0.767 + 0.0055 T`` against the adjusted
-``1.138 - 0.0149 T``, with no sign change in the band, where L8.1's naive channel changed sign at
-22.3-28.6 C. The gate therefore asks whether the graph's adjustment still pays once the weather is
-a driver. No prediction of the effect's size or sign is made.
+``1.138 - 0.0149 T``, with no sign change in the band, where the first run's naive channel changed
+sign at 22.3-28.6 C. The gate therefore asks whether the graph's adjustment still pays once the
+weather is a driver. No prediction of the effect's size or sign is made.
 
-**Metric.** L8.1's. Per replicate, an arm's ``(tdis_tot, ener_tot)`` points over the offsets are
-its operating points and its front their non-dominated subset. Its energy at the built-in
-baseline's ``tdis_tot`` in the same window is read on the front, linearly between the two points
-that bracket it. ``excess = E_naive / E_adjusted - 1``.
+**Metric.** The first run's. Per replicate, an arm's ``(tdis_tot, ener_tot)`` points over the
+offsets are its operating points and its front their non-dominated subset. Its energy at the
+built-in baseline's ``tdis_tot`` in the same window is read on the front, linearly between the two
+points that bracket it. ``excess = E_naive / E_adjusted - 1``.
 
-**Gate.** L8.1's. The mean excess over replicates, with a two-sided 95% Student-t interval.
-CONFIRMED if the interval lies above 0, REFUTED if below, INCONCLUSIVE if it contains 0. Two
-validity checks; either failing voids the decision, which is then printed with DOES NOT STAND:
+**Gate.** The first run's. The mean excess over replicates, with a two-sided 95% Student-t
+interval. CONFIRMED if the interval lies above 0, REFUTED if below, INCONCLUSIVE if it contains 0.
+Two validity checks; either failing voids the decision, which is then printed with DOES NOT STAND:
 
 - V1: both arms' fronts bracket the baseline's discomfort in every replicate, at a positive energy.
 - V2: no episode has more than 1% of its calls **from inside the held band** stopped by the solver's
@@ -64,31 +64,32 @@ validity checks; either failing voids the decision, which is then printed with D
   ``max_iterations`` and no barrier-certified step. Such calls are counted and reported per episode,
   and not gated: they measure the plant's excursions, not the optimiser.
 
-**R12.** As in L8.1: energy is read at the baseline's discomfort, so an arm cannot win by heating
-less. The dual, discomfort at the baseline's energy, is reported beside it and not gated.
+**The trivial win.** As in the first run: energy is read at the baseline's discomfort, so an arm
+cannot win by heating less. The dual, discomfort at the baseline's energy, is reported beside it
+and not gated.
 
 **Against the baseline** (secondary, descriptive, no decision): each arm's saving
 ``1 - E_arm / E_baseline`` at the baseline's comfort, with the same interval.
 
 **The band on the plant** (reported, not gated): per episode, the share of steps the zone ended
 above the held upper edge, the share of calls made from above it, and the barrier-certified prefix.
-L8.1's runaway weeks overheated the zone to 522-1403 K h. Whether the held band keeps the plant out
-of them is read here, not assumed.
+The first run's runaway weeks overheated the zone to 522-1403 K h. Whether the held band keeps the
+plant out of them is read here, not assumed.
 
-**Certificate against plant** (reported, not gated): L8.1's. Per call, the trustworthy prefix, the
-error tube one step ahead, the solver status and the regret bound. Per step, the one-step error
-against the plan's own next temperature, and whether it stayed inside the tube and inside the
-tolerance.
+**Certificate against plant** (reported, not gated): the first run's. Per call, the trustworthy
+prefix, the error tube one step ahead, the solver status and the regret bound. Per step, the
+one-step error against the plan's own next temperature, and whether it stayed inside the tube and
+inside the tolerance.
 
-**Against L8.1** (descriptive): the same windows' baseline and each arm's saving beside L8.1's
-published numbers (bench ``46bb2f9``). L8.1 ran chc 0.5.1 (``7796c69``), so this reads the
-façade's change and the library's together.
+**Against the first run** (descriptive): the same windows' baseline and each arm's saving beside
+the first run's published numbers (bench ``46bb2f9``). The first run ran chc 0.5.1 (``7796c69``),
+so this reads the façade's change and the library's together.
 
-**Size.** L8.1's: 6 replicates x 2 arms x the offsets, plus 6 baseline weeks and six 20-day logs,
-sized to the emulator time available and not for power. Neighbouring logs share 13 of their 20
-days, so the interval is optimistic to that extent. Replicates may run in parallel, one BOPTEST
-worker each, each writing its own journal; every test is its own emulator instance, so this changes
-no number.
+**Size.** The first run's: 6 replicates x 2 arms x the offsets, plus 6 baseline weeks and six
+20-day logs, sized to the emulator time available and not for power. Neighbouring logs share 13 of
+their 20 days, so the interval is optimistic to that extent. Replicates may run in parallel, one
+BOPTEST worker each, each writing its own journal; every test is its own emulator instance, so this
+changes no number.
 
 **Pilot, unscored.** A log off the scored weeks (seed 99, days 320-340, panel ``0b64a769``) and
 the window after it (days 340-347), each arm at offsets from -0.5 to +3 K.
@@ -104,9 +105,9 @@ the window after it (days 340-347), each arm at offsets from -0.5 to +3 K.
   The two arms' energies were within 1% of each other at every offset.
 - *The solver.* No call was stopped by the budget from inside the band. A third of the calls ended
   with the solver's no-progress status, and 70% of the actions were at a bound of the box.
-- *The offsets.* L8.1's, up to +1.5, stop short of the baseline's discomfort here. The scored grid
-  is +1 to +2.5 in quarter steps: dense where L8.1's baseline weeks (3.4-5.9 K h) should cross,
-  and ending at the pilot's least discomfort.
+- *The offsets.* The first run's, up to +1.5, stop short of the baseline's discomfort here. The
+  scored grid is +1 to +2.5 in quarter steps: dense where the first run's baseline weeks (3.4-5.9
+  K h) should cross, and ending at the pilot's least discomfort.
 
 Episodes took 8-21 minutes each, four at a time beside other jobs; that is not a timing. The
 pilot's processes also grew by about 4.5 MB a call, since every held prescription compiled its
@@ -158,8 +159,8 @@ UPPER_SETP = "UpperSetp[1]"
 DRY_BULB, GLOBAL_HORIZONTAL = "TDryBul", "HGloHor"
 FORECAST_POINTS = [LOWER_SETP, UPPER_SETP, DRY_BULB, GLOBAL_HORIZONTAL]
 
-# L8.1's published verdict for the same windows, read beside this run's (bench 46bb2f9)
-L81_RESULTS = "results/boptest_prescribe/results.json"
+# The first run's published verdict for the same windows, read beside this run's (bench 46bb2f9)
+FIRST_RUN_RESULTS = "results/boptest_prescribe/results.json"
 
 
 @dataclass(frozen=True)
@@ -264,7 +265,7 @@ def _held_forecast(panel: Panel, design: Design) -> Forecast:
 
 
 def fit_summary(panel: Panel, arm: Arm, design: Design) -> dict[str, Any]:
-    """What the D21 call identified from the log: the channel ``b0 + b1 T`` in K/h per unit
+    """What the rerun's call identified from the log: the channel ``b0 + b1 T`` in K/h per unit
     modulation and where it changes sign, the drift, the drivers' gains, and the fit's errors."""
     zone = np.asarray(panel[ZONE], dtype=np.float64)
     held = prescription(
@@ -414,7 +415,8 @@ def episode_summary(steps: Sequence[Step], design: Design) -> dict[str, Any]:
 
 
 def verdict(replicates: Sequence[Mapping[str, Any]], design: Design) -> dict[str, Any]:
-    """The pre-registered gate: L8.1's, with V2 read over the calls made from inside the band."""
+    """The pre-registered gate: the first run's, with V2 read over the calls made from inside the
+    band."""
     rows = [matched(r) for r in replicates]
     reached = all(row["reached"] for row in rows)
     values = [row["excess"] for row in rows if row["excess"] is not None]
@@ -593,9 +595,12 @@ def run_experiment(
     }
 
 
-def against_l81(results: Mapping[str, Any], l81: Mapping[str, Any]) -> list[dict[str, Any]]:
-    """Per replicate: whether the panel is L8.1's, and the baseline beside L8.1's. Descriptive."""
-    earlier = {r["replicate"]: r for r in l81["replicates"]}
+def against_first_run(
+    results: Mapping[str, Any], first_run: Mapping[str, Any]
+) -> list[dict[str, Any]]:
+    """Per replicate: whether the panel is the first run's, and the baseline beside the first
+    run's. Descriptive."""
+    earlier = {r["replicate"]: r for r in first_run["replicates"]}
     rows = []
     for replicate in results["replicates"]:
         then = earlier.get(replicate["replicate"])
@@ -606,7 +611,7 @@ def against_l81(results: Mapping[str, Any], l81: Mapping[str, Any]) -> list[dict
                 if then is None
                 else then["panel_sha256"] == replicate["panel_sha256"],
                 "baseline_tdis": replicate["baseline"]["tdis_tot"],
-                "l81_baseline_tdis": None if then is None else then["baseline"]["tdis_tot"],
+                "first_run_baseline_tdis": None if then is None else then["baseline"]["tdis_tot"],
             }
         )
     return rows
@@ -619,12 +624,13 @@ def _show(value: float | None, spec: str = ".4f") -> str:
     return "--" if value is None else format(value, spec)
 
 
-def markdown(results: Mapping[str, Any], l81: Mapping[str, Any] | None = None) -> str:
-    """The results file, every number in it read off ``results`` (and L8.1's, when given)."""
+def markdown(results: Mapping[str, Any], first_run: Mapping[str, Any] | None = None) -> str:
+    """The results file, every number in it read off ``results`` (and the first run's, when
+    given)."""
     design, gate = results["design"], results["verdict"]
     replicates = results["replicates"]
     lines = [
-        "# D21 -- L8.1 rerun: BOPTEST through `chc.prescribe`, the band held, the weather as "
+        "# The rerun: BOPTEST through `chc.prescribe`, the band held, the weather as "
         "drivers, the bound as a schedule",
         "",
         "Produced by `causaldyn_bench.boptest_rerun` at its pre-registered defaults; the",
@@ -768,26 +774,27 @@ def markdown(results: Mapping[str, Any], l81: Mapping[str, Any] | None = None) -
             f" | {sum(e['budget_stopped_outside'] for e in runs)}"
             f" | {min(barriers) if barriers else '--'} |"
         )
-    if l81 is not None:
+    if first_run is not None:
         lines += [
             "",
-            "## Against L8.1 (descriptive)",
+            "## Against the first run (descriptive)",
             "",
-            "The same windows under L8.1's call and chc 0.5.1 (bench `46bb2f9`). Whether each "
-            "replicate's panel is byte for byte L8.1's, and each baseline beside L8.1's.",
+            "The same windows under the first run's call and chc 0.5.1 (bench `46bb2f9`). Whether "
+            "each replicate's panel is byte for byte the first run's, and each baseline beside the "
+            "first run's.",
             "",
-            "| replicate | same panel | baseline tdis | L8.1 baseline tdis |",
+            "| replicate | same panel | baseline tdis | first run baseline tdis |",
             "|---|---|---|---|",
             *(
                 f"| {row['replicate']} | {row['same_panel']} | {row['baseline_tdis']:.4f} | "
-                f"{_show(row['l81_baseline_tdis'])} |"
-                for row in against_l81(results, l81)
+                f"{_show(row['first_run_baseline_tdis'])} |"
+                for row in against_first_run(results, first_run)
             ),
             "",
-            "| arm | L8.1 mean saving | D21 mean saving |",
+            "| arm | first run mean saving | rerun mean saving |",
             "|---|---|---|",
             *(
-                f"| {arm} | {l81['verdict']['saving_against_baseline'][arm]['mean']:+.4f} | "
+                f"| {arm} | {first_run['verdict']['saving_against_baseline'][arm]['mean']:+.4f} | "
                 f"{gate['saving_against_baseline'][arm]['mean']:+.4f} |"
                 for arm in ARMS
             ),
@@ -829,9 +836,9 @@ def main() -> None:
     results = run_experiment(plant, design, journal=journal, chc_commit=args.chc_commit)
     args.out.mkdir(parents=True, exist_ok=True)
     (args.out / "results.json").write_text(json.dumps(results, indent=2))
-    l81_path = Path(L81_RESULTS)
-    l81 = json.loads(l81_path.read_text()) if l81_path.exists() else None
-    text = markdown(results, l81)
+    first_run_path = Path(FIRST_RUN_RESULTS)
+    first_run = json.loads(first_run_path.read_text()) if first_run_path.exists() else None
+    text = markdown(results, first_run)
     (args.out / "results.md").write_text(text)
     print(text)
     print(f"written to {args.out}/results.md and {args.out}/results.json")

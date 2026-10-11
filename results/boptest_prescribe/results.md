@@ -1,4 +1,4 @@
-# L8.1 -- BOPTEST through `chc.prescribe`
+# BOPTEST through `chc.prescribe`
 
 Produced by `causaldyn_bench.boptest_prescribe` at its pre-registered defaults; the
 pre-registration is that module's docstring, committed before this run.

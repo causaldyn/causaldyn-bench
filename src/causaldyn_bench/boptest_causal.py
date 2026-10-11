@@ -1140,7 +1140,8 @@ class SafetyAudit:
 
 @dataclass(frozen=True)
 class StepAudit:
-    """§40 priced on one MPC solve, and the command the filter would allow instead."""
+    """The barrier guarantee priced on one MPC solve, and the command the filter would allow
+    instead."""
 
     margin: float  # h(T) now: how far the zone sits above the bound it is audited against
     guaranteed: float  # worst-case barrier derivative at the step the plan applies
@@ -1179,7 +1180,7 @@ def _audit_plan(
     dt: float,
     audit: SafetyAudit,
 ) -> StepAudit:
-    """Wrap the MPC's horizon in a :class:`chc.plan.CausalPlan` and price it against §40.
+    """Wrap the MPC's horizon in a :class:`chc.plan.CausalPlan` and price its barrier guarantee.
 
     The barrier is ``h(T) = T - floor`` with ``floor`` the comfort bound in force **now**, held
     fixed across the horizon. BOPTEST's bound is a two-level step function -- 21 C occupied, 15 C
@@ -1601,9 +1602,9 @@ def run_certificate_ablation(
 
     Falsifiable in both directions, which is the only reason to run it rather than assert it: the
     audit should find the confounded fit harder to certify, and one that separated the arms
-    *equally* would be reading something other than the confounding. §40's threshold is undefined
-    exactly where ``deficit > u_max * |channel|``, so what the diagnostic tracks is the authority
-    the model *believes* at the operating point -- and attenuating that authority is what
+    *equally* would be reading something other than the confounding. The guarantee's threshold is
+    undefined exactly where ``deficit > u_max * |channel|``, so what the diagnostic tracks is the
+    authority the model *believes* at the operating point -- and attenuating that authority is what
     confounding does here. Measured on two seeds in §9 of the results doc, monotone over all four
     fits.
 

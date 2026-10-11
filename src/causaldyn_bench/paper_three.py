@@ -5,9 +5,10 @@ One command produces all six.
     uv run python -m causaldyn_bench.paper_three --out results/paper3
 
 Nothing here re-derives a model. Tables 1-5 are read off certificates in ``chc.regret`` --
-:func:`minimax_exploration_certificate` (Result 56's floor and the policies that meet it),
-:func:`capped_exploration_policy` (Results 56 and 66) and
-:func:`multivariate_van_trees_certificate` (Result 67) -- so a table and the library cannot drift.
+:func:`minimax_exploration_certificate` (the local-minimax floor and the policies that meet it),
+:func:`capped_exploration_policy` (the matching policy under a constant or a varying per-round
+cap) and :func:`multivariate_van_trees_certificate` (the multivariate van Trees floor) -- so a
+table and the library cannot drift.
 Table 6 is the one simulation in this module: every certificate charges a round the van Trees
 floor, so none of them can say whether an actual estimator attains it, and :func:`table_six` runs
 one on the certificate's own plant.
@@ -52,8 +53,8 @@ from chc.regret import (
     multivariate_van_trees_certificate,
 )
 
-# The knobs Result 56's family shares. These are the defaults of every certificate below; naming
-# them once here is what lets `plant_constants` check itself against the library.
+# The knobs the capped-exploration certificates share. These are the defaults of every certificate
+# below; naming them once here is what lets `plant_constants` check itself against the library.
 _B, _RR, _XT, _SIGMA, _I0, _ETA = 1.0, 0.5, 1.0, 0.7, 1.0, 0.6
 
 
@@ -95,7 +96,7 @@ def exact_mass(horizon: float, cap: float, k: PlantConstants) -> float:
 
     Under a constant cap the stopping round is ``S/cap``, so the remaining horizon in the balance
     is a function of the mass and the root is a quadratic rather than a square root. This is the
-    closed form Result 66 (f) derives; the library reaches the same number as a fixed point.
+    balance's closed form; the library reaches the same number as a fixed point.
     """
     q = k.numerator / cap
     w = (
@@ -107,7 +108,7 @@ def exact_mass(horizon: float, cap: float, k: PlantConstants) -> float:
     return float((w - k.prior_info) / k.info_rate)
 
 
-def result_56_mass(horizon: float, k: PlantConstants) -> float:
+def leading_mass(horizon: float, k: PlantConstants) -> float:
     """``sqrt(K T/(A c)) - I0/c``: the same balance with the horizon held at the FULL ``T``."""
     return float(
         np.sqrt(k.numerator * horizon / (k.curvature * k.info_rate)) - k.prior_info / k.info_rate
@@ -248,10 +249,10 @@ def table_three(horizon: int, k: PlantConstants) -> dict[str, dict[str, float]]:
     """The stopping MASS is the invariant; the stopping ROUND is whatever prefix sum reaches it.
 
     Five schedules, one horizon. The block lengths differ by ``6.9x`` and every delivered mass sits
-    within a fraction of a cap of the same fixed point -- while Result 56's closed form, which does
+    within a fraction of a cap of the same fixed point -- while the leading closed form, which does
     not know when the caps open, is far outside on the schedules that open late.
     """
-    leading = result_56_mass(horizon, k)
+    leading = leading_mass(horizon, k)
     out: dict[str, dict[str, float]] = {}
     for name, caps in _schedules(horizon).items():
         policy = capped_exploration_policy(horizon=horizon, cap=[float(c) for c in caps])
@@ -262,7 +263,7 @@ def table_three(horizon: int, k: PlantConstants) -> dict[str, dict[str, float]]:
             "predicted_mass": policy.predicted_mass,
             "gap_in_caps": abs(policy.exploration_mass - policy.predicted_mass)
             / max(landing, 1e-12),
-            "result_56_over_delivered": leading / policy.exploration_mass,
+            "leading_over_delivered": leading / policy.exploration_mass,
         }
     return out
 
@@ -274,7 +275,7 @@ def table_four(
     cap_horizon: int,
     k: PlantConstants,
 ) -> TableFour:
-    """What Result 56's closed form drops is a CONSTANT, and the cap decides how big it is.
+    """What the leading closed form drops is a CONSTANT, and the cap decides how big it is.
 
     Panel (a) is the horizon ladder at one cap: the gap to the closed form rises to the ceiling
     ``K/(2 A c cap)`` and stops, and the residual after subtracting it decays exactly as the
@@ -292,7 +293,7 @@ def table_four(
     ladder: list[dict[str, float]] = []
     for horizon in horizons:
         exact = exact_mass(horizon, cap, k)
-        gap = result_56_mass(horizon, k) - exact
+        gap = leading_mass(horizon, k) - exact
         ladder.append(
             {
                 "horizon": int(horizon),
@@ -305,7 +306,7 @@ def table_four(
     by_cap: list[dict[str, float]] = []
     for level in ladder_caps:
         exact = exact_mass(cap_horizon, level, k)
-        gap = result_56_mass(cap_horizon, k) - exact
+        gap = leading_mass(cap_horizon, k) - exact
         by_cap.append(
             {
                 "cap": float(level),
@@ -605,14 +606,14 @@ def _markdown(
         "## Table 3 -- the stopping MASS is the invariant, not the block length",
         "",
         "| schedule | block rounds | delivered mass | fixed point | gap, in caps | "
-        "Result 56 / delivered |",
+        "leading form / delivered |",
         "|---|---|---|---|---|---|",
     ]
     for name, row in three.items():
         lines.append(
             f"| {name} | {int(row['block_rounds']):,} | {row['mass']:.4f} | "
             f"{row['predicted_mass']:.4f} | {row['gap_in_caps']:.3f} | "
-            f"{row['result_56_over_delivered']:.3f} |"
+            f"{row['leading_over_delivered']:.3f} |"
         )
     ceiling = four["ceiling"]
     coefficient = four["coefficient"]
@@ -629,7 +630,7 @@ def _markdown(
         "",
         f"(a) horizon ladder at `cap = {four['cap']}`:",
         "",
-        "| T | exact mass | Result 56 - exact | over the ceiling | residual x sqrt(T) |",
+        "| T | exact mass | leading form - exact | over the ceiling | residual x sqrt(T) |",
         "|---|---|---|---|---|",
     ]
     for row in ladder:
@@ -644,7 +645,7 @@ def _markdown(
         "",
         f"(b) cap ladder at `T = {four['cap_horizon']:,}`:",
         "",
-        "| cap | exact mass | Result 56 - exact | ceiling | as a share of the mass |",
+        "| cap | exact mass | leading form - exact | ceiling | as a share of the mass |",
         "|---|---|---|---|---|",
     ]
     for row in by_cap:

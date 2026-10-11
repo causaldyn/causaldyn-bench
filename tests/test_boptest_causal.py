@@ -470,7 +470,8 @@ def _audited(
     radius: float = 0.073,
     alpha: float = 1.0,
 ) -> tuple[HorizonPlan, StepAudit]:
-    """One MPC solve on flat boundary conditions, plus the §40 price of the plan it returned."""
+    """One MPC solve on flat boundary conditions, plus the barrier guarantee's price of the
+    plan it returned."""
     dt = 0.5
     bounds, covariates = jnp.full(16, floor), jnp.zeros((16, 3))
     plan = _mpc_solver(fit, HEAT_PUMP, dt, w_comfort=w_comfort, margin=1.5, iterations=600)(

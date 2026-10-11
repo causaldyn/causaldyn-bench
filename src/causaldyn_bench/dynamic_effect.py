@@ -5,7 +5,7 @@ Two axes, mirroring Track F. **G-effect** -- how well each method recovers the t
 local projections vs the structured Toeplitz-Levinson route. **G-payoff** -- the decision the IRF
 enables: on a distributed-lag plant a one-step controller (inverts only ``g_1``) overshoots to the
 full gain, while deconvolving the whole response tracks. Scoring the effect on what it enables, not
-just its accuracy. Both DGPs match the gated ``chc`` tests. See plans/18.
+just its accuracy. Both DGPs match the gated ``chc`` tests.
 """
 
 from __future__ import annotations

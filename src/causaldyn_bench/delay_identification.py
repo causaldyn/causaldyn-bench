@@ -14,7 +14,7 @@ The three-tier outcome is the content. Ignoring the delay diverges; estimating i
 stabilises, because the stabilising set in delay space is a **half-line** (`chc.delay.delay_ball`:
 under-estimating by up to 76% is survivable, over-estimating never destabilises); and only
 adjustment reaches the oracle. "Estimate something" buys the bifurcation; "estimate it causally"
-buys the regret. See plans/24.
+buys the regret.
 
 The bias has an exploration threshold, and it is exact rather than empirical. Aggregating the plant
 over one observation stride, the incentive's window straddles a block boundary and splits **2:1**

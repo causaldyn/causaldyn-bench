@@ -27,7 +27,7 @@ never sees it. The design is fixed by rule, the same for both environments:
   growth side the e-values average exactly 1, clipped or not; and moved to 1.25 times the model's
   from the first decision, through the pendulum's mass and the car's power.
 
-**The gate** (plans/26, the 0.11.0 release: the drift monitor's type-I error at most ``alpha``
+**The gate** (from the 0.11.0 release: the drift monitor's type-I error at most ``alpha``
 under continuous monitoring): on both environments, both plans and both nulls, read after every
 decision at ``A = 10^3``, the share of runs that alarm by ``H = 100`` decisions does not exceed
 ``alpha = H / A = 0.1`` beyond Monte Carlo error: its Clopper-Pearson lower bound is at most
