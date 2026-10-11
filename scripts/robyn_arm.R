@@ -618,20 +618,22 @@ plan_second <- function(path, setting, smoke) {
       planned_response = planned$optmResponseUnitTotal[1],
       status_quo_response = sum(at_status_quo)
     ),
-    settings = list(
-      ranges = setting,
-      hyperparameters = ranges_of(channels, setting),
-      iterations = iterations,
-      trials = trials,
-      cores = CORES,
-      context_vars = I(controls),
-      kernel_length = NULL,
-      kernel = NO_KERNEL_LENGTH,
-      calibration_scope = "total",
-      date_range = "last_13",
-      gain_window = GAIN_WINDOW,
-      geo = if (world$geo) GEO else NULL,
-      smoke = smoke
+    settings = c(
+      list(
+        ranges = setting,
+        hyperparameters = ranges_of(channels, setting),
+        iterations = iterations,
+        trials = trials,
+        cores = CORES,
+        context_vars = I(controls),
+        kernel_length = NULL,
+        kernel = NO_KERNEL_LENGTH,
+        calibration_scope = "total",
+        date_range = "last_13",
+        gain_window = GAIN_WINDOW
+      ),
+      if (world$geo) list(geo = GEO), # a national record carries no geo key
+      list(smoke = smoke)
     ),
     `n/a` = NOT_GIVEN,
     lift_rows = length(world$lift_channel),
