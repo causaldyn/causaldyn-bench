@@ -55,6 +55,15 @@ Each record carries, beside the plan:
   part of the sales on its own, which ``chc.response`` needs;
 * ``settings``, ``versions`` and ``cost``, the wall and CPU seconds of the whole arm.
 
+**A geo export** (family 8) is read as the market's: Orbit is national, so the arm fits it on the
+KPI and the spend summed over the geos, and plans one weekly spend a channel, in the box and at the
+budget of the channels' cells summed, which the harness allots to the cells as the status quo
+splits it (``GeoQuarter.allot``). That a channel's split across the geos is never planned is the
+tool's limitation, charged to it. A geo test took a set of geos dark, so the market's spend over its
+dark weeks fell by those geos' spend alone: the prior's readout is the history's less that spend,
+read off the geo panel (:mod:`geo_export`), where a national test's is the history with the channel
+dark. The record says so under ``settings.geo``.
+
 ``--smoke`` fits the grid's middle point alone, at 101 steps and with no hold-out fit, its error
 null, to check the plumbing; its records say they are a smoke run, not a result.
 
@@ -85,6 +94,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from geo_export import geo, national
 from orbit.models import KTR  # ty: ignore[unresolved-import]
 from scipy.optimize import brentq, minimize
 
@@ -105,6 +115,11 @@ CAP = 50.0  # the largest coefficient a lift row's prior is centred on
 AGREE = 1e-9  # how near the arm's prediction lies to KTR's own, relative to it
 SMOKE = {"num_steps": 101}
 MODEL = "log-log KTR (Ng, Wang and Dai 2021)"
+GEO = (
+    "fitted on the KPI and the spend summed over the geos, and planned one weekly spend a channel "
+    "in the channels' summed box, which the harness allots to the cells; each geo test's readout "
+    "is the market's spend less what its geos withheld"
+)
 
 
 def _cpu() -> float:
@@ -154,11 +169,13 @@ class Media:
 
 def _priors(world: Any, media: Media, end: int) -> list[dict[str, Any]]:
     """KTR's prior on each tested channel's coefficient over each readout that ends by week
-    ``end``, numbered from 0.
+    ``end``, numbered from 0: the readout's spend is the history's less what the test withheld
+    each dark week (``lift_withheld``, :func:`geo_export.national`), the channel's whole spend on a
+    national export and its tested geos' on a geo one.
 
     Raises:
-        ValueError: on a row whose ``x`` is not the history's mean spend over its dark weeks, or
-            whose change is not the whole of it, as the harness reads a row.
+        ValueError: on a row whose ``x`` is not the mean spend its test withheld over its dark
+            weeks, or whose change is not the whole of it, as the harness reads a row.
     """
     channels = [str(c) for c in world["channels"]]
     spend = np.asarray(world["spend"], dtype=float)
@@ -171,11 +188,12 @@ def _priors(world: Any, media: Media, end: int) -> list[dict[str, Any]]:
         if last > end:
             continue
         x, change = float(world["lift_x"][i]), float(world["lift_delta_x"][i])
-        mean = float(spend[first : first + dark, channels.index(name)].mean())
+        withheld = np.asarray(world["lift_withheld"][i], dtype=float)
+        mean = float(withheld.mean())
         if abs(x - mean) > 1e-9 * abs(mean) or change != -x:
-            raise ValueError(f"{name}'s row {i} reads x {x} and {change}; the history spent {mean}")
+            raise ValueError(f"{name}'s row {i} reads x {x} and {change}; its test withheld {mean}")
         tested = spend[:last].copy()
-        tested[first : first + dark, channels.index(name)] = 0.0
+        tested[first : first + dark, channels.index(name)] -= withheld
         moved = (media.z(tested) - media.z(spend[:last]))[first:last, channels.index(name)]
         base = sales[first:last]
         lift = float(world["lift_delta_y"][i]) * dark
@@ -413,8 +431,11 @@ def _flags(model: Any, held: float | None, agree: float) -> dict[str, Any]:
 
 
 def plan_second(path: Path, smoke: bool) -> dict[str, Any]:
-    """A version-2 export's plan, with what the scorecard reads beside it."""
-    world = np.load(path)
+    """A version-2 export's plan, with what the scorecard reads beside it, a geo export's on the
+    market's series (:func:`geo_export.national`)."""
+    saved = np.load(path)
+    on_geos = geo(saved)
+    world = national(saved)
     seed = int(world["seed"])
     weeks = np.asarray(world["sales"]).size
     points = [(0.5, 1.0)] if smoke else [(d, m) for d in RETENTIONS for m in MULTIPLES]
@@ -478,6 +499,7 @@ def plan_second(path: Path, smoke: bool) -> dict[str, Any]:
             "lift_priors": len(priors),
             "gain_level": LEVEL,
             "smoke": smoke,
+            **({"geo": GEO} if on_geos else {}),
         },
         "n/a": {},
         "lift_rows": int(np.asarray(world["lift_channel"]).size),
