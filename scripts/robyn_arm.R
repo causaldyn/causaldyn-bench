@@ -15,13 +15,15 @@
 #   --ranges names. `genre`: the demo's ranges for the demo channel each world channel stands for,
 #   pla a search channel (search_clicks_P's: alphas 0.5-3, gammas 0.3-1, thetas 0-0.3), meta a
 #   social one (facebook_I's, the same) and tv tv_S's (alphas 0.5-1, gammas 0.3-1, thetas 0.3-0.8),
-#   the thetas its rule of thumb for digital and TV decay. `union`: every channel over the union of
-#   the demo's ranges, thetas 0-0.8 (the rule of thumb joined over digital, OOH, print, radio and
-#   TV), alphas 0.5-3 and gammas 0.3-1. CHOICE: the drawn worlds give every channel, whatever its
-#   genre, a retention drawn uniformly from 0.2 to 0.7, four fifths of which the digital rule of
-#   thumb rules out for pla and meta and the union holds; the scored run takes the setting a pilot
-#   of both found better for Robyn, pre-registered in causaldyn_bench.external_arms. And the demo's
-#   train_size 0.5-0.8, inert with ts_validation off, as in the demo;
+#   the thetas its rule of thumb for digital and TV decay; a geo world's search and social stand
+#   for search_clicks_P and facebook_I as pla and meta do. A record names the ranges of its world's
+#   own channels. `union`: every channel over the union of the demo's ranges, thetas 0-0.8 (the
+#   rule of thumb joined over digital, OOH, print, radio and TV), alphas 0.5-3 and gammas 0.3-1.
+#   CHOICE: the drawn worlds give every channel, whatever its genre, a retention drawn uniformly
+#   from 0.2 to 0.7, four fifths of which the digital rule of thumb rules out for pla and meta and
+#   the union holds; the scored run takes the setting a pilot of both found better for Robyn,
+#   pre-registered in causaldyn_bench.external_arms. And the demo's train_size 0.5-0.8, inert
+#   with ts_validation off, as in the demo;
 # * every geo test the bench kept as one calibration_input row: the test's four dark weeks,
 #   liftStartDate the Monday of the first and liftEndDate the Monday of the last. CHOICE: Robyn
 #   scales its prediction by the lift's days over the days its decomposition covers, Monday to
@@ -78,6 +80,17 @@
 # * `forecast` and `gain_interval` are n/a: Robyn forecasts no week after its modelling window, and
 #   plans on one selected model, a point estimate, and the record says so.
 #
+# A geo export (family 8) is read as the market's, through scripts/geo_export.py's `national`,
+# which reticulate imports: Robyn is national, so the arm fits it on the KPI and the spend summed
+# over the geos and plans one weekly spend a channel, in the box and at the budget of the channels'
+# cells summed, which the harness allots to the cells as the status quo splits it
+# (GeoQuarter.allot). That a channel's split across the geos is never planned is the tool's
+# limitation, charged to it. A geo test took a set of geos dark, and Robyn reads a lift as the
+# channel's whole return over its window, at the spend the history shows there (its own check warns
+# where the calibration's spend is off the history's by more than a tenth): so the test's lift is
+# scaled from the spend its geos withheld to the market's spend over its dark weeks, at the test's
+# ROI, and that spend is the calibration's. The record says so under settings$geo.
+#
 # --smoke runs 400 iterations and 4 trials to check the plumbing; its records say they are a smoke
 # run, not a result. A version-1 export is fitted as before, by the same code, in full.
 #
@@ -102,7 +115,9 @@ RANGES <- list(
   genre = list(
     pla = list(alphas = c(0.5, 3), gammas = c(0.3, 1), thetas = c(0, 0.3)), # search_clicks_P
     meta = list(alphas = c(0.5, 3), gammas = c(0.3, 1), thetas = c(0, 0.3)), # facebook_I
-    tv = list(alphas = c(0.5, 1), gammas = c(0.3, 1), thetas = c(0.3, 0.8)) # tv_S
+    tv = list(alphas = c(0.5, 1), gammas = c(0.3, 1), thetas = c(0.3, 0.8)), # tv_S
+    search = list(alphas = c(0.5, 3), gammas = c(0.3, 1), thetas = c(0, 0.3)), # search_clicks_P
+    social = list(alphas = c(0.5, 3), gammas = c(0.3, 1), thetas = c(0, 0.3)) # facebook_I
   ),
   union = list(alphas = c(0.5, 3), gammas = c(0.3, 1), thetas = c(0, 0.8)) # every channel's
 )
@@ -124,6 +139,11 @@ NOT_GIVEN <- list(
 NO_KERNEL_LENGTH <- paste(
   "Robyn's geometric adstock carries each week's spend over every later week of the series,",
   "so it takes no kernel length"
+)
+GEO <- paste(
+  "fitted on the KPI and the spend summed over the geos, and planned one weekly spend a channel",
+  "in the channels' summed box, which the harness allots to the cells; each geo test's lift scaled",
+  "from the spend its geos withheld to the market's over its dark weeks, at the test's ROI"
 )
 GAIN_WINDOW <- paste(
   "13 steady weeks of the allocator's response, the window's mean carryover held:",
@@ -150,21 +170,29 @@ read_world <- function(path) {
   world
 }
 
+# A geo export's tests are read as the market's (scripts/geo_export.py's market_lift), a national
+# export's as they are
 calibration <- function(world, dates) {
   if (length(world$lift_channel) == 0) {
     return(NULL)
   }
   last <- world$lift_start + world$lift_weeks - 1
+  geo <- isTRUE(world$geo)
   data.frame(
     channel = world$lift_channel,
     liftStartDate = dates[world$lift_start],
     liftEndDate = dates[last],
-    liftAbs = -world$lift_delta_y * world$lift_weeks,
-    spend = world$lift_x * world$lift_weeks,
+    liftAbs = if (geo) world$lift_market_lift else -world$lift_delta_y * world$lift_weeks,
+    spend = if (geo) world$lift_market_spend else world$lift_x * world$lift_weeks,
     confidence = 1 - 2 * pnorm(-abs(world$lift_delta_y) / world$lift_sigma),
     metric = "sales",
     calibration_scope = "total"
   )
+}
+
+# The setting's ranges of the world's own channels, as a record names them
+ranges_of <- function(channels, setting) {
+  if (setting == "union") RANGES$union else RANGES$genre[channels]
 }
 
 hyperparameters <- function(channels, setting) {
@@ -333,7 +361,7 @@ plan_world <- function(path, setting) {
     iterations = ITERATIONS,
     trials = TRIALS,
     cores = CORES,
-    ranges = RANGES[[setting]],
+    ranges = ranges_of(channels, setting),
     lift_rows = length(world$lift_channel),
     lift_dropped = world$lift_dropped,
     error = NULL
@@ -354,9 +382,21 @@ exported_version <- function(path) {
   version
 }
 
+# This script's directory, where scripts/geo_export.py lies beside it
+script_dir <- function() {
+  file <- sub("^--file=", "", grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE))
+  dirname(normalizePath(file))
+}
+
 read_second <- function(path) {
   numpy <- reticulate::import("numpy", convert = FALSE)
-  saved <- numpy$load(path)
+  file <- numpy$load(path)
+  geo <- "population" %in% reticulate::py_to_r(file$files)
+  saved <- file
+  if (geo) { # the market's series, a channel's quarter and each test as the market's
+    reading <- reticulate::import_from_path("geo_export", path = script_dir(), convert = FALSE)
+    saved <- reading$national(file)
+  }
   value <- function(key) reticulate::py_to_r(saved$`__getitem__`(key))
   vector <- function(key) as.vector(value(key))
   world <- lapply(
@@ -372,7 +412,12 @@ read_second <- function(path) {
   )
   world$spend <- unclass(value("spend"))
   world$controls <- unclass(value("controls"))
-  saved$close()
+  world$geo <- geo
+  if (geo) {
+    world$lift_market_lift <- vector("lift_market_lift")
+    world$lift_market_spend <- vector("lift_market_spend")
+  }
+  file$close()
   world
 }
 
@@ -575,7 +620,7 @@ plan_second <- function(path, setting, smoke) {
     ),
     settings = list(
       ranges = setting,
-      hyperparameters = RANGES[[setting]],
+      hyperparameters = ranges_of(channels, setting),
       iterations = iterations,
       trials = trials,
       cores = CORES,
@@ -585,6 +630,7 @@ plan_second <- function(path, setting, smoke) {
       calibration_scope = "total",
       date_range = "last_13",
       gain_window = GAIN_WINDOW,
+      geo = if (world$geo) GEO else NULL,
       smoke = smoke
     ),
     `n/a` = NOT_GIVEN,
