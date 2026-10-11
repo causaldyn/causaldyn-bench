@@ -24,10 +24,10 @@ Each world is fitted as a practitioner fits Meridian 2.1.0, on its default JAX b
   below, where that LogNormal has no parameters: a version-2 export carries every test, whichever
   way its sales moved (:mod:`meridian_roi`). The record names each such channel and why
   (``roi_prior.default``). The ROI prior covers the whole history (``roi_calibration`` unset), as
-  Meridian's documentation recommends. Not used: Meridian 2.1's ``CalibrationBuilder``, whose duration adjustment scales an
-  experiment's ROI up by the share of the adstock its window leaves out, which these lifts already
-  count, and whose recency and spend adjustments widen a test's error by the weeks since it ran and
-  by how far its spend sat from the channel's mean;
+  Meridian's documentation recommends. Not used: Meridian 2.1's ``CalibrationBuilder``, whose
+  duration adjustment scales an experiment's ROI up by the share of the adstock its window leaves
+  out, which these lifts already count, and whose recency and spend adjustments widen a test's error
+  by the weeks since it ran and by how far its spend sat from the channel's mean;
 * sampling as the Getting Started demo does: 500 prior draws, then NUTS with 10 chains of 1000
   adaptation, 500 burn-in and 1000 kept draws, seeded by the world's seed. Recorded: the model
   reviewer's health checks (Meridian's R-hat among them), and ArviZ's largest R-hat and smallest
@@ -74,6 +74,19 @@ beside the plan:
 * ``forecast`` is n/a: Meridian's ``expected_outcome`` refuses periods outside the training window,
   since its weekly effects would need a model of their own there, and the record says so.
 
+**A geo export** (family 8, one holding ``population``) is fitted as Meridian's geo model: every
+geo's weeks with its share of the population as Meridian's population (Meridian divides each geo's
+KPI and media by its population before it scales them, so shares fit the model head counts would),
+each channel's spend as the geo spent it, a national channel's allotted to the geos by population as
+the world allots it. Meridian's ROI calibration selects weeks and channels, not geos, so each geo
+test is read as the national arm reads one, pooled into its channel's ``roi_m`` over every geo and
+the whole history. Meridian's optimiser plans one quarter's spend a channel, scaling every geo's
+media by one ratio, and has no plan of a geo's own: the arm gives it the box and the status quo of
+each channel's cells summed and records its plan one weekly spend a channel, which the harness
+allots to the cells as the status quo splits them (``GeoQuarter.allot``). ``gain`` and
+``gain_interval`` are the optimiser's, over every geo. ``response`` is not mapped: the mapping reads
+one response of the market's spend, where a geo model's is each geo's own curve.
+
 ``--smoke`` samples 100 prior draws and 2 chains of 100 adaptation, 50 burn-in and 100 kept draws
 to check the plumbing; its records say they are a smoke run, not a result. A version-1 export is
 fitted as before, by the same code, in full.
@@ -103,6 +116,7 @@ from typing import Any
 import arviz as az  # ty: ignore[unresolved-import]
 import numpy as np
 import pandas as pd
+from geo_export import channel_quarter, geo, panel
 from meridian import backend, constants  # ty: ignore[unresolved-import]
 from meridian.analysis import analyzer, optimizer, tensors  # ty: ignore[unresolved-import]
 from meridian.analysis.review import reviewer  # ty: ignore[unresolved-import]
@@ -125,6 +139,18 @@ AGREE = 1e-9  # how near the arm's mean gain lies to the optimiser's own, relati
 NO_FORECAST = (
     "Meridian's expected_outcome refuses periods outside the training window: its weekly effects "
     "would need a model of their own there"
+)
+GEO_UNMAPPED = (
+    "a geo model's response is each geo's own curve of its own spend, where the mapping reads one "
+    "response of the market's spend"
+)
+GEO_LIFT = (
+    "each geo test pooled into its channel's roi_m prior, over every geo and the whole history, as "
+    "the national arm reads a test: Meridian's ROI calibration selects weeks and channels, not geos"
+)
+GEO_PLAN = (
+    "one quarter's spend a channel, Meridian's optimiser scaling every geo's media by one ratio; "
+    "the harness allots it to the cells as the status quo splits it"
 )
 PACKAGES = (
     "google-meridian",
@@ -398,31 +424,73 @@ def _outcome(
     return np.asarray(drawn).sum(axis=-1).reshape(-1)
 
 
+def _geos(world: Any) -> list[str]:
+    """Each geo's name, zero-padded, so Meridian's sorted coordinates keep the export's order."""
+    return [f"geo_{g:02d}" for g in range(np.asarray(world["population"]).size)]
+
+
+def _input(world: Any, channels: list[str], controls: list[str], days: list[str]) -> Any:
+    """The history as Meridian's builder reads it: one frame without a geo column for a national
+    export; for a geo export, every geo's weeks with its share of the population beside them, each
+    channel's spend as the geo spent it, a national channel's allotted by population, and the
+    market's controls in every geo.
+
+    Raises:
+        RuntimeError: Meridian holds the geos in another order than the export's.
+    """
+    spend = world["spend"]
+    weeks = world["sales"].shape[0]
+    if not geo(world):
+        frame = pd.DataFrame(
+            {
+                "time": days[:weeks],
+                "sales": world["sales"],
+                **{name: spend[:, c] for c, name in enumerate(channels)},
+                **{name: world["controls"][:, j] for j, name in enumerate(controls)},
+            }
+        )
+    else:
+        frame = pd.concat(
+            [
+                pd.DataFrame(
+                    {
+                        "geo": name,
+                        "time": days[:weeks],
+                        "population": float(world["population"][g]),
+                        "sales": world["sales"][:, g],
+                        **{channel: spend[:, g, c] for c, channel in enumerate(channels)},
+                        **{n: world["controls"][:, j] for j, n in enumerate(controls)},
+                    }
+                )
+                for g, name in enumerate(_geos(world))
+            ],
+            ignore_index=True,
+        )
+    builder = data_frame_input_data_builder.DataFrameInputDataBuilder(
+        kpi_type=constants.REVENUE, default_kpi_column="sales", default_time_column="time"
+    ).with_kpi(frame)
+    if geo(world):
+        builder = builder.with_population(frame)
+    if controls:
+        builder = builder.with_controls(frame, control_cols=controls)
+    data = builder.with_media(
+        frame, media_cols=channels, media_spend_cols=channels, media_channels=channels
+    ).build()
+    if geo(world) and [str(g) for g in data.geo.values] != _geos(world):
+        raise RuntimeError("Meridian holds the geos in another order than the export's")
+    return data
+
+
 def plan_second(path: Path, smoke: bool) -> dict[str, Any]:
     """A version-2 export's plan, with what the scorecard reads beside it."""
     world = np.load(path)
     channels = [str(c) for c in world["channels"]]
     controls = [str(c) for c in world["control_names"]]
     spend = world["spend"]
-    weeks, planned = world["sales"].size, int(world["planned"])
+    weeks, planned = world["sales"].shape[0], int(world["planned"])
     dates = pd.date_range(FIRST_MONDAY, periods=weeks + planned, freq="W-MON")
     days = [d.strftime("%Y-%m-%d") for d in dates]
-    frame = pd.DataFrame(
-        {
-            "time": days[:weeks],
-            "sales": world["sales"],
-            **{name: spend[:, c] for c, name in enumerate(channels)},
-            **{name: world["controls"][:, j] for j, name in enumerate(controls)},
-        }
-    )
-    builder = data_frame_input_data_builder.DataFrameInputDataBuilder(
-        kpi_type=constants.REVENUE, default_kpi_column="sales", default_time_column="time"
-    ).with_kpi(frame)
-    if controls:
-        builder = builder.with_controls(frame, control_cols=controls)
-    data = builder.with_media(
-        frame, media_cols=channels, media_spend_cols=channels, media_channels=channels
-    ).build()
+    data = _input(world, channels, controls, days)
     prior, calibration = roi_prior(world, channels)
     model_spec = spec.ModelSpec(
         prior=prior_distribution.PriorDistribution(roi_m=prior),
@@ -437,17 +505,22 @@ def plan_second(path: Path, smoke: bool) -> dict[str, Any]:
     mmm.sample_posterior(**sampling, seed=seed)
     health = review(mmm)
 
-    status_quo = np.asarray(world["status_quo"], dtype=float)
-    quarter = np.tile(status_quo, (planned, 1))
+    box = channel_quarter(world)  # a geo export's cells summed a channel, a national one's own
+    status_quo = box["status_quo"]
+    if geo(world):  # each geo's history, then its quarter at the status quo, as the world allots it
+        quarter = np.repeat(panel(world, world["status_quo"])[:, np.newaxis], planned, axis=1)
+        media_spend = np.concatenate([np.transpose(spend, (1, 0, 2)), quarter], axis=1)
+    else:
+        # with its one geo already: 2.1.0 allocates a geo-less tensor by dividing by the
+        # population as an xarray, which its JAX backend rejects
+        media_spend = np.vstack([spend, np.tile(status_quo, (planned, 1))])[np.newaxis]
     budget_optimizer = optimizer.BudgetOptimizer(mmm)
     new_data = budget_optimizer.create_optimization_tensors(
         time=days,
         cpmu=np.ones(len(channels)),
-        # with its one geo already: 2.1.0 allocates a geo-less tensor by dividing by the
-        # population as an xarray, which its JAX backend rejects
-        media_spend=np.vstack([spend, quarter])[np.newaxis],
+        media_spend=media_spend,
         # what Meridian sets for a revenue KPI, and new data over new weeks must carry it
-        revenue_per_kpi=np.ones((1, len(dates))),
+        revenue_per_kpi=np.ones((media_spend.shape[0], len(dates))),
     )
     result = budget_optimizer.optimize(
         new_data=new_data,
@@ -455,8 +528,8 @@ def plan_second(path: Path, smoke: bool) -> dict[str, Any]:
         end_date=days[-1],
         budget=float(world["budget"]),
         pct_of_spend=list(status_quo / status_quo.sum()),
-        spend_constraint_lower=list(1.0 - world["lower"] / status_quo),
-        spend_constraint_upper=list(world["upper"] / status_quo - 1.0),
+        spend_constraint_lower=list(1.0 - box["lower"] / status_quo),
+        spend_constraint_upper=list(box["upper"] / status_quo - 1.0),
     )
     optimized = result.optimized_data[constants.SPEND]
     total = np.array([float(optimized.sel(channel=name)) for name in channels])
@@ -501,7 +574,9 @@ def plan_second(path: Path, smoke: bool) -> dict[str, Any]:
         ],
         "flags": _flags(mmm, health),
         "review": health,
-        "response": _response(mmm, analysis, channels),
+        "response": (
+            {"unmapped": GEO_UNMAPPED} if geo(world) else _response(mmm, analysis, channels)
+        ),
         "settings": {
             "max_lag": int(mmm.model_spec.max_lag),
             "enable_aks": True,
@@ -514,6 +589,19 @@ def plan_second(path: Path, smoke: bool) -> dict[str, Any]:
             "gain_window": "the quarter's weeks alone, as Meridian's optimiser counts them",
             "gain_level": LEVEL,
             "smoke": smoke,
+            **(
+                {
+                    "geo": {
+                        "geos": len(_geos(world)),
+                        "national": [str(c) for c in world["national"]],
+                        "population": "each geo's share of the market's",
+                        "lift": GEO_LIFT,
+                        "plan": GEO_PLAN,
+                    }
+                }
+                if geo(world)
+                else {}
+            ),
         },
         "n/a": {"forecast": NO_FORECAST},
         "lift_rows": int(world["lift_channel"].size),
