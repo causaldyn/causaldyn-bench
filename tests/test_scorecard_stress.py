@@ -1,4 +1,4 @@
-"""Families 2 to 4 through the scorecard, as an arm reads them: each world drawn from its seed
+"""Families 2 to 5 through the scorecard, as an arm reads them: each world drawn from its seed
 alone, from the blocks its family owns; at the ladder's rungs 0 and 4, exported and read back bit
 for bit; scored beside the built-in arms, the oracle's own plan at nought; and beneath its stress,
 Track M v2's drawn world."""
@@ -14,12 +14,13 @@ from causaldyn_bench.scorecard.confounded import CONFOUNDED
 from causaldyn_bench.scorecard.continuation import Shadow
 from causaldyn_bench.scorecard.family import number
 from causaldyn_bench.scorecard.observe import VERSION, export, read
+from causaldyn_bench.scorecard.performance import PERFORMANCE
 from causaldyn_bench.scorecard.s_curves import S_CURVES
 from causaldyn_bench.scorecard.scoring import score_world
 from causaldyn_bench.scorecard.seeds import pilot, scored
 from causaldyn_bench.scorecard.track_m2 import TRACK_M2
 
-FAMILIES = {2: CONFOUNDED, 3: COLLINEAR, 4: S_CURVES}
+FAMILIES = {2: CONFOUNDED, 3: COLLINEAR, 4: S_CURVES, 5: PERFORMANCE}
 TOP = len(STARTS)
 
 
@@ -109,7 +110,7 @@ def test_beneath_its_stress_a_world_is_track_m2s_drawn_world(f):
     media and every process beneath them, the channels' parameters, the measurement layer, and the
     quarter's processes; the quarter's effect path is each channel's coefficient."""
     family = FAMILIES[f]
-    name, seed = _first(f, 0)
+    name, seed = _first(f, 2)
     world, base = family.world(name, seed), TRACK_M2.world("drawn", seed)
     kept = ("premedia", "baseline", "sentiment", "budget", "bidding", "observed_promotion")
     kept += ("observed_price", "retention", "saturation", "effect", "kernel_length", "week")

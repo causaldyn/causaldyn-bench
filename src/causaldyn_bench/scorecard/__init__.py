@@ -16,7 +16,8 @@ Family 0 is Track M v2 itself (:mod:`~causaldyn_bench.scorecard.track_m2`); fami
 channel's effect drift (:mod:`~causaldyn_bench.scorecard.drift`); family 2 sets the spend by the
 sentiment no arm observes (:mod:`~causaldyn_bench.scorecard.confounded`); family 3 moves two
 channels' spend together (:mod:`~causaldyn_bench.scorecard.collinear`); family 4 makes every curve
-S-shaped (:mod:`~causaldyn_bench.scorecard.s_curves`); family 14 is Robyn's home ground,
+S-shaped (:mod:`~causaldyn_bench.scorecard.s_curves`); family 5 sets the spend by last week's sales
+(:mod:`~causaldyn_bench.scorecard.performance`); family 14 is Robyn's home ground,
 its media in Robyn's own form (:mod:`~causaldyn_bench.scorecard.robyn`); family 15 is siMMMulator's
 own worlds, Meta's simulator run as its documentation's demo
 (:mod:`~causaldyn_bench.scorecard.simmmulator`).
