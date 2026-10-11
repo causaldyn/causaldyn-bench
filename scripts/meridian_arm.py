@@ -19,10 +19,12 @@ Each world is fitted as a practitioner fits Meridian 2.1.0, on its default JAX b
   standard error ``sigma / |delta_x|``; a channel's rows are pooled by inverse variance and its
   prior is the LogNormal of that mean and standard error (Meridian's
   ``lognormal_dist_from_mean_std``). The row's lift counts the cooldown's carryover, so it is the
-  whole return of the spend withheld, the ROI Meridian's prior is on. A channel whose every test
-  was dropped (its sales did not fall) keeps Meridian's default ``LogNormal(0.2, 0.9)``. The ROI
-  prior covers the whole history (``roi_calibration`` unset), as Meridian's documentation
-  recommends. Not used: Meridian 2.1's ``CalibrationBuilder``, whose duration adjustment scales an
+  whole return of the spend withheld, the ROI Meridian's prior is on. A channel with no test keeps
+  Meridian's default ``LogNormal(0.2, 0.9)``, and so does one whose tests pool to a ROI of nought or
+  below, where that LogNormal has no parameters: a version-2 export carries every test, whichever
+  way its sales moved (:mod:`meridian_roi`). The record names each such channel and why
+  (``roi_prior.default``). The ROI prior covers the whole history (``roi_calibration`` unset), as
+  Meridian's documentation recommends. Not used: Meridian 2.1's ``CalibrationBuilder``, whose duration adjustment scales an
   experiment's ROI up by the share of the adstock its window leaves out, which these lifts already
   count, and whose recency and spend adjustments widen a test's error by the weeks since it ran and
   by how far its spend sat from the channel's mean;
@@ -106,6 +108,7 @@ from meridian.analysis import analyzer, optimizer, tensors  # ty: ignore[unresol
 from meridian.analysis.review import reviewer  # ty: ignore[unresolved-import]
 from meridian.data import data_frame_input_data_builder  # ty: ignore[unresolved-import]
 from meridian.model import model, prior_distribution, spec  # ty: ignore[unresolved-import]
+from meridian_roi import defaulted, pooled
 
 FIRST_MONDAY = "2023-01-02"
 YEAR = 52  # the status quo is last year's mean weekly spend, as the bench's box is centred
@@ -137,30 +140,26 @@ PACKAGES = (
 
 
 def roi_prior(world: Any, channels: list[str]) -> tuple[Any, dict[str, Any]]:
-    """Each channel's ``roi_m`` prior from its lift rows, pooled by inverse variance."""
-    loc, scale, pooled = [], [], {}
+    """Each channel's ``roi_m`` prior from its lift rows, pooled by inverse variance, Meridian's
+    default where the channel has no row or its pooled ROI is not positive (:mod:`meridian_roi`)."""
+    pools = pooled(world, channels)
+    default = defaulted(pools)
+    loc, scale = [], []
     for name in channels:
-        rows = np.array([str(c) == name for c in world["lift_channel"]], dtype=bool)
-        if not rows.any():
+        pool = pools[name]
+        if name in default or pool is None:
             loc.append(DEFAULT_ROI[0])
             scale.append(DEFAULT_ROI[1])
-            pooled[name] = None
             continue
-        delta_x = np.abs(world["lift_delta_x"][rows])
-        roi = world["lift_delta_y"][rows] / world["lift_delta_x"][rows]
-        weight = (delta_x / world["lift_sigma"][rows]) ** 2
-        mean = float(np.sum(weight * roi) / np.sum(weight))
-        error = float(1.0 / math.sqrt(np.sum(weight)))
-        fitted = prior_distribution.lognormal_dist_from_mean_std(mean, error)
+        fitted = prior_distribution.lognormal_dist_from_mean_std(pool["roi"], pool["error"])
         loc.append(float(np.asarray(fitted.loc)))
         scale.append(float(np.asarray(fitted.scale)))
-        pooled[name] = {"rows": int(rows.sum()), "roi": mean, "error": error}
     prior = backend.tfd.LogNormal(
         np.array(loc, dtype=backend.np_float_dtype),
         np.array(scale, dtype=backend.np_float_dtype),
         name=constants.ROI_M,
     )
-    return prior, {"pooled": pooled, "loc": loc, "scale": scale}
+    return prior, {"pooled": pools, "default": default, "loc": loc, "scale": scale}
 
 
 def _plain(value: Any) -> Any:
