@@ -128,6 +128,25 @@ def test_a_geo_test_read_as_the_markets_keeps_its_roi(geo_world, saved):
         assert read["spend"][row] > 1.2 * tested
 
 
+def test_a_national_row_reads_its_own_lift_whatever_its_spend():
+    """On a national export the market's spend is the spend withheld, so a row reads its own lift
+    exactly. Read as the lift times the market's spend, then over the spend withheld, a row missed
+    it by an ulp on about one spend in eleven."""
+    rng = np.random.default_rng(0)
+    rows, weeks = 200, 4
+    world = {
+        "channels": np.array(["tv"]),
+        "sales": np.zeros(rows * weeks),
+        "spend": rng.uniform(10.0, 500.0, (rows * weeks, 1)),
+        "lift_channel": np.array(["tv"] * rows),
+        "lift_weeks": np.array(weeks),
+        "lift_start": 1 + weeks * np.arange(rows),
+        "lift_delta_y": rng.uniform(-200.0, 200.0, rows),
+    }
+    read = reading.market_lift(world)
+    np.testing.assert_array_equal(read["lift"], -world["lift_delta_y"] * weeks)
+
+
 def test_a_national_test_reads_as_it_is(tmp_path):
     path = export(TRACK_M2.observe(TRACK_M2.world("drawn", 905), 4), tmp_path)
     with np.load(path) as national:

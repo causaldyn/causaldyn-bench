@@ -139,7 +139,7 @@ def market_lift(world: World) -> dict[str, np.ndarray]:
         first = int(world["lift_start"][row]) - 1
         total[row] = spend[first : first + weeks, c].sum()
         tested = withheld(world, row).sum()
-        lift[row] = -float(world["lift_delta_y"][row]) * weeks * total[row] / tested
+        lift[row] = -float(world["lift_delta_y"][row]) * weeks * (total[row] / tested)
     return {"lift": lift, "spend": total}
 
 
