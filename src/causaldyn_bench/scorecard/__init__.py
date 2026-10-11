@@ -21,8 +21,9 @@ S-shaped (:mod:`~causaldyn_bench.scorecard.s_curves`); family 5 sets the spend b
 history shows (:mod:`~causaldyn_bench.scorecard.outside`); family 7 lets an arm read only the last
 weeks of a history (:mod:`~causaldyn_bench.scorecard.short`); family 8 is ten geos drawn by
 :mod:`chc.geo_world`, planned geo by geo and tested by geo experiments
-(:mod:`~causaldyn_bench.scorecard.geo`); family 14 is Robyn's home ground,
-its media in Robyn's own form (:mod:`~causaldyn_bench.scorecard.robyn`); family 15 is siMMMulator's
-own worlds, Meta's simulator run as its documentation's demo
+(:mod:`~causaldyn_bench.scorecard.geo`); family 10 is family 8 at three geos, at eight and at
+fifty small, noisy ones (:mod:`~causaldyn_bench.scorecard.few_geos`); family 14 is Robyn's home
+ground, its media in Robyn's own form (:mod:`~causaldyn_bench.scorecard.robyn`); family 15 is
+siMMMulator's own worlds, Meta's simulator run as its documentation's demo
 (:mod:`~causaldyn_bench.scorecard.simmmulator`).
 """
