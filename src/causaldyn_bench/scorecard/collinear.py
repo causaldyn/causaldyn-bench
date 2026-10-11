@@ -1,15 +1,24 @@
 """Family 3: Track M v2's drawn worlds whose paid shopping and Meta spend move together.
 
 His business plans each channel's log spend with noise of its own, of sd 0.1 a week (his Eq. 4),
-and its bidding rule scales paid shopping's (PLA's) spend alone (his Eq. 6). Here Meta's planning
-noise is PLA's at correlation ``r``,
+and its bidding rule scales paid shopping's (PLA's) spend alone (his Eq. 6). Here Meta takes the
+share ``c`` of PLA's own movements: its planning noise is PLA's at correlation ``c``,
 
-    e'_meta = r e_pla + sqrt(1 - r^2) e_meta,
+    e'_meta = c e_pla + sqrt(1 - c^2) e_meta,
 
 from the drawn world's own noise (:attr:`~causaldyn_bench.endogenous_mmm.MediaMixWorld.plan_noise`),
-and the bidding rule scales Meta's spend as it scales PLA's. The two channels then share every
-mechanism that sets their spend but their base levels, and differ by ``sqrt(1 - r^2)`` of Meta's own
-noise alone. Each environment is one ``r``: 0.9, 0.97 and 0.99.
+and the bidding rule scales Meta's spend to the power ``c``. At ``c = 0`` the world is Track M v2's;
+at ``c = 1`` the two channels' log spend differs by a constant.
+
+Each environment is the collinearity an arm sees, ``r``: 0.9, 0.97 and 0.99, the correlation of the
+two channels' log spend over the history, as an arm computes it from the spend it reads, averaged
+over the environment's worlds. Each environment's ``c`` (:data:`SHARES`) was found once, by
+bisection on ``c`` to 1e-10 where that average over the family's pilot worlds is ``r``, and rounded
+to six places: over its three pilot blocks pooled, 300 worlds, since the environments differ in
+``c`` alone, so that the scored worlds never entered it. Each pilot block's average is 0.706 to
+0.717 at ``c = 0``. The bidding rule alone, at Meta's noise its own, gives 0.927 to 0.930, past
+0.9; and Meta's noise PLA's alone, without the rule, at most 0.789 to 0.792, short of 0.9: so ``c``
+moves both.
 
 The world's budget and bidding rule read its sales before media, so neither moves; Meta's media and
 the sales follow its spend (:func:`~causaldyn_bench.scorecard.track_m2.respent`). Beneath the
@@ -37,15 +46,19 @@ COUPLED = ("pla", "meta")  # the bidding rule's channel, and the channel coupled
 CORRELATIONS: MappingProxyType[str, float] = MappingProxyType(
     {"r-0.9": 0.9, "r-0.97": 0.97, "r-0.99": 0.99}
 )
+# each environment's share c, from the family's pilot worlds alone; see the module
+SHARES: MappingProxyType[str, float] = MappingProxyType(
+    {"r-0.9": 0.457375, "r-0.97": 0.748522, "r-0.99": 0.890720}
+)
 
 
-def couple(history: MediaMixWorld, r: float) -> MediaMixWorld:
-    """``history`` with Meta's planning noise PLA's at correlation ``r`` and Meta's spend scaled by
-    the bidding rule, and Meta's media and the sales with it."""
+def couple(history: MediaMixWorld, share: float) -> MediaMixWorld:
+    """``history`` with Meta's planning noise PLA's at correlation ``share`` and Meta's spend scaled
+    by the bidding rule to the power ``share``, and Meta's media and the sales with it."""
     lead, follower = (history.channels.index(name) for name in COUPLED)
     noise = history.plan_noise.copy()
-    noise[:, follower] = r * noise[:, lead] + math.sqrt(1.0 - r**2) * noise[:, follower]
-    moved = np.exp(noise[:, follower] - history.plan_noise[:, follower]) * history.bidding
+    noise[:, follower] = share * noise[:, lead] + math.sqrt(1.0 - share**2) * noise[:, follower]
+    moved = np.exp(noise[:, follower] - history.plan_noise[:, follower]) * history.bidding**share
     spend = history.spend.copy()
     spend[:, follower] *= moved
     return dataclasses.replace(respent(history, spend), plan_noise=noise)
@@ -68,7 +81,7 @@ class Collinear:
         if environment not in CORRELATIONS:
             raise ValueError(f"{self.name} has no environment {environment!r}")
         generator = drawn(seed)
-        history = couple(generator.simulate(seed), CORRELATIONS[environment])
+        history = couple(generator.simulate(seed), SHARES[environment])
         return settled(environment, seed, generator, history)
 
     def observe(self, world: World, k: int) -> Observation:
