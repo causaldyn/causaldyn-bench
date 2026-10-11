@@ -129,6 +129,10 @@ class Quarter:
             np.full(self.status_quo.size, self.budget / PLANNED / self.status_quo.size)
         )
 
+    def allot(self, weekly: Sequence[float] | Series) -> Series:
+        """A plan as the quarter's cells spend it: here each channel is a cell, so as it is."""
+        return np.asarray(weekly, dtype=float)
+
 
 @dataclass(frozen=True)
 class _Reach:

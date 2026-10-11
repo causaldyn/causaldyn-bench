@@ -262,6 +262,28 @@ class GeoQuarter(Quarter):
         channels = len(set(self.channel))
         return self.project(self.budget / PLANNED / channels * self.people)
 
+    def allot(self, weekly: Sequence[float] | Series) -> Series:
+        """A plan as the cells spend it: one weekly spend a cell as it is, and one a channel
+        allotted, a per-geo channel's across the geos as the status quo splits it and a national
+        channel's to its one cell, which the world allots to the geos by population
+        (:func:`allotted`).
+
+        Raises:
+            ValueError: a plan neither a cell's nor a channel's.
+        """
+        weekly = np.asarray(weekly, dtype=float)
+        if weekly.shape == self.status_quo.shape:
+            return weekly
+        channel = np.asarray(self.channel)
+        channels = len(set(self.channel))
+        if weekly.shape != (channels,):
+            raise ValueError(
+                f"a plan spends on the {self.status_quo.size} cells or the {channels} channels, "
+                f"not {weekly.shape}"
+            )
+        totals = np.bincount(channel, weights=self.status_quo, minlength=channels)
+        return weekly[channel] * self.status_quo / totals[channel]
+
 
 def geo_quarter(world: GeoMediaWorld, box: tuple[float, float] = BOX) -> GeoQuarter:
     """The quarter after ``world``'s history over its cells (:func:`geo_spend`): its budget and

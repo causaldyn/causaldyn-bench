@@ -159,6 +159,72 @@ def test_the_equal_split_gives_each_channel_a_third_a_per_geo_ones_split_by_popu
     assert scores.arms["equal split"].regret == pytest.approx(regret, rel=1e-12, abs=0.0)
 
 
+def _per_channel(quarter: Quarter) -> np.ndarray:
+    """A plan of one weekly spend a channel, off the status quo's mix."""
+    status_quo = quarter.status_quo
+    return np.array(
+        [1.3 * status_quo[0:20:2].sum(), 0.8 * status_quo[1:20:2].sum(), 0.9 * status_quo[20]]
+    )
+
+
+def test_a_plan_a_channel_is_allotted_to_the_cells_as_the_status_quo_splits_it():
+    """A per-geo channel's spend goes across the geos as the status quo splits it, and TV's to its
+    one cell, which the world allots to the geos by population; a plan of the cells is as it is, a
+    national quarter's plan is its cells', and a plan of neither size is refused."""
+    history = GEO.world("policy-0.5", GEO.pilots["policy-0.5"][4]).history
+    quarter = geo_quarter(history)
+    weekly = _per_channel(quarter)
+    cells = quarter.allot(weekly)
+    local, status_quo = cells[:20].reshape(10, 2), quarter.status_quo[:20].reshape(10, 2)
+    np.testing.assert_allclose(local.sum(axis=0), weekly[:2], rtol=1e-13)
+    np.testing.assert_allclose(
+        local / weekly[:2], status_quo / status_quo.sum(axis=0), rtol=1e-13, atol=0.0
+    )
+    assert cells[20] == pytest.approx(weekly[2], rel=1e-15, abs=0.0)
+    np.testing.assert_allclose(
+        allotted(history, cells)[:, 2], history.shares * weekly[2], rtol=1e-14, atol=0.0
+    )
+    np.testing.assert_array_equal(quarter.allot(cells), cells)
+    np.testing.assert_allclose(
+        quarter.allot(
+            [
+                quarter.status_quo[0:20:2].sum(),
+                quarter.status_quo[1:20:2].sum(),
+                quarter.status_quo[20],
+            ]
+        ),
+        quarter.status_quo,
+        rtol=1e-13,
+        atol=0.0,
+    )
+    national = Quarter(
+        quarter.budget, quarter.lower, quarter.upper, quarter.status_quo, quarter.history
+    )
+    np.testing.assert_array_equal(national.allot(weekly), weekly)
+    with pytest.raises(ValueError, match="the 21 cells or the 3 channels"):
+        quarter.allot(weekly[:2])
+
+
+def test_the_harness_scores_a_plan_a_channel_as_its_cells_once_for_every_arm():
+    """Where plans are scored, an arm's plan of one weekly spend a channel is allotted to the cells
+    before anything else reads it: it scores as the plan of its cells, moved into the box alike."""
+    seed = GEO.pilots["policy-0.5"][4]
+    world = GEO.world("policy-0.5", seed)
+    quarter = geo_quarter(world.history)
+    weekly = _per_channel(quarter)
+    digest = GEO.observe(world, 0).digest()
+
+    def record(plan: np.ndarray) -> dict:
+        return {"digest": digest, "version": VERSION, "error": None, "weekly": plan.tolist()}
+
+    records = {"channels": record(weekly), "cells": record(quarter.allot(weekly))}
+    scores = score_world(GEO, "policy-0.5", seed, 0, records, pilot=True)
+    by_channel, by_cell = scores.arms["channels"], scores.arms["cells"]
+    assert by_channel.moved is not None and by_channel.moved == by_cell.moved
+    assert by_channel.regret == by_cell.regret > TIE
+    assert by_channel.bounds == by_cell.bounds
+
+
 def _plans(quarter: Quarter, count: int, seed: int) -> list[np.ndarray]:
     draw = np.random.default_rng(seed)
     return [quarter.status_quo, quarter.lower, quarter.upper] + [

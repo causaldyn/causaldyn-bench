@@ -7,6 +7,11 @@ v2's external arms were (:mod:`causaldyn_bench.external_arms`):
 * a record is scored only on the export whose digest it echoes, by the rule of the export's version
   it names, version 1 where it names none, as the budgets run's records do;
 * an arm whose fit raised plays the status quo, and is counted;
+* on a geo world a plan may give one weekly spend a channel rather than a cell; it is allotted to
+  the cells here, once for every arm (:meth:`GeoQuarter.allot
+  <causaldyn_bench.scorecard.truth.GeoQuarter.allot>`): a per-geo channel's spend across the geos
+  as the status quo splits it, a national channel's to its one cell, which the world allots to the
+  geos by population;
 * a plan off the budget by more than a millionth of it, or outside the box, is moved into the box
   (``Quarter.project``), and the move recorded;
 * the primary axis is regret per euro of the budget: what the best plan returns over the plan, on
@@ -154,6 +159,7 @@ def _score(
     spend where that is given.
 
     Raises:
+        ValueError: on a geo world, a plan neither a cell's nor a channel's.
         RuntimeError: the plan beat the best plan, which only a broken oracle allows, or the export
             reads returns over another window than the truth's.
     """
@@ -162,7 +168,7 @@ def _score(
     if failure:
         plan = quarter.status_quo
     else:
-        plan = np.asarray(record["weekly"], dtype=float)
+        plan = quarter.allot(record["weekly"])
         if not quarter.feasible(plan, tolerance=OUT_OF_PLAN):
             inside = quarter.project(plan)
             moved = float(np.max(np.abs(inside - plan)))

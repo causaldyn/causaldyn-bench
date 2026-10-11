@@ -35,7 +35,10 @@ last year, at the budget of last year's rate. The status quo is every cell at it
 its spend over the geos summed. The equal split gives each channel, not each cell, an equal share of
 the budget, a per-geo channel's share split across the geos by population, then moves it into the
 box (:class:`~causaldyn_bench.scorecard.truth.GeoQuarter`): split over the 21 cells, TV would get a
-21st. The oracle is exact: every cell is concave. The ladder
+21st. An arm may plan one weekly spend a channel instead of a cell: where plans are scored
+(:mod:`~causaldyn_bench.scorecard.scoring`) it is allotted to the cells once, for every arm, a
+per-geo channel's across the geos as the status quo splits it and TV's to its one cell. The oracle
+is exact: every cell is concave. The ladder
 is geo experiments read by difference-in-differences
 (:func:`~causaldyn_bench.scorecard.ladder.geo_rung`), noisy ones: on the family's first 30 pilot
 worlds at policy 0 a reading of a world without noise is off the true change, relative to it, by
