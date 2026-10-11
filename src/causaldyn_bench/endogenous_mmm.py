@@ -87,12 +87,16 @@ class Curve:
     """A channel's curve on its adstock ``a``, given his ``lambda``: its value, rising from 0 to 1,
     and its slope in ``a``. Its ``bend``, where it states one, is its greatest concavity at the
     ``lambda``: the largest ``-d^2 value / d a^2`` over ``a >= 0``, which bounds how far the curve
-    rises above a chord, and so lets an oracle bound the worth of an S-shaped curve from above."""
+    rises above a chord, and so lets an oracle bound the worth of an S-shaped curve from above. Its
+    ``kinks`` are the adstocks where its slope drops, where a curve with a bend must be read for
+    that bound to hold, since a chord over one may pass below it by any amount; the bend is the
+    greatest concavity between them."""
 
     value: Callable[[Series, float], Series]
     slope: Callable[[Series, float], Series]
     concave: bool  # from zero adstock; otherwise S-shaped
     bend: Callable[[float], float] | None = None
+    kinks: tuple[float, ...] = ()
 
 
 def _hill(a: Series, lam: float) -> Series:

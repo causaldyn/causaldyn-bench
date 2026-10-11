@@ -21,9 +21,9 @@ The best plan in the box at the budget:
   the budget;
 * otherwise, where every cell's curve states its bend (:attr:`Curve.bend
   <causaldyn_bench.endogenous_mmm.Curve.bend>`), as every curve of
-  :data:`~causaldyn_bench.endogenous_mmm.CURVES` does, exact for any number of cells to a gap of
-  :data:`GAP` per euro of the budget, a tenth of a tie: Falk and Soland's branch and bound
-  (:func:`_bounded`);
+  :data:`~causaldyn_bench.endogenous_mmm.CURVES` does, and the kinks its slope drops at, exact for
+  any number of cells to a gap of :data:`GAP` per euro of the budget, a tenth of a tie: Falk and
+  Soland's branch and bound (:func:`_bounded`);
 * otherwise, for up to three cells, every split on a grid of 401 points a side of every cell's box
   but the last's, the last spending the rest, refined by SLSQP from the grid's best points, each
   some points from the others: Track M v2's searched plan;
@@ -88,6 +88,14 @@ class Cell:
         if self.curve.bend is None or not np.all(self.effect >= 0.0):
             return None
         return float(np.sum(self.effect * self.reach**2)) * self.curve.bend(self.scale)
+
+    def kinks(self, low: float, high: float) -> Series:
+        """The weekly spends inside ``(low, high)``, rising, where some week's adstock meets a kink
+        of the curve: the worth's slope drops there, and between them the bend bounds it."""
+        rising = self.reach > 0.0
+        kinks = np.asarray(self.curve.kinks, dtype=float)[:, None]
+        at = ((kinks - self.carry[rising]) / self.reach[rising]).ravel()
+        return np.unique(at[(at > low) & (at < high)])
 
     def worths(self, weekly: ArrayLike) -> Series:
         """The worth at every entry of ``weekly``, whatever its shape."""
@@ -211,15 +219,15 @@ class _Envelope:
 
 def _envelope(cell: Cell, low: float, high: float) -> _Envelope:
     """The upper concave hull of the cell's worth at :data:`SAMPLES` + 1 points evenly spread over
-    ``[low, high]``, lifted by what the worth can rise above a chord between two neighbours, ``bend
-    h^2 / 8`` for their spacing ``h``, and by the points' rounding: above the worth everywhere on
-    the interval."""
+    ``[low, high]`` and at its kinks there (:meth:`Cell.kinks`), lifted by what the worth can rise
+    above a chord between two neighbours, ``bend h^2 / 8`` for the widest spacing ``h``, and by the
+    points' rounding: above the worth everywhere on the interval."""
     bend = cell.bend
     if bend is None:
         raise ValueError("a cell bounded from above states its bend")
-    x = np.linspace(low, high, SAMPLES + 1)
+    x = np.union1d(np.linspace(low, high, SAMPLES + 1), cell.kinks(low, high))
     y = cell.worths(x)
-    step = (high - low) / SAMPLES
+    step = float(np.max(np.diff(x), initial=0.0))
     lift = bend * step**2 / 8.0 + ROUNDING * float(np.max(np.abs(y)))
     if step <= 0.0:
         return _Envelope(x[:1], y[:1] + lift)

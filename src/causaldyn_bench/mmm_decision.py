@@ -92,12 +92,14 @@ class Quarter:
     history: Series  # (weeks, channels)
 
     @classmethod
-    def after(cls, world: Market) -> Quarter:
+    def after(cls, world: Market, box: tuple[float, float] = BOX) -> Quarter:
+        """The quarter after ``world``'s history: its budget and status quo last year's mean weekly
+        spend, and each channel's box ``box`` times its mean."""
         mean = world.spend[-YEAR:].mean(axis=0)
         return cls(
             budget=PLANNED * float(mean.sum()),
-            lower=BOX[0] * mean,
-            upper=BOX[1] * mean,
+            lower=box[0] * mean,
+            upper=box[1] * mean,
             status_quo=mean,
             history=world.spend.copy(),
         )

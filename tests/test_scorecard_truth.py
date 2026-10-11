@@ -14,7 +14,7 @@ import pytest
 from scipy.optimize import linprog, minimize
 
 from causaldyn_bench.budget_regret import TIE
-from causaldyn_bench.endogenous_mmm import CURVES, LN3, EndogenousMediaMix
+from causaldyn_bench.endogenous_mmm import CURVES, LN3, Curve, EndogenousMediaMix
 from causaldyn_bench.geo_selection import GeoPanel
 from causaldyn_bench.mmm_decision import PLANNED, Quarter, drawn, worth
 from causaldyn_bench.scorecard import truth
@@ -307,6 +307,28 @@ def test_an_envelope_lies_above_its_cells_worth_and_touches_it_at_its_lift(curve
             np.testing.assert_allclose(
                 envelope.y - cell.worths(envelope.x), lift, rtol=1e-9, atol=0.0
             )
+
+
+def test_an_envelope_reads_a_kinked_worth_at_its_kinks():
+    """A curve flat past a kink at adstock 1, ``min(a, 1)``, has no concavity between its kinks, so
+    only reading the worth where some week's adstock meets the kink, at ``1 / reach``, keeps the
+    envelope above it: two of those spends fall between the evenly spread samples."""
+    kinked = Curve(
+        lambda a, lam: np.minimum(a, 1.0),
+        lambda a, lam: np.where(a < 1.0, 1.0, 0.0),
+        concave=False,
+        bend=lambda lam: 0.0,
+        kinks=(1.0,),
+    )
+    reach = np.array([1.0, 0.8, 0.55, 0.3, 0.0])
+    cell = Cell(np.zeros(5), reach, kinked, 1.0, np.ones(5))
+    at = cell.kinks(0.0, 4.0)
+    np.testing.assert_allclose(at, np.sort(1.0 / reach[:4]), rtol=1e-15, atol=0.0)
+    assert cell.kinks(1.1, 3.0).size == 2 and cell.kinks(0.0, 1.0).size == 0
+    envelope = _envelope(cell, 0.0, 4.0)
+    dense = np.union1d(np.linspace(0.0, 4.0, 64 * SAMPLES + 1), at)
+    assert np.min(np.interp(dense, envelope.x, envelope.y) - cell.worths(dense)) >= 0.0
+    assert set(at.tolist()) <= set(envelope.x.tolist())
 
 
 def test_a_cells_bend_is_its_worths_greatest_concavity_bound():

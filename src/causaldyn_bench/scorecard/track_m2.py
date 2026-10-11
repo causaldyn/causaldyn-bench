@@ -27,7 +27,7 @@ import numpy as np
 from causaldyn_bench.budget_regret import ENVIRONMENTS, PILOTS, lift_rows
 from causaldyn_bench.endogenous_mmm import YEAR, EndogenousMediaMix, Market, MediaMixWorld, Series
 from causaldyn_bench.lift_calibration import TEST
-from causaldyn_bench.mmm_decision import PLANNED, Quarter
+from causaldyn_bench.mmm_decision import BOX, PLANNED, Quarter
 from causaldyn_bench.scorecard import ladder
 from causaldyn_bench.scorecard.continuation import Shadow, shadow
 from causaldyn_bench.scorecard.family import Truth
@@ -86,12 +86,13 @@ def window(history: Market) -> tuple[int, int]:
     return (weeks - YEAR + 1, weeks)
 
 
-def observation(family: int, world: World, k: int) -> Observation:
+def observation(family: int, world: World, k: int, box: tuple[float, float] = BOX) -> Observation:
     """All an arm reads of ``world`` at rung ``k``: the history as the measurement layer reads it,
-    the quarter's budget, box and status quo, the quarter's promotion calendar and price as they
-    will be read, last year's weeks as the window a return is read over, and the rung's tests."""
+    the quarter's budget, box and status quo, each channel's box ``box`` times its mean, the
+    quarter's promotion calendar and price as they will be read, last year's weeks as the window a
+    return is read over, and the rung's tests."""
     history = world.history
-    quarter = Quarter.after(history)
+    quarter = Quarter.after(history, box)
     return Observation(
         family=family,
         environment=world.environment,
@@ -140,13 +141,15 @@ def overlapping(family: int, world: World, held: ladder.Overlap) -> Observation:
     )
 
 
-def truth(world: World, held: ladder.Overlap | None = None) -> Truth:
-    """The best plan on the expected path, the best on the realised one where it is another, the
-    quarter's sales at the status quo, and each channel's returns on last year's spend: on the
-    history as planned, or, where ``held``'s tests ran in the market, on the history as it ran
-    them. The quarter's carryover is the same, since a test's darkness is over before the kernel
-    reaches the quarter."""
-    quarter = Quarter.after(world.history)
+def truth(
+    world: World, held: ladder.Overlap | None = None, box: tuple[float, float] = BOX
+) -> Truth:
+    """The best plan in the box ``box`` times each channel's mean, on the expected path, the best on
+    the realised one where it is another, the quarter's sales at the status quo, and each channel's
+    returns on last year's spend: on the history as planned, or, where ``held``'s tests ran in the
+    market, on the history as it ran them. The quarter's carryover is the same, since a test's
+    darkness is over before the kernel reaches the quarter."""
+    quarter = Quarter.after(world.history, box)
     expected = cells(world.history, quarter, world.expected)
     realised = hindsight = None
     if not np.array_equal(world.realised, world.expected):

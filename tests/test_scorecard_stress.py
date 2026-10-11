@@ -1,4 +1,4 @@
-"""Families 2 to 5 through the scorecard, as an arm reads them: each world drawn from its seed
+"""Families 2 to 6 through the scorecard, as an arm reads them: each world drawn from its seed
 alone, from the blocks its family owns; at the ladder's rungs 0 and 4, exported and read back bit
 for bit; scored beside the built-in arms, the oracle's own plan at nought; and beneath its stress,
 Track M v2's drawn world."""
@@ -14,13 +14,15 @@ from causaldyn_bench.scorecard.confounded import CONFOUNDED
 from causaldyn_bench.scorecard.continuation import Shadow
 from causaldyn_bench.scorecard.family import number
 from causaldyn_bench.scorecard.observe import VERSION, export, read
+from causaldyn_bench.scorecard.outside import OUTSIDE
 from causaldyn_bench.scorecard.performance import PERFORMANCE
 from causaldyn_bench.scorecard.s_curves import S_CURVES
 from causaldyn_bench.scorecard.scoring import score_world
 from causaldyn_bench.scorecard.seeds import pilot, scored
 from causaldyn_bench.scorecard.track_m2 import TRACK_M2
 
-FAMILIES = {2: CONFOUNDED, 3: COLLINEAR, 4: S_CURVES, 5: PERFORMANCE}
+FAMILIES = {2: CONFOUNDED, 3: COLLINEAR, 4: S_CURVES, 5: PERFORMANCE, 6: OUTSIDE}
+KEPT = {6}  # the families whose stress leaves the history alone, and moves what reads past it
 TOP = len(STARTS)
 
 
@@ -117,7 +119,7 @@ def test_beneath_its_stress_a_world_is_track_m2s_drawn_world(f):
     for field in kept:
         assert np.array_equal(getattr(world.history, field), getattr(base.history, field)), field
     assert isinstance(world.history, MediaMixWorld)
-    assert not np.array_equal(world.history.sales, base.history.sales)
+    assert np.array_equal(world.history.sales, base.history.sales) == (f in KEPT)
     for field in ("sentiment", "baseline", "premedia", "observed_promotion", "observed_price"):
         assert np.array_equal(getattr(world.shadow, field), getattr(base.shadow, field)), field
     assert isinstance(world.shadow, Shadow)
