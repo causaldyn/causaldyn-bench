@@ -18,7 +18,8 @@ sentiment no arm observes (:mod:`~causaldyn_bench.scorecard.confounded`); family
 channels' spend together (:mod:`~causaldyn_bench.scorecard.collinear`); family 4 makes every curve
 S-shaped (:mod:`~causaldyn_bench.scorecard.s_curves`); family 5 sets the spend by last week's sales
 (:mod:`~causaldyn_bench.scorecard.performance`); family 6 changes every curve outside the range the
-history shows (:mod:`~causaldyn_bench.scorecard.outside`); family 14 is Robyn's home ground,
+history shows (:mod:`~causaldyn_bench.scorecard.outside`); family 7 lets an arm read only the last
+weeks of a history (:mod:`~causaldyn_bench.scorecard.short`); family 14 is Robyn's home ground,
 its media in Robyn's own form (:mod:`~causaldyn_bench.scorecard.robyn`); family 15 is siMMMulator's
 own worlds, Meta's simulator run as its documentation's demo
 (:mod:`~causaldyn_bench.scorecard.simmmulator`).

@@ -1,7 +1,7 @@
-"""Families 2 to 6 through the scorecard, as an arm reads them: each world drawn from its seed
-alone, from the blocks its family owns; at the ladder's rungs 0 and 4, exported and read back bit
-for bit; scored beside the built-in arms, the oracle's own plan at nought; and beneath its stress,
-Track M v2's drawn world."""
+"""Families 2 to 7 through the scorecard, as an arm reads them: each world drawn from its seed
+alone, from the blocks its family owns; at the ladder's rungs 0 and 4, or the deepest a short
+series holds, exported and read back bit for bit; scored beside the built-in arms, the oracle's own
+plan at nought; and beneath its stress, Track M v2's drawn world."""
 
 import numpy as np
 import pytest
@@ -19,11 +19,16 @@ from causaldyn_bench.scorecard.performance import PERFORMANCE
 from causaldyn_bench.scorecard.s_curves import S_CURVES
 from causaldyn_bench.scorecard.scoring import score_world
 from causaldyn_bench.scorecard.seeds import pilot, scored
+from causaldyn_bench.scorecard.short import DEEPEST, SHORT
 from causaldyn_bench.scorecard.track_m2 import TRACK_M2
 
-FAMILIES = {2: CONFOUNDED, 3: COLLINEAR, 4: S_CURVES, 5: PERFORMANCE, 6: OUTSIDE}
-KEPT = {6}  # the families whose stress leaves the history alone, and moves what reads past it
-TOP = len(STARTS)
+FAMILIES = {2: CONFOUNDED, 3: COLLINEAR, 4: S_CURVES, 5: PERFORMANCE, 6: OUTSIDE, 7: SHORT}
+KEPT = {6, 7}  # the families whose stress leaves the history alone, and moves what reads past it
+
+
+def _top(f: int, name: str) -> int:
+    """The ladder's top rung for the environment: every test, or as many as a short series holds."""
+    return DEEPEST[name] if f == 7 else len(STARTS)
 
 
 def _first(f: int, e: int, *, pilots: bool = True) -> tuple[str, int]:
@@ -49,7 +54,7 @@ def test_a_world_is_its_seed_alone(f):
     family = FAMILIES[f]
     name, seed = _first(f, 1, pilots=False)
     first, again, other = (family.world(name, s) for s in (seed, seed, seed + 1))
-    for k in (0, TOP):
+    for k in (0, _top(f, name)):
         assert family.observe(first, k).digest() == family.observe(again, k).digest()
         assert family.observe(first, k).digest() != family.observe(other, k).digest()
     assert family.truth(first).best.worth == family.truth(again).best.worth
@@ -63,25 +68,29 @@ def test_an_arm_reads_its_rungs_tests_and_its_export_reads_back(f, tmp_path):
     family = FAMILIES[f]
     name, seed = _first(f, 0)
     world = family.world(name, seed)
-    none, top = family.observe(world, 0), family.observe(world, TOP)
+    k = _top(f, name)
+    none, top = family.observe(world, 0), family.observe(world, k)
+    cut = world.history.week.size - top.sales.size  # the weeks a short series leaves out
+    assert cut == 0 or f == 7
     assert len(none.lift.channel) == none.lift.dropped == 0
-    assert len(top.lift.channel) + top.lift.dropped == TOP * len(top.channels)
+    assert len(top.lift.channel) + top.lift.dropped == k * len(top.channels)
     assert (top.family, top.environment, top.seed, top.k, top.version) == (
         f,
         name,
         seed,
-        TOP,
+        k,
         VERSION,
     )
-    assert set(top.lift.start) <= set(STARTS)  # each row's first dark week
+    assert {start + cut for start in top.lift.start} <= set(STARTS)  # each row's first dark week
     for row, (channel, start) in enumerate(zip(top.lift.channel, top.lift.start, strict=True)):
-        dark = world.history.spend[start - 1 : start - 1 + TEST, top.channels.index(channel)]
-        assert top.lift.x[row] == pytest.approx(float(np.mean(dark)), rel=1e-12, abs=0.0)
+        dark = world.history.spend[cut + start - 1 : cut + start - 1 + TEST]
+        mean = float(np.mean(dark[:, top.channels.index(channel)]))
+        assert top.lift.x[row] == pytest.approx(mean, rel=1e-12, abs=0.0)
     for observation in (none, top):
         back = read(export(observation, tmp_path / str(observation.k)))
         assert back.digest() == observation.digest()
-        np.testing.assert_array_equal(back.spend, world.history.spend)
-        np.testing.assert_array_equal(back.sales, world.history.sales)
+        np.testing.assert_array_equal(back.spend, world.history.spend[cut:])
+        np.testing.assert_array_equal(back.sales, world.history.sales[cut:])
 
 
 @pytest.mark.parametrize("f", FAMILIES)
@@ -90,7 +99,7 @@ def test_a_world_is_scored_at_both_rungs_and_the_best_plan_scores_nought(f):
     name, seed = _first(f, 2, pilots=False)
     world = family.world(name, seed)
     best = family.truth(world).best
-    for k in (0, TOP):
+    for k in (0, _top(f, name)):
         observation = family.observe(world, k)
         record = {
             "digest": observation.digest(),
