@@ -6,6 +6,11 @@ change's size, with no density at nought; so it takes a row where ``delta_x * de
 export carries every test whichever way its sales moved, so the arm drops the rest itself and
 counts them. Kept apart from :mod:`pymc_marketing_arm`, which imports PyMC-Marketing, so the
 bench's tests read the rule in the bench's environment.
+
+A geo model's likelihood reads each row at one coordinate of its geo axis (``exact_row_indices``):
+a test is one geo's, its change in spend and in sales that geo's. A geo export's test takes a set of
+geos dark and reads their change in sales together, which no row of one geo holds, so on a geo
+export the arm takes a test of one geo alone, and counts the rest by why (:func:`taken_geo`).
 """
 
 from __future__ import annotations
@@ -25,3 +30,18 @@ def taken(world: Mapping[str, Any]) -> tuple[np.ndarray, int]:
         > 0.0
     )
     return keep, int(keep.size - np.count_nonzero(keep))
+
+
+SEVERAL = "a test of several geos, whose change in sales no row of one geo holds"
+AGAINST = "a change in sales that does not follow its change in spend"
+
+
+def taken_geo(world: Mapping[str, Any]) -> tuple[np.ndarray, int, dict[str, int]]:
+    """Which of a geo export's lift rows the likelihood takes, a mask over them: one geo's, whose
+    change in sales follows its change in spend; how many it does not take; and how many of those
+    for each reason, a test of several geos counted as that whatever its sales did."""
+    follows, _ = taken(world)
+    one = np.asarray(world["lift_geos"], dtype=bool).sum(axis=1) == 1
+    keep = follows & one
+    why = {SEVERAL: int(np.count_nonzero(~one)), AGAINST: int(np.count_nonzero(one & ~follows))}
+    return keep, int(keep.size - np.count_nonzero(keep)), why

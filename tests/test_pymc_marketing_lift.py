@@ -48,3 +48,26 @@ def test_on_a_national_export_the_rows_are_the_ladders_and_the_arm_drops_the_one
         keep, dropped = lift.taken(world)
         np.testing.assert_array_equal(keep, world["lift_delta_y"] < 0.0)
     assert dropped == 1
+
+
+def test_on_a_geo_export_the_arm_takes_a_test_of_one_geo_whose_sales_fell():
+    """A geo model reads a lift row at one geo, so a test of several geos is dropped whatever its
+    sales did, and counted as that; a test of one geo is taken where its sales fell."""
+    world = {
+        "lift_geos": np.array([[1, 0, 1], [0, 1, 0], [0, 1, 0], [1, 1, 1], [1, 0, 0]], dtype=bool),
+        "lift_delta_x": np.array([-1.0, -1.0, -1.0, -1.0, -2.0]),
+        "lift_delta_y": np.array([-1.0, -1.0, 0.5, 0.5, 0.0]),
+    }
+    keep, dropped, why = lift.taken_geo(world)
+    np.testing.assert_array_equal(keep, [False, True, False, False, False])
+    assert dropped == 4
+    assert why == {lift.SEVERAL: 2, lift.AGAINST: 2}
+
+
+def test_on_the_familys_geo_export_every_test_takes_several_geos_and_is_dropped(tmp_path):
+    seed = GEO.pilots["policy-0"][3]
+    path = export(GEO.observe(GEO.world("policy-0", seed), 4), tmp_path)
+    with np.load(path) as world:
+        keep, dropped, why = lift.taken_geo(world)
+    assert not keep.any() and dropped == 12
+    assert why == {lift.SEVERAL: 12, lift.AGAINST: 0}

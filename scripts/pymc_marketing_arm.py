@@ -61,6 +61,20 @@ test's date. CHOICE: the Monday of its first dark week. Each record carries, bes
   number of the record moves;
 * ``settings``, ``versions`` and ``cost``, the wall and CPU seconds of the whole arm.
 
+**A geo export** (family 8, one holding ``population``) is fitted by PyMC-Marketing's
+multidimensional ``MMM`` with ``dims=("geo",)``, static media alone: each geo's KPI and spend, a
+national channel's spend allotted to the geos by population as the world allots it, ``l_max`` the
+export's kernel length. Its lift likelihood reads each row at one coordinate of every dimension, so
+one geo's change in sales, and a test that took several geos dark holds no such change: the arm
+drops it and counts it under ``lift_dropped_why`` (:func:`pymc_marketing_lift.taken_geo`). The
+family's tests each take several geos, so there every test is dropped, and the fit at any rung is
+the fit with none. The quarter is planned by its own optimiser over every geo's cells, from the
+status quo, at the weekly budget and in each cell's box, each national channel's spend in a geo
+held to the geo's share of the population of the channel's (one equality a geo but the last), and
+recorded one weekly spend a cell. ``forecast``, ``gain`` and ``gain_interval`` are the market's,
+summed over the geos. ``response`` is not mapped: the mapping reads one response of the market's
+spend, where a geo model's is each geo's own curve.
+
 ``--smoke`` samples 2 chains of 100 tuning and 100 kept draws to check the plumbing; its records
 say they are a smoke run, not a result. A version-1 export is fitted as before, by the same code,
 statically and in full.
@@ -99,14 +113,19 @@ import numpy as np
 import pandas as pd
 import pytensor  # ty: ignore[unresolved-import]
 import xarray as xr  # ty: ignore[unresolved-import]
+from geo_export import cells, geo, panel
 from pymc_marketing.hsgp_kwargs import HSGPKwargs  # ty: ignore[unresolved-import]
 from pymc_marketing.mmm import (  # ty: ignore[unresolved-import]
     MMM,
     GeometricAdstock,
     LogisticSaturation,
 )
+from pymc_marketing.mmm.constraints import (  # ty: ignore[unresolved-import]
+    Constraint,
+    build_default_sum_constraint,
+)
 from pymc_marketing.mmm.tvp import create_hsgp_from_config  # ty: ignore[unresolved-import]
-from pymc_marketing_lift import taken
+from pymc_marketing_lift import taken, taken_geo
 
 pytensor.config.numba__cache = False
 
@@ -126,6 +145,10 @@ DRAWS = 400  # the most draws of the forecast and the response a record keeps
 HELD = 4  # draws whose weekly decomposition a record keeps
 LEVEL = 0.9  # the gain interval's
 AGREE = 1e-9  # how near the plan's mean response lies to the optimiser's own, relative to it
+GEO_UNMAPPED = (
+    "a geo model's response is each geo's own curve of its own spend, where the mapping reads one "
+    "response of the market's spend"
+)
 
 
 def plan(path: Path) -> dict[str, Any]:
@@ -439,6 +462,177 @@ def plan_second(path: Path, setting: str, smoke: bool) -> dict[str, Any]:
     }
 
 
+def _geos(world: Any) -> list[str]:
+    """Each geo's name, zero-padded so that sorted coordinates keep the export's order."""
+    return [f"geo_{g:02d}" for g in range(np.asarray(world["population"]).size)]
+
+
+def _long(world: Any, dates: pd.DatetimeIndex, spend: np.ndarray) -> pd.DataFrame:
+    """Each geo's weeks of ``dates`` as the model reads them, one row a geo and week, each
+    channel's spend ``spend[g, t, c]``, a national channel's allotted by population."""
+    channels = [str(c) for c in world["channels"]]
+    return pd.concat(
+        [
+            pd.DataFrame(
+                {"date": dates, "geo": name, **{n: spend[g, :, c] for c, n in enumerate(channels)}}
+            )
+            for g, name in enumerate(_geos(world))
+        ],
+        ignore_index=True,
+    )
+
+
+def _cell_grid(world: Any, weekly: np.ndarray) -> xr.DataArray:
+    """A weekly spend a cell as the optimiser's budgets, one a geo and channel."""
+    return xr.DataArray(
+        panel(world, weekly),
+        dims=("geo", "channel"),
+        coords={"geo": _geos(world), "channel": [str(c) for c in world["channels"]]},
+    )
+
+
+def _national(world: Any) -> list[Constraint]:
+    """Each national channel's spend in each geo held at the geo's share of the population of the
+    channel's spend over the geos, as the world allots it: one equality a geo but the last, whose
+    share the others' fix."""
+    shares = np.asarray(world["population"], dtype=float)
+    channels = [str(c) for c in world["channels"]]
+    out = []
+    for name in (str(c) for c in world["national"]):
+        c = channels.index(name)
+        for g in range(shares.size - 1):
+
+            def held(budgets: Any, total: Any, optimizer: Any, g: int = g, c: int = c) -> Any:
+                spent = budgets.isel(channel=c)
+                return spent.isel(geo=g) - float(shares[g]) * spent.sum("geo")
+
+            out.append(Constraint(key=f"{name}_{g}", constraint_type="eq", constraint_fun=held))
+    return out
+
+
+def plan_geo(path: Path, smoke: bool) -> dict[str, Any]:
+    """A geo export's plan: the geo model, its tests as its likelihood takes them, and its own
+    optimiser over every geo's cells."""
+    world = np.load(path)
+    channels = [str(c) for c in world["channels"]]
+    weeks, planned = world["sales"].shape[0], int(world["planned"])
+    dates = pd.date_range(FIRST_MONDAY, periods=weeks + planned, freq="W-MON")
+    names = _geos(world)
+    frame = _long(world, dates[:weeks], np.transpose(world["spend"], (1, 0, 2)))
+    sales = pd.Series(np.asarray(world["sales"], dtype=float).T.ravel(), name="sales")
+    model = MMM(
+        date_column="date",
+        channel_columns=channels,
+        target_column="sales",
+        adstock=GeometricAdstock(l_max=int(world["kernel_length"])),
+        saturation=LogisticSaturation(),
+        yearly_seasonality=HARMONICS,
+        dims=("geo",),
+    )
+    model.build_model(frame, sales)
+    keep, dropped, why = taken_geo(world)
+    rows = int(np.count_nonzero(keep))
+    if rows:
+        tested = np.asarray(world["lift_geos"], dtype=bool)[keep]
+        model.add_lift_test_measurements(
+            pd.DataFrame(
+                {
+                    "channel": [str(c) for c in world["lift_channel"][keep]],
+                    "geo": [names[int(np.flatnonzero(row)[0])] for row in tested],
+                    "x": world["lift_x"][keep],
+                    "delta_x": world["lift_delta_x"][keep],
+                    "delta_y": world["lift_delta_y"][keep],
+                    "sigma": world["lift_sigma"][keep],
+                }
+            )
+        )
+    seed = int(world["seed"])
+    trace = model.fit(frame, sales, random_seed=seed, progressbar=False, **(SMOKE if smoke else {}))
+
+    status_quo = _cell_grid(world, world["status_quo"])
+    bounds = xr.concat(
+        [_cell_grid(world, world["lower"]), _cell_grid(world, world["upper"])], dim="bound"
+    ).transpose("geo", "channel", "bound")
+    optimiser = model.budget_optimizer(
+        start_date=dates[weeks],
+        end_date=dates[-1],
+        constraints=[build_default_sum_constraint(), *_national(world)],
+    )
+    result = optimiser.allocate_budget(
+        float(world["budget"]) / planned, budget_bounds=bounds, x0=status_quo
+    )
+    plan = result.budgets.transpose("geo", "channel")
+    at_plan = optimiser.evaluate_response_distribution({"channel_data": result.budgets})
+    optimised = -float(result.scipy_result.fun)  # the mean response, the default utility
+    if abs(float(at_plan.mean()) - optimised) > AGREE * abs(optimised):
+        raise RuntimeError(
+            f"the plan's mean response {float(at_plan.mean())} is not the optimiser's {optimised}"
+        )
+    gain = np.asarray(
+        at_plan - optimiser.evaluate_response_distribution({"channel_data": status_quo})
+    )
+
+    future = _long(
+        world,
+        dates[weeks:],
+        np.repeat(status_quo.transpose("geo", "channel").values[:, np.newaxis], planned, axis=1),
+    )
+    predicted = model.sample_posterior_predictive(
+        future,
+        extend_idata=False,
+        include_last_observations=True,
+        var_names=["y"],
+        random_seed=seed,
+        progressbar=False,
+    )
+    market = (predicted["y"] * model.scalers["_target"]).sum("geo")
+    forecast = market.transpose("sample", "date").values
+
+    posterior = trace.posterior.to_dataset()
+    weekly = cells(world, plan.values)
+    return {
+        "version": SECOND,
+        "seed": seed,
+        "digest": str(world["digest"]),
+        "family": int(world["family"]),
+        "environment": str(world["environment"]),
+        "k": int(world["k"]),
+        "weekly": weekly.tolist(),
+        "optimiser_success": bool(result.scipy_result.success),
+        "forecast": forecast[_kept(forecast.shape[0], DRAWS)].tolist(),
+        "gain": float(np.mean(gain)),
+        "gain_interval": [
+            float(np.quantile(gain, (1.0 - LEVEL) / 2.0)),
+            float(np.quantile(gain, (1.0 + LEVEL) / 2.0)),
+        ],
+        "flags": _flags(trace, model),
+        "response": {"unmapped": GEO_UNMAPPED},
+        "multiplier": None,
+        "settings": {
+            "setting": "static",
+            "media": SETTINGS["static"],
+            "l_max": int(world["kernel_length"]),
+            "yearly_seasonality": HARMONICS,
+            "controls": [],
+            "dims": ["geo"],
+            "geos": len(names),
+            "national": [str(c) for c in world["national"]],
+            "plan": "every geo's cells by its own optimiser from the status quo, each national "
+            "channel held to the geos' shares of the population",
+            "chains": int(posterior.sizes["chain"]),
+            "draws": int(posterior.sizes["draw"]),
+            "lift_dated": False,
+            "gain_level": LEVEL,
+            "smoke": smoke,
+        },
+        "n/a": {},
+        "lift_rows": rows,
+        "lift_dropped": int(world["lift_dropped"]) + dropped,
+        "lift_dropped_why": why,
+        "error": None,
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--worlds", type=Path, required=True)
@@ -470,12 +664,20 @@ def main() -> None:
             continue
         with np.load(path) as saved:
             second = "version" in saved.files
+            on_geos = geo(saved)
         if not second and (args.setting != "static" or args.smoke):
             raise SystemExit(f"{path} is a version-1 export, fitted as version 1 fitted it")
+        if on_geos and args.setting != "static":
+            raise SystemExit(f"{path} is a geo export, which the arm fits with static media alone")
         began, spent = time.perf_counter(), _cpu()
         record: dict[str, Any]
         try:
-            record = plan_second(path, args.setting, args.smoke) if second else plan(path)
+            if on_geos:
+                record = plan_geo(path, args.smoke)
+            elif second:
+                record = plan_second(path, args.setting, args.smoke)
+            else:
+                record = plan(path)
         except Exception as error:  # a world that breaks the arm is recorded, not fatal
             world = np.load(path)
             record = {
