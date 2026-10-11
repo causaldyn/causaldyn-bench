@@ -76,7 +76,7 @@ PyMC-Marketing's plans repeat bit for bit under the recipe: the pinned environme
 thread, the world's seed. Another thread count draws other chains, and the plan moves by the
 posterior's Monte Carlo error.
 
-**By construction** (R19). The world is a reading of Heusch's paper, and its geo test is two
+**By construction.** The world is a reading of Heusch's paper, and its geo test is two
 universes, so his differencing equation holds exactly and the tests carry no noise between regions
 beyond what is drawn: no placebo floor. Every channel is tested. With his own design, paid
 shopping's tests alone, no CHC arm is built: CHC reads only what was tested, and a plan across the
