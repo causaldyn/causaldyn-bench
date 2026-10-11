@@ -3,7 +3,8 @@ blocks at double precision whatever the caller's setting; the policy raises the 
 season by exactly its factor; every cell's worth is what chc's world lifts over the quarter, so the
 oracle, exact on concave cells, is checked against chc's own world, a dense grid on two geos and a
 search written apart from it; the geo tests read by difference-in-differences, exact on a world that
-holds still outside them, their standard error the noise's, nesting under common random numbers;
+holds still outside them, their standard error read in time from placebo readings, the readings
+and the standard errors nesting under common random numbers;
 the quarter at the status quo and the returns are chc's world run on; and every world exports,
 reads back and scores, the oracle's own plan at nought."""
 
@@ -26,7 +27,7 @@ from causaldyn_bench.scorecard import truth
 from causaldyn_bench.scorecard.continuation import geo_shadow, lifted
 from causaldyn_bench.scorecard.family import number
 from causaldyn_bench.scorecard.geo import FAMILY, GEO, POLICIES, mix, window
-from causaldyn_bench.scorecard.ladder import GEO_STARTS, dark_geos, geo_rung
+from causaldyn_bench.scorecard.ladder import GEO_STARTS, dark_geos, geo_rung, placebo_error
 from causaldyn_bench.scorecard.observe import VERSION, export, read
 from causaldyn_bench.scorecard.returns import drawn_returns, true_geo_returns
 from causaldyn_bench.scorecard.scoring import WorldRecord, score_world
@@ -339,14 +340,15 @@ def test_each_channels_tests_run_in_a_universe_of_their_own():
             assert rows.delta_y[held[0]] == pytest.approx(reading, rel=1e-12, abs=0.0)
 
 
-def test_a_geo_tests_standard_error_is_its_noises():
-    """On worlds that hold still but for the noise, a tenth of the family's so no test is dropped:
-    the reading less the true change, over its noise's standard deviation, ``sigma_u sqrt(Q + Q^2 /
-    P) / TEST`` with ``sigma_u`` the tested geos' noise beside the others' at the ratio, has a
-    standard deviation of 1 within four standard errors; the standard error read from the weeks
-    before the tests estimates that noise, its square's mean over the noise's within four of its
-    standard errors."""
-    z, ratios = [], []
+def test_on_worlds_still_but_for_their_noise_a_geo_tests_standard_error_is_its_groupings():
+    """On worlds that hold still but for the noise, a tenth of the family's: the reading less the
+    true change, over its noise's standard deviation, ``sigma_u sqrt(Q + Q^2 / P) / TEST`` with
+    ``sigma_u`` the tested geos' noise beside the others' at the ratio, has a standard deviation of
+    1 within four standard errors, and so has it over the test's standard error. The even and the
+    odd geos' noises differ by their ratio, and a test's standard error follows its own: within a
+    channel its log moves with the noise's with a slope of 1, where one weekly noise pooled over the
+    channel's tests does not move at all."""
+    z, read, noises, errors = [], [], [], []
     for seed in GEO.pilots["policy-0"][:40]:
         world = _world(seed, spend_noise=0.0, season=0.0, noise=23.0)
         quiet = dataclasses.replace(world, noise=np.zeros_like(world.noise))
@@ -356,31 +358,109 @@ def test_a_geo_tests_standard_error_is_its_noises():
         kpi = quiet.kpi
         names = [c.name for c in world.mix.channels]
         for c in range(3):
-            variances = []
+            spreads, sigmas = [], []
             for j, start in enumerate(GEO_STARTS):
                 ours = list(dark_geos(10, j))
                 theirs = [g for g in range(10) if g not in ours]
                 pre = slice(start - 1 - PRE, start - 1)
                 ratio = kpi[ours, pre].sum() / kpi[theirs, pre].sum()
                 variance = float(sizes[ours].sum() + ratio**2 * sizes[theirs].sum())
-                variances.append(variance)
                 spread = math.sqrt(variance * (12 + 12**2 / PRE)) / TEST
                 row = next(
                     i
                     for i, (n, s) in enumerate(zip(rows.channel, rows.start, strict=True))
                     if n == names[c] and s == start
                 )
-                z.append((rows.delta_y[row] - _true_change(world, c, j)) / spread)
-            row = rows.channel.index(names[c])
-            weekly = rows.sigma[row] * TEST / math.sqrt(12 + 12**2 / PRE)
-            ratios.append(weekly**2 / float(np.mean(variances)))
-    z, ratios = np.array(z), np.array(ratios)
-    assert z.size == 480 and ratios.size == 120
+                error = rows.delta_y[row] - _true_change(world, c, j)
+                z.append(error / spread)
+                read.append(error / rows.sigma[row])
+                spreads.append(math.log(spread))
+                sigmas.append(math.log(rows.sigma[row]))
+            noises += list(np.array(spreads) - np.mean(spreads))
+            errors += list(np.array(sigmas) - np.mean(sigmas))
+    z, read, noises, errors = np.array(z), np.array(read), np.array(noises), np.array(errors)
+    assert z.size == read.size == 480
+    for values in (z, read):
+        assert abs(float(np.std(values, ddof=1)) - 1.0) <= 4.0 / math.sqrt(2 * (values.size - 1))
+        assert abs(float(np.mean(values))) <= 4.0 / math.sqrt(values.size)
+    assert float(np.std(noises)) > 0.2  # the groupings' noises do differ
+    assert float(noises @ errors / (noises @ noises)) == pytest.approx(1.0, abs=0.05)
+
+
+@pytest.mark.parametrize("name", list(POLICIES))
+def test_on_the_familys_worlds_a_geo_tests_error_over_its_standard_error_has_a_spread_of_1(name):
+    """On the family's first 30 pilot worlds, whose spend jitters and whose season moves the base,
+    at policy 0.5 the spend too: a reading less the true change, over its standard error, has a
+    standard deviation of 1 within four standard errors. The noise alone misses the KPI's movement
+    that is not proportional across the groups; the standard error, read in time, holds it."""
+    z = []
+    for seed in GEO.pilots[name][:30]:
+        world = GEO.world(name, seed).history
+        rows = geo_rung(world, 8, seed, 4)
+        names = [c.name for c in world.mix.channels]
+        for row, (channel, start) in enumerate(zip(rows.channel, rows.start, strict=True)):
+            true = _true_change(world, names.index(channel), GEO_STARTS.index(start))
+            z.append((rows.delta_y[row] - true) / rows.sigma[row])
+    z = np.array(z)
+    assert z.size == 360
     assert abs(float(np.std(z, ddof=1)) - 1.0) <= 4.0 / math.sqrt(2 * (z.size - 1))
-    assert abs(float(np.mean(z))) <= 4.0 / math.sqrt(z.size)
-    assert abs(float(np.mean(ratios)) - 1.0) <= 4.0 * float(np.std(ratios, ddof=1)) / math.sqrt(
-        ratios.size
+
+
+def _placebo_kpi() -> np.ndarray:
+    return 100.0 + np.random.default_rng(5).standard_normal((4, 104))
+
+
+def test_a_placebo_reading_reads_no_week_of_the_tests_own_window_nor_the_adstocks_first():
+    """A test's standard error is read from the windows clear of its own four weeks before and
+    twelve of readout, and of the adstock's first ``length - 1`` weeks: a spike in any of those
+    weeks leaves it as it was, and one in a week next to them moves it."""
+    kpi, treated, first, length = _placebo_kpi(), (1, 3), 50, LENGTH
+    after = TEST + COOLDOWN
+    alone = placebo_error(kpi, treated, first, length)
+
+    def spiked(week: int) -> float:
+        changed = kpi.copy()
+        changed[1, week] += 50.0
+        return placebo_error(changed, treated, first, length)
+
+    for week in (0, length - 2, first - PRE, first, first + after - 1):
+        assert spiked(week) == alone, week
+    for week in (length - 1, first - PRE - 1, first + after, 103):
+        assert spiked(week) != alone, week
+
+
+def test_a_tests_standard_error_widens_its_placebo_readings_by_a_ts_spread_at_their_count():
+    """Over independent weeks two placebo readings ``h`` weeks apart correlate by ``rho(h)``,
+    Maxima's exact values for four weeks before and twelve of readout and 0 from 16; the standard
+    error is the readings' root mean square times ``sqrt(nu / (nu - 2))``,
+    ``nu = n^2 / sum rho(|f - f'|)^2``. A universe with two effective readings or fewer is
+    refused."""
+    rho = np.array([1, 35 / 48, 11 / 24, 3 / 16, -1 / 12, -5 / 48, -1 / 8, -7 / 48, -1 / 6])
+    rho = np.concatenate([rho, [-3 / 16, -5 / 24, -11 / 48, -1 / 4, -3 / 16, -1 / 8, -1 / 16, 0]])
+    kpi, treated, first = _placebo_kpi(), (0, 2), 30
+    ours, theirs = kpi[[0, 2]].sum(axis=0), kpi[[1, 3]].sum(axis=0)
+    after = TEST + COOLDOWN
+    firsts = np.array(
+        [
+            f
+            for f in range(LENGTH - 1 + PRE, 104 - after + 1)
+            if f + after <= first - PRE or f - PRE >= first + after
+        ]
     )
+    readings = []
+    for f in firsts:
+        gap = ours - ours[f - PRE : f].mean() / theirs[f - PRE : f].mean() * theirs
+        readings.append(gap[f : f + after].sum() / TEST)
+    lags = np.minimum(np.abs(firsts[:, None] - firsts[None, :]), 16)
+    nu = firsts.size**2 / float(np.sum(rho[lags] ** 2))
+    assert firsts.size == 51 and 17.0 < nu < 18.0
+    expected = math.sqrt(float(np.mean(np.square(readings))) * nu / (nu - 2.0))
+    assert placebo_error(kpi, treated, first, LENGTH) == pytest.approx(expected, rel=1e-12, abs=0.0)
+    # one placebo window, at week 11, and none at all
+    with pytest.raises(ValueError, match="too few"):
+        placebo_error(kpi[:, :40], treated, 27, LENGTH)
+    with pytest.raises(ValueError, match="too few"):
+        placebo_error(kpi[:, :40], treated, 20, LENGTH)
 
 
 def test_the_rungs_nest_under_common_random_numbers():
@@ -399,7 +479,7 @@ def test_the_rungs_nest_under_common_random_numbers():
                 if n == channel and s == start
             ]
             assert len(same) == 1
-            for field in ("x", "delta_x", "delta_y"):
+            for field in ("x", "delta_x", "delta_y", "sigma"):
                 assert getattr(rows, field)[row] == getattr(top, field)[same[0]], field
             assert rows.geos[row] == top.geos[same[0]]
         kept = [s for s in top.start if s in GEO_STARTS[4 - k :]]

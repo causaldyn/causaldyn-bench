@@ -42,11 +42,30 @@ parallel. Where every geo's KPI holds still outside the test the reading is exac
 does not: each geo's spend jitters week by week, which no pre-period reads, and the season
 multiplies the base alone, so the two groups' KPI do not move in proportion; the reading's error,
 beside its noise, is what is left of both. It beat the difference in KPI a head, the other geos'
-scaled by population, on the geo family's pilots.
-Its standard error is the weekly noise of the difference, read from the four weeks before every
-test of the channel, times ``sqrt(Q + Q^2 / P)`` over the dark weeks, ``Q`` the readout's twelve
-weeks from the first dark one and ``P`` its four before, the second term the ratio's error
-(Maxima). Controls next to tested geos receive what spills from them, as in practice.
+scaled by population, on the geo family's pilots. Controls next to tested geos receive what spills
+from them, as in practice.
+
+A reading's standard error is read in time, as an A/A test reads one. The same reading, of the same
+geos, is taken at every other window of the channel's universe had it held no test (the world's base
+and logged spend, and the universe's own noise), clear of the test's own four weeks before and
+twelve of readout and of the adstock's first weeks. The standard error is the root mean square of
+those placebo readings, widened by ``sqrt(nu / (nu - 2))``, a t's spread at their effective count
+``nu`` over a normal's. Over independent weeks, two placebo readings ``h`` weeks apart correlate by
+``rho(h)``, the reading's weights (``-Q/P`` on the ``P`` weeks before, 1 on the ``Q`` of readout)
+correlated with themselves ``h`` weeks on, so their mean square holds
+``nu = n^2 / sum rho(|f - f'|)^2`` independent squares (both checked in Maxima).
+
+The noise alone, ``sqrt(Q + Q^2 / P)`` times the difference's weekly noise, the second term the
+ratio's error, misses two parts of a reading's error. The first is the KPI's movement that is
+neither noise nor proportional across the two groups: each geo's spend jitter carried by the
+adstock, the season moving the base and not the media, and at policy 0.5 the spend following the
+season. The four weeks before a test do not read it, and it is 0.44 to 0.52 of the mean square of
+the error over the noise's standard deviation, per environment and channel on the family's first
+100 pilot worlds of each. The second is the noise's own variance: ``A + r^2 B`` for the even geos'
+test at the ratio ``r``, ``A`` and ``B`` the even and the odd geos' summed variances, and
+``B + A / r^2`` for the odd geos' at the inverse ratio, ``r^2`` apart (Maxima), with ``r`` from 0.11
+to 8.85 on those worlds; one weekly noise pooled over a channel's tests fits neither. A placebo
+reading holds both.
 """
 
 from __future__ import annotations
@@ -75,6 +94,12 @@ from causaldyn_bench.scorecard.seeds import Role, rng
 RUNGS = tuple(range(len(STARTS) + 1))  # the tests a channel may get: none to all of his four
 SHARES = (0.5, 1.0)  # the shares of the market an overlapping rung's tests may run in
 GEO_STARTS = (20, 44, 68, 92)  # a geo world's tests' first dark weeks, of its 104
+# a geo reading's weights over its weeks before and its readout, and their correlation with
+# themselves h weeks on, 0 from P + Q
+_WEIGHTS = np.concatenate([np.full(PRE, -(TEST + COOLDOWN) / PRE), np.ones(TEST + COOLDOWN)])
+_RHO = np.append(
+    [float(_WEIGHTS[: _WEIGHTS.size - h] @ _WEIGHTS[h:]) for h in range(_WEIGHTS.size)], 0.0
+) / float(_WEIGHTS @ _WEIGHTS)
 
 
 def starts(k: int) -> tuple[int, ...]:
@@ -155,15 +180,56 @@ def dark_geos(geos: int, test: int) -> tuple[int, ...]:
     return tuple(range(test % 2, geos, 2))
 
 
+def _geo_reading(ours: Series, theirs: Series, first: int) -> float:
+    """The change a geo test reads from its tested geos' KPI ``ours`` and the others' ``theirs``,
+    its first dark week ``first`` counted from 0: the gap over the dark weeks and the cooldown, the
+    others' KPI scaled by the ratio of the two groups' means over the ``PRE`` weeks before, a dark
+    week."""
+    pre = slice(first - PRE, first)
+    gap = ours - float(ours[pre].mean()) / float(theirs[pre].mean()) * theirs
+    return float(gap[first : first + TEST + COOLDOWN].sum()) / TEST
+
+
+def placebo_error(kpi: Series, treated: tuple[int, ...], first: int, length: int) -> float:
+    """The standard error of the reading of a test that took ``treated`` dark from week ``first``,
+    counted from 0, read in time on ``kpi``, ``(geos, weeks)``, the channel's universe had it held
+    no test: the root mean square of the same reading at every window clear of the test's own and
+    of the adstock's first ``length - 1`` weeks, widened by ``sqrt(nu / (nu - 2))`` at their
+    effective count ``nu``; see the module.
+
+    Raises:
+        ValueError: on a universe too short for a t's spread, two effective placebo readings or
+            fewer.
+    """
+    others = [g for g in range(kpi.shape[0]) if g not in treated]
+    ours, theirs = kpi[list(treated)].sum(axis=0), kpi[others].sum(axis=0)
+    after = TEST + COOLDOWN
+    firsts = np.array(
+        [
+            f
+            for f in range(length - 1 + PRE, kpi.shape[1] - after + 1)
+            if f + after <= first - PRE or f - PRE >= first + after
+        ],
+        dtype=np.int64,
+    )
+    readings = np.array([_geo_reading(ours, theirs, int(f)) for f in firsts])
+    apart = np.minimum(np.abs(firsts[:, None] - firsts[None, :]), _RHO.size - 1)
+    nu = firsts.size**2 / float(np.sum(_RHO[apart] ** 2)) if firsts.size else 0.0
+    if not nu > 2.0:
+        raise ValueError(f"a test's placebo readings count {nu:.3g}, too few for a t's spread")
+    return float(np.sqrt(np.mean(readings**2) * nu / (nu - 2.0)))
+
+
 def geo_rung(world: GeoMediaWorld, family: int, seed: int, k: int) -> LiftRows:
     """Rung ``k``'s geo tests on ``world``, which family ``family`` drew from ``seed``: each
     channel's latest ``k`` of :data:`GEO_STARTS`, read by difference-in-differences; see the
     module. Each row names its tested geos. Every test is a row, whichever way its KPI moved, as
-    :func:`causaldyn_bench.budget_regret.lift_rows` keeps it.
+    :func:`causaldyn_bench.budget_regret.lift_rows` keeps it. A test's standard error is read in
+    time (:func:`placebo_error`).
 
     Raises:
         ValueError: a rung off the ladder, a world with fewer than two geos, or one too short for a
-            test's readout.
+            test's readout or its placebo readings.
     """
     if k not in RUNGS:
         raise ValueError(f"a rung holds 0 to {len(GEO_STARTS)} tests a channel, not {k}")
@@ -173,10 +239,12 @@ def geo_rung(world: GeoMediaWorld, family: int, seed: int, k: int) -> LiftRows:
     if GEO_STARTS[-1] + TEST + COOLDOWN - 1 > weeks:
         raise ValueError(f"the tests' readouts run past the world's {weeks} weeks")
     starts = GEO_STARTS[len(GEO_STARTS) - k :]
-    after = TEST + COOLDOWN
-    columns: dict[str, list] = {key: [] for key in ("channel", "start", "x", "change", "geos")}
-    sigma: list[float] = []
+    columns: dict[str, list] = {
+        key: [] for key in ("channel", "start", "x", "change", "sigma", "geos")
+    }
     size = world.mix.noise * np.sqrt(world.population)[:, None]
+    with jax.enable_x64(True):
+        logged = world.base + np.asarray(world.lift(world.spend), dtype=float)
     for c, channel in enumerate(world.mix.channels):
         noise = size * rng(family, Role.TESTS, seed, c + 1).standard_normal((geos, weeks))
         dark = world.spend.copy()
@@ -186,26 +254,19 @@ def geo_rung(world: GeoMediaWorld, family: int, seed: int, k: int) -> LiftRows:
             ] = 0.0
         with jax.enable_x64(True):
             kpi = world.base + np.asarray(world.lift(dark), dtype=float) + noise
-        gaps = []
         for start in starts:
             treated = dark_geos(geos, GEO_STARTS.index(start))
             control = [g for g in range(geos) if g not in treated]
             first = start - 1
-            pre, readout = slice(first - PRE, first), slice(first, first + after)
             ours, theirs = kpi[list(treated)].sum(axis=0), kpi[control].sum(axis=0)
-            gap = ours - float(ours[pre].mean()) / float(theirs[pre].mean()) * theirs
-            gaps.append(gap[pre])
-            change = float(gap[readout].sum()) / TEST
             columns["channel"].append(channel.name)
             columns["start"].append(start)
             columns["x"].append(
                 float(world.spend[list(treated), first : first + TEST, c].sum(axis=0).mean())
             )
-            columns["change"].append(change)
+            columns["change"].append(_geo_reading(ours, theirs, first))
+            columns["sigma"].append(placebo_error(logged + noise, treated, first, world.mix.length))
             columns["geos"].append(treated)
-        if gaps:
-            weekly = float(np.sqrt(np.mean([np.var(g, ddof=1) for g in gaps])))
-            sigma += [weekly * float(np.sqrt(after + after**2 / PRE)) / TEST] * len(gaps)
     x = np.array(columns["x"], dtype=float)
     return LiftRows(
         channel=tuple(columns["channel"]),
@@ -213,7 +274,7 @@ def geo_rung(world: GeoMediaWorld, family: int, seed: int, k: int) -> LiftRows:
         x=x,
         delta_x=-x,
         delta_y=np.array(columns["change"], dtype=float),
-        sigma=np.array(sigma, dtype=float),
+        sigma=np.array(columns["sigma"], dtype=float),
         dropped=0,
         geos=tuple(columns["geos"]),
     )
