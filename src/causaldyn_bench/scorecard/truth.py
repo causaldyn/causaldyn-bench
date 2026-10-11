@@ -19,6 +19,11 @@ The best plan in the box at the budget:
   of cells: at a price ``mu`` per euro each cell spends where its slope over the quarter meets
   ``13 mu``, or sits at an end of its box, and ``mu`` is found by bisection where the plan spends
   the budget;
+* otherwise, where every cell's curve states its bend (:attr:`Curve.bend
+  <causaldyn_bench.endogenous_mmm.Curve.bend>`), as every curve of
+  :data:`~causaldyn_bench.endogenous_mmm.CURVES` does, exact for any number of cells to a gap of
+  :data:`GAP` per euro of the budget, a tenth of a tie: Falk and Soland's branch and bound
+  (:func:`_bounded`);
 * otherwise, for up to three cells, every split on a grid of 401 points a side of every cell's box
   but the last's, the last spending the rest, refined by SLSQP from the grid's best points, each
   some points from the others: Track M v2's searched plan;
@@ -32,6 +37,8 @@ world a test holds its worth and the status quo's regret to the budgets run's ``
 
 from __future__ import annotations
 
+import heapq
+import itertools
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -45,6 +52,10 @@ from causaldyn_bench.mmm_decision import GRID, PLANNED, STARTS, Plan, Quarter
 
 STEPS = 2_000  # the dynamic programme's steps of the budget above the cells' floors
 APART = 4  # a grid point this many points or fewer from a start, along every axis, is no start
+GAP = 1e-10  # the bound's certified gap per euro of the budget, a tenth of budget_regret's tie
+SAMPLES = 128  # the pieces a cell's interval is read in, for its envelope
+NODES = 100_000  # the boxes the bound may split before it gives up
+ROUNDING = 64.0 * float(np.finfo(float).eps)  # a sampled worth's rounding, of the largest one
 
 
 @dataclass(frozen=True, eq=False)
@@ -68,6 +79,15 @@ class Cell:
         """Whether the worth is concave in the weekly spend: a concave curve of an affine adstock,
         weighted by an effect that is never negative."""
         return self.curve.concave and bool(np.all(self.effect >= 0.0))
+
+    @property
+    def bend(self) -> float | None:
+        """The worth's greatest concavity in the weekly spend, the largest ``-worth''``: its curve's
+        bend times ``sum effect reach^2``, where the curve states its bend and the effect is never
+        negative; None otherwise."""
+        if self.curve.bend is None or not np.all(self.effect >= 0.0):
+            return None
+        return float(np.sum(self.effect * self.reach**2)) * self.curve.bend(self.scale)
 
     def worths(self, weekly: ArrayLike) -> Series:
         """The worth at every entry of ``weekly``, whatever its shape."""
@@ -139,6 +159,8 @@ def oracle(cells: Sequence[Cell], quarter: Quarter) -> Plan:
         raise ValueError(f"no plan in the box spends {rate:.6g} a week")
     if all(cell.concave for cell in cells):
         return _priced(cells, quarter)
+    if all(cell.bend is not None for cell in cells):
+        return _bounded(cells, quarter)
     if len(cells) <= 3:
         return _gridded(cells, quarter)
     return _programmed(cells, quarter)
@@ -173,6 +195,123 @@ def _priced(cells: Sequence[Cell], quarter: Quarter) -> Plan:
         price = brentq(excess, 0.0, ceiling, xtol=1e-14, rtol=4 * np.finfo(float).eps)
     weekly = weekly_at(price)
     return Plan(weekly, worth(cells, weekly), price)
+
+
+@dataclass(frozen=True, eq=False)
+class _Envelope:
+    """A cell's worth over an interval, from above: concave and piecewise linear through the points
+    ``(x, y)``, ``x`` rising."""
+
+    x: Series
+    y: Series
+
+    def at(self, weekly: float) -> float:
+        return float(np.interp(weekly, self.x, self.y))
+
+
+def _envelope(cell: Cell, low: float, high: float) -> _Envelope:
+    """The upper concave hull of the cell's worth at :data:`SAMPLES` + 1 points evenly spread over
+    ``[low, high]``, lifted by what the worth can rise above a chord between two neighbours, ``bend
+    h^2 / 8`` for their spacing ``h``, and by the points' rounding: above the worth everywhere on
+    the interval."""
+    bend = cell.bend
+    if bend is None:
+        raise ValueError("a cell bounded from above states its bend")
+    x = np.linspace(low, high, SAMPLES + 1)
+    y = cell.worths(x)
+    step = (high - low) / SAMPLES
+    lift = bend * step**2 / 8.0 + ROUNDING * float(np.max(np.abs(y)))
+    if step <= 0.0:
+        return _Envelope(x[:1], y[:1] + lift)
+    hull: list[int] = []
+    for i in range(x.size):
+        while len(hull) >= 2:
+            o, a = hull[-2], hull[-1]
+            if (x[a] - x[o]) * (y[i] - y[o]) < (y[a] - y[o]) * (x[i] - x[o]):
+                break  # the last point lies above the chord past it, so it stays on the hull
+            hull.pop()
+        hull.append(i)
+    return _Envelope(x[hull], y[hull] + lift)
+
+
+def _relaxed(envelopes: Sequence[_Envelope], rate: float) -> tuple[float, Series]:
+    """The best of the envelopes' sum where the weekly spends, each in its envelope's interval, sum
+    to ``rate``, and those spends: every cell from its interval's start, the rest of the rate spent
+    on the steepest pieces first, which is exact on concave pieces."""
+    weekly = np.array([float(e.x[0]) for e in envelopes])
+    bound = float(sum(float(e.y[0]) for e in envelopes))
+    owner = np.concatenate([np.full(e.x.size - 1, c) for c, e in enumerate(envelopes)])
+    length = np.concatenate([np.diff(e.x) for e in envelopes])
+    slope = np.concatenate([np.diff(e.y) for e in envelopes]) / length
+    rest = rate - float(weekly.sum())
+    for k in np.argsort(-slope, kind="stable"):
+        if rest <= 0.0:
+            break
+        taken = min(float(length[k]), rest)
+        weekly[owner[k]] += taken
+        bound += float(slope[k]) * taken
+        rest -= taken
+    return bound, weekly
+
+
+def _bounded(cells: Sequence[Cell], quarter: Quarter) -> Plan:
+    """Cells whose curves state their bend: Falk and Soland's branch and bound for separable
+    programmes (Management Science 15(9), 1969).
+
+    On a box of intervals, one a cell, each cell's worth lies below its envelope
+    (:func:`_envelope`), so the best of the envelopes' sum at the budget, exact on concave pieces
+    (:func:`_relaxed`), bounds every plan in the box. Its spends are a plan, which SLSQP refines
+    where it beats the best so far. The box of the highest bound is split in two at its plan's
+    spend of the cell whose envelope lies furthest above its worth there, or at the interval's
+    middle where that spend lies within a tenth of an end, and a box no better than the best plan
+    by :data:`GAP` per euro of the budget is dropped. Once no box is left, no plan in the box at
+    the budget returns more than the best plan by that gap.
+
+    Raises:
+        RuntimeError: :data:`NODES` boxes were split without closing the gap.
+    """
+    rate = quarter.budget / PLANNED
+    tolerance = GAP * quarter.budget
+    held: dict[tuple[int, float, float], _Envelope] = {}
+
+    def relaxed(lows: Series, highs: Series) -> tuple[float, Series, list[_Envelope]]:
+        envelopes = []
+        for c, (low, high) in enumerate(zip(lows.tolist(), highs.tolist(), strict=True)):
+            if (c, low, high) not in held:
+                held[(c, low, high)] = _envelope(cells[c], low, high)
+            envelopes.append(held[(c, low, high)])
+        bound, weekly = _relaxed(envelopes, rate)
+        return bound, weekly, envelopes
+
+    bound, weekly, envelopes = relaxed(quarter.lower, quarter.upper)
+    best = _refined(cells, quarter, [weekly])
+    order = itertools.count()
+    boxes = [(-bound, next(order), quarter.lower, quarter.upper, weekly, envelopes)]
+    for _ in range(NODES):
+        if not boxes or -boxes[0][0] <= best.worth + tolerance:
+            return best
+        _, _, lows, highs, weekly, envelopes = heapq.heappop(boxes)
+        above = [
+            e.at(w) - cell.worth(w) if high > low else -math.inf
+            for e, cell, w, low, high in zip(
+                envelopes, cells, weekly.tolist(), lows, highs, strict=True
+            )
+        ]
+        c = int(np.argmax(above))
+        low, high = float(lows[c]), float(highs[c])
+        inside = low + 0.1 * (high - low) < weekly[c] < high - 0.1 * (high - low)
+        split = float(weekly[c]) if inside else (low + high) / 2.0
+        for side in (0, 1):
+            child_lows, child_highs = lows.copy(), highs.copy()
+            (child_highs if side == 0 else child_lows)[c] = split
+            if child_lows.sum() > rate or child_highs.sum() < rate:
+                continue
+            child = relaxed(child_lows, child_highs)
+            if worth(cells, child[1]) > best.worth + tolerance:
+                best = max(best, _refined(cells, quarter, [child[1]]), key=lambda plan: plan.worth)
+            if child[0] > best.worth + tolerance:
+                heapq.heappush(boxes, (-child[0], next(order), child_lows, child_highs, *child[1:]))
+    raise RuntimeError(f"{NODES} boxes split and the bound still above the best plan by {GAP:g}")
 
 
 def _refined(cells: Sequence[Cell], quarter: Quarter, starts: Sequence[Series]) -> Plan:

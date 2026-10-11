@@ -124,6 +124,24 @@ def test_with_every_mechanism_off_spend_follows_only_its_plan() -> None:
 
 
 @pytest.mark.parametrize("curve", sorted(CURVES))
+def test_each_curves_bend_is_its_greatest_concavity(curve) -> None:
+    """The bend bounds ``-value''`` over every adstock from 0 to twenty half-saturations, and the
+    bound is reached: read off the slope's differences a millionth of a half-saturation apart,
+    central but at nought, which err there by under 2e-6 of it and elsewhere by under 1e-9."""
+    for lam in (0.004, 0.0073, 0.012):
+        half = math.log(3.0) / lam
+        adstock = np.linspace(0.0, 20.0 * half, 400_001)
+        step = 1e-6 * half
+        slope = CURVES[curve].slope
+        concavity = -(slope(adstock + step, lam) - slope(np.maximum(adstock - step, 0.0), lam))
+        concavity /= adstock + step - np.maximum(adstock - step, 0.0)
+        bend = CURVES[curve].bend
+        assert bend is not None
+        assert concavity.max() <= bend(lam) * (1.0 + 1e-6)
+        assert concavity.max() >= bend(lam) * (1.0 - 1e-5)
+
+
+@pytest.mark.parametrize("curve", sorted(CURVES))
 def test_every_curve_is_the_library_s_family_at_half_its_ceiling_where_his_is(curve) -> None:
     """Each curve, value and slope, against ``chc.response``'s family at the matching scale, and
     half its ceiling at ``ln 3 / lambda``, where his ``tanh(lambda x / 2)`` is."""

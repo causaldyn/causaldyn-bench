@@ -1,5 +1,8 @@
 """The scorecard's oracle against the committed Track M v2 records it must reproduce, and against
-searches written apart from it where no record exists: effect paths, and more than three cells."""
+searches written apart from it where no record exists: effect paths, more than three cells, and
+S-shaped cells, where its branch and bound is checked part by part: each envelope against the worth
+it bounds, the relaxation against a linear programme, and the plan against dense grids and a corner
+that a local search stops short of."""
 
 import dataclasses
 import itertools
@@ -8,18 +11,25 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from scipy.optimize import minimize
+from scipy.optimize import linprog, minimize
 
 from causaldyn_bench.budget_regret import TIE
-from causaldyn_bench.endogenous_mmm import CURVES, EndogenousMediaMix
+from causaldyn_bench.endogenous_mmm import CURVES, LN3, EndogenousMediaMix
 from causaldyn_bench.geo_selection import GeoPanel
 from causaldyn_bench.mmm_decision import PLANNED, Quarter, drawn, worth
 from causaldyn_bench.scorecard import truth
 from causaldyn_bench.scorecard.truth import (
+    GAP,
+    ROUNDING,
+    SAMPLES,
     Cell,
+    _bounded,
+    _envelope,
     _gridded,
     _priced,
     _programmed,
+    _refined,
+    _relaxed,
     _split,
     cells,
     oracle,
@@ -275,3 +285,154 @@ def test_a_budget_the_box_cannot_spend_and_a_misshapen_cell_are_refused(worlds):
         Cell(np.zeros(18), np.zeros(17), CURVES["tanh"], 0.01, np.ones(18))
     with pytest.raises(ValueError, match="effect path"):
         cells(world, quarter, np.ones((3, 5)))
+
+
+@pytest.mark.parametrize("curve", sorted(CURVES))
+def test_an_envelope_lies_above_its_cells_worth_and_touches_it_at_its_lift(curve):
+    """On the whole box and on a random interval of it, the envelope is concave, never below the
+    worth at sixty-four points between two of its samples, and above it by its lift, ``bend h^2 /
+    8`` and the samples' rounding, where it touches."""
+    on, quarter = _s_shaped(curve, 41)
+    rng = np.random.default_rng(3)
+    for cell, low, high in zip(on, quarter.lower, quarter.upper, strict=True):
+        for a, b in ((low, high), tuple(np.sort(rng.uniform(low, high, 2)))):
+            envelope = _envelope(cell, a, b)
+            dense = np.linspace(a, b, 64 * SAMPLES + 1)
+            assert np.min(np.interp(dense, envelope.x, envelope.y) - cell.worths(dense)) >= 0.0
+            assert envelope.x[0] == a and envelope.x[-1] == b
+            assert np.all(np.diff(np.diff(envelope.y) / np.diff(envelope.x)) <= 1e-12)
+            assert cell.bend is not None
+            samples = cell.worths(np.linspace(a, b, SAMPLES + 1))
+            lift = cell.bend * ((b - a) / SAMPLES) ** 2 / 8 + ROUNDING * np.max(np.abs(samples))
+            np.testing.assert_allclose(
+                envelope.y - cell.worths(envelope.x), lift, rtol=1e-9, atol=0.0
+            )
+
+
+def test_a_cells_bend_is_its_worths_greatest_concavity_bound():
+    """``-worth''`` over the box, read off the slope's central differences, stays below the cell's
+    bend; its effect's sign and a curve's stated bend decide whether it has one."""
+    on, quarter = _s_shaped("weibull-2", 43)
+    for cell, low, high in zip(on, quarter.lower, quarter.upper, strict=True):
+        weekly = np.linspace(low, high, 2001)
+        step = 1e-6 * (high - low)
+        concavity = [-(cell.slope(w + step) - cell.slope(w - step)) / (2 * step) for w in weekly]
+        assert cell.bend is not None and max(concavity) <= cell.bend
+    cell = on[0]
+    assert dataclasses.replace(cell, effect=-cell.effect).bend is None
+    assert dataclasses.replace(cell, curve=dataclasses.replace(cell.curve, bend=None)).bend is None
+
+
+def test_the_relaxation_is_the_linear_programme_over_the_envelopes():
+    """The steepest pieces first, against HiGHS on the pieces' fills, on random boxes inside the
+    budget's reach."""
+    on, quarter = _s_shaped("logistic-4", 42)
+    rate = quarter.budget / PLANNED
+    rng = np.random.default_rng(5)
+    for _ in range(6):
+        lows = rng.uniform(quarter.lower, (quarter.lower + quarter.upper) / 2)
+        highs = rng.uniform((quarter.lower + quarter.upper) / 2, quarter.upper)
+        if not lows.sum() <= rate <= highs.sum():
+            continue
+        envelopes = [_envelope(c, lo, hi) for c, lo, hi in zip(on, lows, highs, strict=True)]
+        bound, weekly = _relaxed(envelopes, rate)
+        slopes = np.concatenate([np.diff(e.y) / np.diff(e.x) for e in envelopes])
+        lengths = np.concatenate([np.diff(e.x) for e in envelopes])
+        programme = linprog(
+            -slopes,
+            A_eq=np.ones((1, slopes.size)),
+            b_eq=[rate - lows.sum()],
+            bounds=list(zip(np.zeros(slopes.size), lengths, strict=True)),
+            method="highs",
+        )
+        assert programme.status == 0
+        start = sum(float(e.y[0]) for e in envelopes)
+        assert bound == pytest.approx(start - programme.fun, rel=1e-12, abs=0.0)
+        assert float(np.sum(weekly)) == pytest.approx(rate, rel=1e-13, abs=0.0)
+        assert np.all(weekly >= lows) and np.all(weekly <= highs * (1 + 1e-15))
+        assert sum(
+            e.at(w) for e, w in zip(envelopes, weekly.tolist(), strict=True)
+        ) == pytest.approx(bound, rel=1e-12, abs=0.0)
+
+
+def _dense(on, quarter, points: int) -> float:
+    """The best worth on a grid of ``points`` a side over every box but the last's, the last cell
+    spending the rest: a search written apart from the oracle, on two or three cells."""
+    if len(on) not in (2, 3):
+        raise ValueError(f"a dense grid takes two or three cells, not {len(on)}")
+    rate = quarter.budget / PLANNED
+    low, high = quarter.lower, quarter.upper
+    middle = np.linspace(low[-2], high[-2], points)
+    middles = on[-2].worths(middle)
+    firsts = [(0.0, 0.0)]
+    if len(on) == 3:
+        first = np.linspace(low[0], high[0], points)
+        firsts = list(zip(first, on[0].worths(first), strict=True))
+    best = -np.inf
+    for spent, value in firsts:
+        rest = rate - spent - middle
+        inside = (rest >= low[-1]) & (rest <= high[-1])
+        total = value + middles + on[-1].worths(np.clip(rest, low[-1], high[-1]))
+        best = max(best, float(np.max(np.where(inside, total, -np.inf))))
+    return best
+
+
+@pytest.mark.parametrize("curve", S_SHAPED)
+def test_on_s_shaped_cells_no_grid_beats_the_bound(curve):
+    """Three cells: a grid of 1 201 points a side and the searched plan; two: 200 001 points."""
+    for seed in (44, 45):
+        on, quarter = _s_shaped(curve, seed)
+        plan = oracle(on, quarter)
+        np.testing.assert_array_equal(plan.weekly, _bounded(on, quarter).weekly)
+        assert quarter.feasible(plan.weekly)
+        assert plan.worth == pytest.approx(truth.worth(on, plan.weekly), rel=1e-15, abs=0.0)
+        allowance = GAP * quarter.budget
+        assert _dense(on, quarter, 1201) <= plan.worth + allowance
+        assert _gridded(on, quarter).worth <= plan.worth + allowance
+        pair = Quarter(
+            PLANNED * float(quarter.status_quo[:2].sum()),
+            quarter.lower[:2],
+            quarter.upper[:2],
+            quarter.status_quo[:2],
+            quarter.history[:, :2],
+        )
+        two = oracle(on[:2], pair)
+        assert _dense(on[:2], pair, 200_001) <= two.worth + GAP * pair.budget
+
+
+def test_the_bound_finds_the_corner_a_local_search_stops_short_of():
+    """Two equal logistic cells at a budget inside their convex stretch: the even split meets the
+    conditions of a plan, both slopes equal, and SLSQP from it stays there, but it is the worst
+    plan; the best spends the budget on one cell."""
+    lam = 0.01
+    weeks = 4
+    cell = Cell(np.zeros(weeks), np.ones(weeks), CURVES["logistic-4"], lam, np.full(weeks, 100.0))
+    rate = LN3 / lam
+    quarter = Quarter(
+        PLANNED * rate, np.zeros(2), np.full(2, rate), np.full(2, rate / 2), np.zeros((0, 2))
+    )
+    best = oracle((cell, cell), quarter)
+    stuck = _refined((cell, cell), quarter, [quarter.status_quo])
+    np.testing.assert_allclose(stuck.weekly, quarter.status_quo, rtol=1e-12)
+    np.testing.assert_allclose(np.sort(best.weekly), [0.0, rate], atol=1e-9 * rate)
+    assert best.worth > 2.0 * stuck.worth
+    assert _dense((cell, cell), quarter, 200_001) <= best.worth + GAP * quarter.budget
+
+
+def test_a_bound_that_cannot_close_its_gap_is_refused(monkeypatch):
+    on, quarter = _s_shaped("hill-2", 46)
+    monkeypatch.setattr(truth, "NODES", 1)
+    with pytest.raises(RuntimeError, match="boxes split"):
+        _bounded(on, quarter)
+
+
+def test_cells_without_a_bend_are_searched():
+    """A curve that states no bend leaves the plan to the grid, and to the programme past three
+    cells, as before the bound."""
+    on, quarter = _s_shaped("hill-2", 47)
+    unbent = tuple(
+        dataclasses.replace(c, curve=dataclasses.replace(c.curve, bend=None)) for c in on
+    )
+    np.testing.assert_array_equal(oracle(unbent, quarter).weekly, _gridded(unbent, quarter).weekly)
+    with pytest.raises(ValueError, match="states its bend"):
+        _envelope(unbent[0], quarter.lower[0], quarter.upper[0])

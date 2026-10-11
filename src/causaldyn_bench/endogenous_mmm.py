@@ -85,11 +85,14 @@ _MIDPOINT = 1.0 / (1.0 + float(logit((1.0 + expit(-STEEPNESS)) / 2.0)) / STEEPNE
 @dataclass(frozen=True)
 class Curve:
     """A channel's curve on its adstock ``a``, given his ``lambda``: its value, rising from 0 to 1,
-    and its slope in ``a``."""
+    and its slope in ``a``. Its ``bend``, where it states one, is its greatest concavity at the
+    ``lambda``: the largest ``-d^2 value / d a^2`` over ``a >= 0``, which bounds how far the curve
+    rises above a chord, and so lets an oracle bound the worth of an S-shaped curve from above."""
 
     value: Callable[[Series, float], Series]
     slope: Callable[[Series, float], Series]
     concave: bool  # from zero adstock; otherwise S-shaped
+    bend: Callable[[float], float] | None = None
 
 
 def _hill(a: Series, lam: float) -> Series:
@@ -124,26 +127,46 @@ def _logistic_slope(a: Series, lam: float) -> Series:
 
 # his curve, tanh(lambda a / 2), and five others, each written from its definition and at half its
 # ceiling where his is, at ln 3 / lambda: the exponential and Michaelis-Menten, concave from zero as
-# his is, and Hill of slope 2, Weibull of shape 2 and the logistic of steepness 4, S-shaped
+# his is, and Hill of slope 2, Weibull of shape 2 and the logistic of steepness 4, S-shaped. Each
+# bend is -value'' at its greatest, in units of z = a lambda / ln 3: tanh at tanh(lambda a / 2) =
+# 1 / sqrt 3, the exponential and Michaelis-Menten at a = 0, Hill at z = 1, Weibull at
+# z^2 = 3 / (2 ln 2), and the logistic where its sigmoid is 1/2 + sqrt 3 / 6 (Maxima checks each)
 CURVES: dict[str, Curve] = {
     "tanh": Curve(
         lambda a, lam: np.tanh(lam * a / 2.0),
         lambda a, lam: lam / 2.0 / np.cosh(lam * a / 2.0) ** 2,
         concave=True,
+        bend=lambda lam: lam**2 / (3.0 * math.sqrt(3.0)),
     ),
     "exponential": Curve(
         lambda a, lam: -np.expm1(-LN2 * a * lam / LN3),
         lambda a, lam: LN2 * lam / LN3 * np.exp(-LN2 * a * lam / LN3),
         concave=True,
+        bend=lambda lam: (LN2 * lam / LN3) ** 2,
     ),
     "michaelis-menten": Curve(
         lambda a, lam: a / (LN3 / lam + a),
         lambda a, lam: LN3 / lam / (LN3 / lam + a) ** 2,
         concave=True,
+        bend=lambda lam: 2.0 * (lam / LN3) ** 2,
     ),
-    "hill-2": Curve(_hill, _hill_slope, concave=False),
-    "weibull-2": Curve(_weibull, _weibull_slope, concave=False),
-    "logistic-4": Curve(_logistic, _logistic_slope, concave=False),
+    "hill-2": Curve(_hill, _hill_slope, concave=False, bend=lambda lam: (lam / LN3) ** 2 / 2.0),
+    "weibull-2": Curve(
+        _weibull,
+        _weibull_slope,
+        concave=False,
+        bend=lambda lam: 4.0 * LN2 * math.exp(-1.5) * (lam / LN3) ** 2,
+    ),
+    "logistic-4": Curve(
+        _logistic,
+        _logistic_slope,
+        concave=False,
+        bend=lambda lam: (
+            STEEPNESS**2
+            / (6.0 * math.sqrt(3.0) * float(expit(STEEPNESS)))
+            * (lam / LN3 / _MIDPOINT) ** 2
+        ),
+    ),
 }
 
 
