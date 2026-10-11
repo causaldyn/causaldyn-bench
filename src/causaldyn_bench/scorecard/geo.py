@@ -31,7 +31,11 @@ with 0.3, a season of 0.2 of the base, no spillover and no drift.
 The decision is the quarter after the history over the world's cells: each geo's own channels, geo
 by geo, then TV once, its plan allotted to the geos by population
 (:func:`~causaldyn_bench.scorecard.truth.geo_parts`), each within half and twice its mean over the
-last year, at the budget of last year's rate. The oracle is exact: every cell is concave. The ladder
+last year, at the budget of last year's rate. The status quo is every cell at its own mean, TV's
+its spend over the geos summed. The equal split gives each channel, not each cell, an equal share of
+the budget, a per-geo channel's share split across the geos by population, then moves it into the
+box (:class:`~causaldyn_bench.scorecard.truth.GeoQuarter`): split over the 21 cells, TV would get a
+21st. The oracle is exact: every cell is concave. The ladder
 is geo experiments read by difference-in-differences
 (:func:`~causaldyn_bench.scorecard.ladder.geo_rung`), noisy ones: on the family's first 30 pilot
 worlds at policy 0 a reading of a world without noise is off the true change, relative to it, by

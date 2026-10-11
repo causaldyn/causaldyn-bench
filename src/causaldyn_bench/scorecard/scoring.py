@@ -26,8 +26,11 @@ the share of the channels whose truth the draws' central 90 % holds. A response 
 unmapped, malformed or off its tool's decomposition is not read, and the score says why. A failed
 fit claims, forecasts and maps nothing.
 
-The status quo and the equal split are scored on every world, without a record. Beside the arms the
-score keeps covariates of the world that the oracle computes anyway, for control variates: the
+The status quo and the equal split are scored on every world, without a record: the equal split an
+equal share of the budget a channel, on a geo world a per-geo channel's split across the geos by
+population (:meth:`GeoQuarter.equal_split
+<causaldyn_bench.scorecard.truth.GeoQuarter.equal_split>`). Beside the arms the score keeps
+covariates of the world that the oracle computes anyway, for control variates: the
 status quo's and the equal split's regrets, the best plan's return per euro of the budget, and the
 budget's shadow price.
 

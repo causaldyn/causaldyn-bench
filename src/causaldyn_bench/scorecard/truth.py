@@ -50,7 +50,15 @@ from chc.response import Hill, MichaelisMenten, Saturation, Tanh
 from numpy.typing import ArrayLike
 from scipy.optimize import brentq, minimize
 
-from causaldyn_bench.endogenous_mmm import CURVES, LN3, YEAR, Curve, MediaMixWorld, Series
+from causaldyn_bench.endogenous_mmm import (
+    CURVES,
+    LN3,
+    YEAR,
+    Curve,
+    MediaMixWorld,
+    Series,
+    Vector,
+)
 from causaldyn_bench.mmm_decision import BOX, GRID, PLANNED, STARTS, Plan, Quarter
 
 STEPS = 2_000  # the dynamic programme's steps of the budget above the cells' floors
@@ -238,17 +246,38 @@ def geo_spend(world: GeoMediaWorld) -> Series:
     return np.column_stack([part.spend for part in geo_parts(world)])
 
 
-def geo_quarter(world: GeoMediaWorld, box: tuple[float, float] = BOX) -> Quarter:
+@dataclass(frozen=True)
+class GeoQuarter(Quarter):
+    """A geo world's quarter over its cells (:func:`geo_parts`), each naming its ``channel`` and
+    the share of the market's population it reaches, ``people``: its geo's for a geo's own channel,
+    the whole market's, 1, for a national channel's one cell."""
+
+    channel: tuple[int, ...]
+    people: Vector
+
+    def equal_split(self) -> Series:
+        """Each channel an equal share of the budget, a per-geo channel's split across the geos by
+        population, moved into the box: a channel, not a cell, is a part, so a national channel's
+        one cell gets as much as a per-geo channel's geos together."""
+        channels = len(set(self.channel))
+        return self.project(self.budget / PLANNED / channels * self.people)
+
+
+def geo_quarter(world: GeoMediaWorld, box: tuple[float, float] = BOX) -> GeoQuarter:
     """The quarter after ``world``'s history over its cells (:func:`geo_spend`): its budget and
-    status quo last year's mean weekly spend, and each cell's box ``box`` times its mean."""
+    status quo last year's mean weekly spend, each cell's box ``box`` times its mean, and each
+    cell's channel and share of the population."""
+    parts = geo_parts(world)
     spend = geo_spend(world)
     mean = spend[-YEAR:].mean(axis=0)
-    return Quarter(
+    return GeoQuarter(
         budget=PLANNED * float(mean.sum()),
         lower=box[0] * mean,
         upper=box[1] * mean,
         status_quo=mean,
         history=spend,
+        channel=tuple(part.channel for part in parts),
+        people=np.array([part.people for part in parts]) / float(world.population.sum()),
     )
 
 

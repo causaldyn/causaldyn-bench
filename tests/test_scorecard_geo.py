@@ -131,6 +131,34 @@ def test_national_media_is_allotted_by_population_and_its_cell_is_its_spend_summ
         allotted(world, quarter.status_quo[:20])
 
 
+def test_the_equal_split_gives_each_channel_a_third_a_per_geo_ones_split_by_population():
+    """The equal split is the channels', not the cells': each of the three gets a third of the
+    budget, a per-geo channel's third split across the geos by population and TV's on its one
+    cell, then moved into the box; the score's equal split is it. The status quo needs no such
+    rule: every cell is at its own mean, TV's its spend over the geos summed."""
+    seed = GEO.pilots["policy-0"][1]
+    world = GEO.world("policy-0", seed)
+    history = world.history
+    wide = geo_quarter(history, box=(0.0, 1e3))
+    rate = wide.budget / PLANNED
+    weekly = wide.equal_split()
+    assert wide.feasible(weekly)
+    local = weekly[:20].reshape(10, 2)
+    np.testing.assert_allclose(local, np.outer(history.shares, [rate / 3.0] * 2), rtol=1e-9)
+    assert weekly[20] == pytest.approx(rate / 3.0, rel=1e-9, abs=0.0)
+    quarter = geo_quarter(history)
+    split = quarter.equal_split()
+    assert quarter.feasible(split)
+    np.testing.assert_allclose(split, quarter.project(weekly), rtol=1e-9)
+    assert quarter.status_quo[20] == pytest.approx(
+        float(history.spend[:, -52:, 2].sum(axis=0).mean()), rel=1e-14, abs=0.0
+    )
+    on = GEO.truth(world)
+    regret = (on.best.worth - truth.worth(on.cells, split)) / quarter.budget
+    scores = score_world(GEO, "policy-0", seed, 0, {}, pilot=True)
+    assert scores.arms["equal split"].regret == pytest.approx(regret, rel=1e-12, abs=0.0)
+
+
 def _plans(quarter: Quarter, count: int, seed: int) -> list[np.ndarray]:
     draw = np.random.default_rng(seed)
     return [quarter.status_quo, quarter.lower, quarter.upper] + [
