@@ -25,6 +25,7 @@ from causaldyn_bench.budget_regret import (
     Comparison,
     Environment,
     Mean,
+    budgets_rows,
     digest,
     experiments,
     lift_rows,
@@ -134,7 +135,7 @@ def _job(scored, records):
 
 def test_a_world_reads_the_committed_regrets_beside_the_arms_it_scores(world, scored):
     quarter, best, status_quo = scored
-    fitted = digest(world, lift_rows(experiments(world, 905)))
+    fitted = digest(world, budgets_rows(experiments(world, 905)))
     records = {MERIDIAN: {"digest": fitted, **_plan(quarter.status_quo)}}
     score = score_world(_job(scored, records))
     assert score.committed == {"CHC": 0.01, PYMC: 0.02, "status quo": pytest.approx(status_quo)}
@@ -150,10 +151,19 @@ def test_a_record_fitted_to_other_data_is_refused(world, scored):
         score_world(_job(scored, records))
 
 
+def test_a_record_fitted_to_every_test_of_a_world_whose_test_rose_is_refused(scored):
+    # the budgets run's records were fitted to its export, which left out world 900's rising test
+    world = drawn(900).simulate(900)
+    every = digest(world, lift_rows(experiments(world, 900)))
+    records = {MERIDIAN: {"digest": every, **_plan(scored[0].status_quo)}}
+    with pytest.raises(RuntimeError, match="Meridian record was fitted to other data"):
+        score_world(("drawn", 900, records, {}))
+
+
 @pytest.mark.parametrize("moved", ["best", "status quo"])
 def test_a_world_whose_oracle_is_not_the_pre_registered_runs_is_refused(world, scored, moved):
     quarter, best, status_quo = scored
-    fitted = digest(world, lift_rows(experiments(world, 905)))
+    fitted = digest(world, budgets_rows(experiments(world, 905)))
     records = {MERIDIAN: {"digest": fitted, **_plan(quarter.status_quo)}}
     job = _job(scored, records)
     if moved == "best":
@@ -168,7 +178,7 @@ def test_the_oracle_still_reproduces_the_committed_pilot(world):
     # the pre-registered run's own record of world 905, so a moved oracle fails here first
     committed = _committed(ROOT / "results/track_m2_budgets_pilot.json", pilot=True)
     known = committed["drawn"][905]
-    fitted = digest(world, lift_rows(experiments(world, 905)))
+    fitted = digest(world, budgets_rows(experiments(world, 905)))
     records = {MERIDIAN: {"digest": fitted, **_plan(Quarter.after(world).status_quo)}}
     score = score_world(("drawn", 905, records, known))
     assert score.committed == {arm: known["regret"][arm] for arm in READ}

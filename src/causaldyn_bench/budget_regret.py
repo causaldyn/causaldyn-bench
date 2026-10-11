@@ -33,9 +33,16 @@ each universe.
   :func:`chc.allocation.allocate` with carryover counted both ways;
 * *myopic*: CHC's channels as a planner reads them who counts a week's spend in that week alone,
   planned without carryover;
-* *PyMC-Marketing* 1.2.0: its default model fitted to the history, every test entered as a lift
-  measurement (:func:`lift_rows`), NUTS at its defaults, the quarter planned by its own optimiser
-  (``scripts/pymc_marketing_arm.py``, in the environment ``scripts/pymc_marketing_arm.txt`` pins).
+* *PyMC-Marketing* 1.2.0: its default model fitted to the history, every test whose sales fell
+  entered as a lift measurement (:func:`lift_rows`, :func:`budgets_rows`), NUTS at its defaults, the
+  quarter planned by its own optimiser (``scripts/pymc_marketing_arm.py``, in the environment
+  ``scripts/pymc_marketing_arm.txt`` pins).
+
+The run's export holds those tests alone: PyMC-Marketing's likelihood cannot take a test whose
+sales did not fall, and the export left such a test out for every arm that read it, a selection on
+the outcome that biases what an arm reads of a channel towards a larger fall. The run's records
+echo digests of that export, so the run keeps it (:func:`budgets_rows`); the scorecard's exports
+carry every test, and an arm drops what its own tool cannot take.
 
 An arm whose fit raises plays the status quo, and is counted. A plan that leaves the box or misses
 the budget by more than a millionth of it is moved into the box (``Quarter.project``), and the move
@@ -242,7 +249,7 @@ class LiftRows:
     delta_x: Series
     delta_y: Series
     sigma: Series
-    dropped: int  # tests whose sales did not fall, which the measurement cannot take
+    dropped: int  # tests left out: by the budgets run's export alone (:func:`falling`)
     geos: tuple[tuple[int, ...], ...] | None = None
 
 
@@ -252,9 +259,8 @@ def lift_rows(tests: dict[str, tuple[LiftTest, ...]]) -> LiftRows:
     ``x`` is the control's mean weekly spend over the dark weeks and ``delta_x = -x``. ``delta_y``
     is the gap summed over the dark weeks and the cooldown after them, so the carryover the
     darkness cost is counted, over the dark weeks. ``sigma`` scales the weekly gap's noise, read
-    from the pre-test weeks of every test of the channel, to that sum. PyMC-Marketing's likelihood
-    needs a fall in sales for a cut in spend, so a test whose sales did not fall is dropped and
-    counted.
+    from the pre-test weeks of every test of the channel, to that sum. Every test is a row,
+    whichever way its sales moved: keeping a test on its reading truncates on the outcome.
     """
     columns: dict[str, list] = {
         "channel": [],
@@ -264,7 +270,6 @@ def lift_rows(tests: dict[str, tuple[LiftTest, ...]]) -> LiftRows:
         "delta_y": [],
         "sigma": [],
     }
-    dropped = 0
     after = slice(PRE, PRE + TEST + COOLDOWN)
     for name, channel_tests in tests.items():
         pre = [t.difference[:PRE] for t in channel_tests]
@@ -273,9 +278,6 @@ def lift_rows(tests: dict[str, tuple[LiftTest, ...]]) -> LiftRows:
             readout = test.control.spend[test.control.history :]
             level = float(np.mean(readout[PRE : PRE + TEST]))
             change = float(np.sum(test.difference[after])) / TEST
-            if not change < 0.0:
-                dropped += 1
-                continue
             columns["channel"].append(name)
             # the readout opens PRE weeks before the first dark week
             columns["start"].append(test.control.history + PRE + 1)
@@ -290,8 +292,37 @@ def lift_rows(tests: dict[str, tuple[LiftTest, ...]]) -> LiftRows:
         delta_x=np.array(columns["delta_x"]),
         delta_y=np.array(columns["delta_y"]),
         sigma=np.array(columns["sigma"]),
-        dropped=dropped,
+        dropped=0,
     )
+
+
+def falling(rows: LiftRows) -> LiftRows:
+    """The rows PyMC-Marketing 1.2.0's lift likelihood takes, the rest dropped and counted: those
+    whose sales fell. Every row cuts spend, and the likelihood raises on a test whose sales rose
+    (``assert_monotonic``) and is a Gamma of the fall's size, with no density at nought.
+
+    The budgets run exported these rows to every arm, a selection on the outcome; its records'
+    digests pin it, so its export and its scoring read them still (:func:`budgets_rows`). Nothing
+    else does.
+    """
+    fell = np.asarray(rows.delta_y) < 0.0
+    kept = np.flatnonzero(fell)
+    return LiftRows(
+        channel=tuple(rows.channel[i] for i in kept),
+        start=tuple(rows.start[i] for i in kept),
+        x=np.asarray(rows.x)[fell],
+        delta_x=np.asarray(rows.delta_x)[fell],
+        delta_y=np.asarray(rows.delta_y)[fell],
+        sigma=np.asarray(rows.sigma)[fell],
+        dropped=rows.dropped + int(fell.size - kept.size),
+        geos=None if rows.geos is None else tuple(rows.geos[i] for i in kept),
+    )
+
+
+def budgets_rows(tests: dict[str, tuple[LiftTest, ...]]) -> LiftRows:
+    """The rows of ``tests`` the budgets run exported and its records' digests hash: those whose
+    sales fell (:func:`falling`)."""
+    return falling(lift_rows(tests))
 
 
 def digest(world: MediaMixWorld, rows: LiftRows) -> str:
@@ -415,7 +446,7 @@ def score_world(job: tuple[str, int, Mapping[str, Any]]) -> WorldScore:
     environment = next(e for e in ENVIRONMENTS if e.name == name)
     world = environment.generator(seed).simulate(seed)
     tests = experiments(world, seed)
-    if record["digest"] != digest(world, lift_rows(tests)):
+    if record["digest"] != digest(world, budgets_rows(tests)):
         raise RuntimeError(f"{name} world {seed}: the {PYMC} record was fitted to other data")
     arms, fits = plans(world, tests)
     arms[PYMC] = record["error"] or np.asarray(record["weekly"], dtype=float)
@@ -634,7 +665,7 @@ def _export(work: Path, environments: Sequence[Environment]) -> None:
         directory.mkdir(parents=True, exist_ok=True)
         for seed in environment.seeds:
             world = environment.generator(seed).simulate(seed)
-            export(world, seed, lift_rows(experiments(world, seed)), directory)
+            export(world, seed, budgets_rows(experiments(world, seed)), directory)
         print(f"{environment.name}: {environment.worlds} worlds in {directory}", flush=True)
 
 

@@ -264,7 +264,7 @@ def test_a_geo_test_takes_alternate_geos_dark_and_reads_their_planned_spend():
     world = GEO.world("policy-0", GEO.pilots["policy-0"][6]).history
     rows = geo_rung(world, 8, GEO.pilots["policy-0"][6], 4)
     assert rows.geos is not None
-    assert len(rows.channel) + rows.dropped == 12
+    assert len(rows.channel) == 12 and rows.dropped == 0
     assert dark_geos(10, 0) == dark_geos(10, 2) == (0, 2, 4, 6, 8)
     assert dark_geos(10, 1) == dark_geos(10, 3) == (1, 3, 5, 7, 9)
     assert dark_geos(3, 0) == (0, 2) and dark_geos(3, 1) == (1,)
@@ -274,7 +274,7 @@ def test_a_geo_test_takes_alternate_geos_dark_and_reads_their_planned_spend():
         assert rows.geos[row] == dark_geos(10, j)
         dark = world.spend[list(rows.geos[row]), start - 1 : start - 1 + TEST, names.index(channel)]
         assert rows.x[row] == pytest.approx(float(dark.sum(axis=0).mean()), rel=1e-14, abs=0.0)
-        assert rows.delta_x[row] == -rows.x[row] and rows.delta_y[row] < 0.0
+        assert rows.delta_x[row] == -rows.x[row]
     assert set(rows.start) <= set(GEO_STARTS)
     assert GEO_STARTS[0] - PRE >= 1 + LENGTH  # every readout past the adstock's first weeks
     assert GEO_STARTS[-1] + TEST + COOLDOWN - 1 <= 104
@@ -293,6 +293,20 @@ def test_on_a_world_that_holds_still_outside_its_tests_the_reading_is_the_true_c
     for row, (channel, start) in enumerate(zip(rows.channel, rows.start, strict=True)):
         true = _true_change(world, names.index(channel), GEO_STARTS.index(start))
         assert rows.delta_y[row] == pytest.approx(true, rel=1e-9, abs=0.0)
+
+
+def test_a_geo_test_whose_kpi_rose_is_exported():
+    """Dropping a test on its reading truncates on the outcome: every test of the rung is a row,
+    whichever way its KPI moved, and nothing is dropped."""
+    seed = GEO.pilots["policy-0"][3]
+    world = GEO.world("policy-0", seed).history
+    rows = geo_rung(world, 8, seed, 4)
+    assert rows.dropped == 0 and len(rows.channel) == 12
+    assert int(np.sum(rows.delta_y >= 0.0)) == 8
+    names = [c.name for c in world.mix.channels]
+    assert sorted(zip(rows.channel, rows.start, strict=True)) == sorted(
+        itertools.product(names, GEO_STARTS)
+    )
 
 
 def test_each_channels_tests_run_in_a_universe_of_their_own():
@@ -321,10 +335,8 @@ def test_each_channels_tests_run_in_a_universe_of_their_own():
                 for i, (n, s) in enumerate(zip(rows.channel, rows.start, strict=True))
                 if n == channel.name and s == start
             ]
-            if reading < 0.0:
-                assert rows.delta_y[held[0]] == pytest.approx(reading, rel=1e-12, abs=0.0)
-            else:
-                assert held == []
+            assert len(held) == 1
+            assert rows.delta_y[held[0]] == pytest.approx(reading, rel=1e-12, abs=0.0)
 
 
 def test_a_geo_tests_standard_error_is_its_noises():

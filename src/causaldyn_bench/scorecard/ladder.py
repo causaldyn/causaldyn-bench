@@ -158,8 +158,8 @@ def dark_geos(geos: int, test: int) -> tuple[int, ...]:
 def geo_rung(world: GeoMediaWorld, family: int, seed: int, k: int) -> LiftRows:
     """Rung ``k``'s geo tests on ``world``, which family ``family`` drew from ``seed``: each
     channel's latest ``k`` of :data:`GEO_STARTS`, read by difference-in-differences; see the
-    module. Each row names its tested geos; a test whose KPI did not fall is dropped and counted,
-    as :func:`causaldyn_bench.budget_regret.lift_rows` drops it.
+    module. Each row names its tested geos. Every test is a row, whichever way its KPI moved, as
+    :func:`causaldyn_bench.budget_regret.lift_rows` keeps it.
 
     Raises:
         ValueError: a rung off the ladder, a world with fewer than two geos, or one too short for a
@@ -176,7 +176,6 @@ def geo_rung(world: GeoMediaWorld, family: int, seed: int, k: int) -> LiftRows:
     after = TEST + COOLDOWN
     columns: dict[str, list] = {key: [] for key in ("channel", "start", "x", "change", "geos")}
     sigma: list[float] = []
-    dropped = 0
     size = world.mix.noise * np.sqrt(world.population)[:, None]
     for c, channel in enumerate(world.mix.channels):
         noise = size * rng(family, Role.TESTS, seed, c + 1).standard_normal((geos, weeks))
@@ -197,9 +196,6 @@ def geo_rung(world: GeoMediaWorld, family: int, seed: int, k: int) -> LiftRows:
             gap = ours - float(ours[pre].mean()) / float(theirs[pre].mean()) * theirs
             gaps.append(gap[pre])
             change = float(gap[readout].sum()) / TEST
-            if not change < 0.0:
-                dropped += 1
-                continue
             columns["channel"].append(channel.name)
             columns["start"].append(start)
             columns["x"].append(
@@ -209,8 +205,7 @@ def geo_rung(world: GeoMediaWorld, family: int, seed: int, k: int) -> LiftRows:
             columns["geos"].append(treated)
         if gaps:
             weekly = float(np.sqrt(np.mean([np.var(g, ddof=1) for g in gaps])))
-            kept = len(columns["channel"]) - len(sigma)
-            sigma += [weekly * float(np.sqrt(after + after**2 / PRE)) / TEST] * kept
+            sigma += [weekly * float(np.sqrt(after + after**2 / PRE)) / TEST] * len(gaps)
     x = np.array(columns["x"], dtype=float)
     return LiftRows(
         channel=tuple(columns["channel"]),
@@ -219,6 +214,6 @@ def geo_rung(world: GeoMediaWorld, family: int, seed: int, k: int) -> LiftRows:
         delta_x=-x,
         delta_y=np.array(columns["change"], dtype=float),
         sigma=np.array(sigma, dtype=float),
-        dropped=dropped,
+        dropped=0,
         geos=tuple(columns["geos"]),
     )

@@ -24,14 +24,18 @@ from causaldyn_bench.budget_regret import (
     Comparison,
     Environment,
     EnvironmentRun,
+    LiftRows,
     Mean,
     WorldScore,
+    _export,
     _markdown,
     _record,
     _records,
+    budgets_rows,
     digest,
     experiments,
     export,
+    falling,
     lift_rows,
     main,
     myopic,
@@ -73,17 +77,54 @@ def test_a_quiet_go_dark_test_reduces_to_its_gap_over_the_dark_weeks():
     np.testing.assert_array_equal(rows.delta_x, -rows.x)
 
 
-def test_a_test_whose_sales_did_not_fall_is_dropped_and_counted():
+def test_a_test_whose_sales_rose_is_kept_unselected():
+    """Dropping a test on its reading truncates on the outcome: the rows hold every test."""
     world = EndogenousMediaMix().simulate(4)
     tests = lift_tests(world, Setting("meta", noise_share=0.10), seed=2)
     rows = lift_rows({"meta": tests})
     rose = sum(float(np.sum(t.difference[PRE:])) >= 0.0 for t in tests)
     assert rose == 2
-    assert rows.dropped == rose
-    assert len(rows.channel) == len(tests) - rose
+    assert rows.dropped == 0
+    assert rows.start == STARTS
+    assert int(np.sum(rows.delta_y >= 0.0)) == rose
+    for test, change in zip(tests, rows.delta_y, strict=True):
+        assert change == float(np.sum(test.difference[PRE : PRE + TEST + COOLDOWN])) / TEST
+
+
+def test_the_budgets_runs_selection_drops_and_counts_a_test_whose_sales_did_not_fall():
+    world = EndogenousMediaMix().simulate(4)
+    tests = lift_tests(world, Setting("meta", noise_share=0.10), seed=2)
+    every = lift_rows({"meta": tests})
+    rows = falling(every)
+    assert rows.dropped == 2
+    assert len(rows.channel) == len(tests) - 2
     assert np.all(rows.delta_y < 0.0)
-    fell = [s for s, t in zip(STARTS, tests, strict=True) if float(np.sum(t.difference[PRE:])) < 0]
-    assert rows.start == tuple(fell)
+    fell = every.delta_y < 0.0
+    assert rows.start == tuple(s for s, kept in zip(STARTS, fell, strict=True) if kept)
+    for field in ("x", "delta_x", "delta_y", "sigma"):
+        np.testing.assert_array_equal(getattr(rows, field), getattr(every, field)[fell])
+    again = falling(rows)  # rows already selected, as a version-1 export holds them
+    assert (again.channel, again.dropped) == (rows.channel, rows.dropped)
+
+
+def test_the_selection_drops_a_test_whose_sales_held_still_and_keeps_each_kept_rows_geos():
+    rows = LiftRows(
+        channel=("a", "a", "b"),
+        start=(20, 44, 20),
+        x=np.array([1.0, 2.0, 3.0]),
+        delta_x=np.array([-1.0, -2.0, -3.0]),
+        delta_y=np.array([-0.5, 0.0, -0.1]),
+        sigma=np.ones(3),
+        dropped=0,
+        geos=((0,), (1,), (2,)),
+    )
+    kept = falling(rows)
+    assert (kept.channel, kept.start, kept.geos, kept.dropped) == (
+        ("a", "b"),
+        (20, 20),
+        ((0,), (2,)),
+        1,
+    )
 
 
 def test_the_digest_reads_the_world_and_its_tests_and_nothing_else(world):
@@ -101,7 +142,39 @@ def test_the_digest_is_the_one_the_pre_registered_records_were_fitted_under(worl
     # that moves orphans them, since the scoring refuses a record fitted to other data
     if other_kernels is not None:
         pytest.skip(other_kernels)
-    assert digest(world, lift_rows(experiments(world, 905))) == "aba9555185e64d61"
+    assert digest(world, budgets_rows(experiments(world, 905))) == "aba9555185e64d61"
+
+
+def test_a_pilot_world_whose_test_rose_keeps_the_digest_its_archived_record_echoes(other_kernels):
+    # world 900's record, fitted at the pre-registration on rows that left one test out, echoes
+    # this digest: the budgets run's rows must keep leaving it out, or the record is orphaned
+    if other_kernels is not None:
+        pytest.skip(other_kernels)
+    world = drawn(900).simulate(900)
+    tests = experiments(world, 900)
+    every = lift_rows(tests)
+    assert int(np.sum(every.delta_y >= 0.0)) == 1
+    assert digest(world, budgets_rows(tests)) == "b099841c5a52dc0b" != digest(world, every)
+
+
+def test_the_budgets_runs_export_of_a_world_whose_test_rose_is_the_one_its_record_echoes(
+    other_kernels, tmp_path
+):
+    if other_kernels is not None:
+        pytest.skip(other_kernels)
+    _export(tmp_path, [Environment("drawn", 900, 1)])
+    saved = np.load(tmp_path / "drawn" / "world_900.npz")
+    assert str(saved["digest"]) == "b099841c5a52dc0b"
+    assert saved["lift_channel"].size == 11 and int(saved["lift_dropped"]) == 1
+
+
+def test_the_budgets_runs_scoring_refuses_a_record_fitted_to_every_test():
+    # the scorecard's rows hold the test that rose, and the budgets run's records were not fitted
+    # to them
+    world = drawn(900).simulate(900)
+    every = digest(world, lift_rows(experiments(world, 900)))
+    with pytest.raises(RuntimeError, match="record was fitted to other data"):
+        score_world(("drawn", 900, {"digest": every}))
 
 
 def test_export_writes_what_the_pymc_arm_reads(world, tmp_path):

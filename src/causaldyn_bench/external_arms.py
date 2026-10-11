@@ -132,9 +132,9 @@ from causaldyn_bench.budget_regret import (
     Comparison,
     Environment,
     Mean,
+    budgets_rows,
     digest,
     experiments,
-    lift_rows,
 )
 from causaldyn_bench.endogenous_mmm import MediaMixWorld, Series
 from causaldyn_bench.mmm_decision import PLANNED, Plan, Quarter, oracle, regret
@@ -242,7 +242,7 @@ def score_world(
     name, seed, records, committed = job
     environment = next(e for e in ENVIRONMENTS if e.name == name)
     world = environment.generator(seed).simulate(seed)
-    fitted = digest(world, lift_rows(experiments(world, seed)))
+    fitted = digest(world, budgets_rows(experiments(world, seed)))
     for arm, record in records.items():
         if record["digest"] != fitted:
             raise RuntimeError(f"{name} world {seed}: the {arm} record was fitted to other data")

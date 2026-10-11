@@ -10,7 +10,10 @@ Each world is fitted as a practitioner fits PyMC-Marketing 1.2.0's media-mix mod
 * ``MMM`` with its defaults, ``GeometricAdstock(l_max=6)`` (normalised by default) and
   ``LogisticSaturation``, the world's forms; the observed promotion indicator and price as
   controls; three yearly harmonics, as Heusch's (2026a) realistic specification;
-* every geo test entered through ``add_lift_test_measurements``, as the bench reduced it;
+* every geo test its lift likelihood takes entered through ``add_lift_test_measurements``, as the
+  bench reduced it. An export carries every test, whichever way its sales moved; the likelihood
+  takes a test whose sales fell, so the arm drops the rest and counts them (``lift_dropped``,
+  :mod:`pymc_marketing_lift`);
 * NUTS at PyMC's defaults: 4 chains of 1000 tuning and 1000 kept draws, ``target_accept`` 0.8;
 * the quarter planned by its own optimiser, ``budget_optimizer(start, end).allocate_budget``, at
   the bench's weekly budget and box, starting the week after the history so the history's
@@ -103,6 +106,7 @@ from pymc_marketing.mmm import (  # ty: ignore[unresolved-import]
     LogisticSaturation,
 )
 from pymc_marketing.mmm.tvp import create_hsgp_from_config  # ty: ignore[unresolved-import]
+from pymc_marketing_lift import taken
 
 pytensor.config.numba__cache = False
 
@@ -148,15 +152,16 @@ def plan(path: Path) -> dict[str, Any]:
         yearly_seasonality=HARMONICS,
     )
     model.build_model(frame, sales)
-    if world["lift_channel"].size:
+    keep, dropped = taken(world)
+    if keep.any():
         model.add_lift_test_measurements(
             pd.DataFrame(
                 {
-                    "channel": [str(c) for c in world["lift_channel"]],
-                    "x": world["lift_x"],
-                    "delta_x": world["lift_delta_x"],
-                    "delta_y": world["lift_delta_y"],
-                    "sigma": world["lift_sigma"],
+                    "channel": [str(c) for c in world["lift_channel"][keep]],
+                    "x": world["lift_x"][keep],
+                    "delta_x": world["lift_delta_x"][keep],
+                    "delta_y": world["lift_delta_y"][keep],
+                    "sigma": world["lift_sigma"][keep],
                 }
             )
         )
@@ -193,8 +198,8 @@ def plan(path: Path) -> dict[str, Any]:
             }
             for name in channels
         },
-        "lift_rows": int(world["lift_channel"].size),
-        "lift_dropped": int(world["lift_dropped"]),
+        "lift_rows": int(np.count_nonzero(keep)),
+        "lift_dropped": int(world["lift_dropped"]) + dropped,
         "error": None,
     }
 
@@ -344,19 +349,20 @@ def plan_second(path: Path, setting: str, smoke: bool) -> dict[str, Any]:
         time_varying_media=_media(setting, weeks),
     )
     model.build_model(frame, sales)
-    rows = int(world["lift_channel"].size)
+    keep, dropped = taken(world)
+    rows = int(np.count_nonzero(keep))
     if rows:
         lift = pd.DataFrame(
             {
-                "channel": [str(c) for c in world["lift_channel"]],
-                "x": world["lift_x"],
-                "delta_x": world["lift_delta_x"],
-                "delta_y": world["lift_delta_y"],
-                "sigma": world["lift_sigma"],
+                "channel": [str(c) for c in world["lift_channel"][keep]],
+                "x": world["lift_x"][keep],
+                "delta_x": world["lift_delta_x"][keep],
+                "delta_y": world["lift_delta_y"][keep],
+                "sigma": world["lift_sigma"][keep],
             }
         )
         if setting != "static":
-            lift["date"] = dates[world["lift_start"] - 1]
+            lift["date"] = dates[world["lift_start"][keep] - 1]
         model.add_lift_test_measurements(lift)
     seed = int(world["seed"])
     trace = model.fit(frame, sales, random_seed=seed, progressbar=False, **(SMOKE if smoke else {}))
@@ -428,7 +434,7 @@ def plan_second(path: Path, setting: str, smoke: bool) -> dict[str, Any]:
         },
         "n/a": {},
         "lift_rows": rows,
-        "lift_dropped": int(world["lift_dropped"]),
+        "lift_dropped": int(world["lift_dropped"]) + dropped,
         "error": None,
     }
 

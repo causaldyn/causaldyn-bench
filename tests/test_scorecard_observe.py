@@ -8,7 +8,7 @@ import dataclasses
 import numpy as np
 import pytest
 
-from causaldyn_bench.budget_regret import digest, experiments, export, lift_rows
+from causaldyn_bench.budget_regret import budgets_rows, digest, experiments, export, lift_rows
 from causaldyn_bench.lift_calibration import COOLDOWN, STARTS, TEST
 from causaldyn_bench.mmm_decision import PLANNED, Quarter
 from causaldyn_bench.scorecard import ladder, observe
@@ -136,7 +136,7 @@ def test_an_export_names_its_tests_readout_and_its_digest_reads_it(
 
 def test_version_ones_digest_is_the_budgets_runs_and_reads_what_that_run_hashed(world, observed):
     history = world.history
-    assert observed.digest(FIRST) == digest(history, lift_rows(experiments(history, 905)))
+    assert observed.digest(FIRST) == digest(history, budgets_rows(experiments(history, 905)))
     moved = _moved(observed)
     for unread in ("family", "environment", "seed", "k", "budget", "future controls", "window"):
         assert moved[unread].digest(FIRST) == observed.digest(FIRST)
@@ -144,6 +144,18 @@ def test_version_ones_digest_is_the_budgets_runs_and_reads_what_that_run_hashed(
         assert moved[read_].digest(FIRST) != observed.digest(FIRST)
     with pytest.raises(ValueError, match="national worlds alone"):
         moved["geos"].digest(FIRST)
+
+
+def test_version_ones_digest_of_a_world_whose_test_rose_is_its_archived_records(other_kernels):
+    """The export holds every test, the one that rose among them; the budgets run's rule hashes the
+    rows it exported, without it, so its record of the world is still scored here."""
+    if other_kernels is not None:
+        pytest.skip(other_kernels)
+    world = TRACK_M2.world("drawn", 900)
+    top = TRACK_M2.observe(world, len(STARTS))
+    assert len(top.lift.channel) == 12 and int(np.sum(top.lift.delta_y >= 0.0)) == 1
+    assert top.digest(FIRST) == "b099841c5a52dc0b"
+    assert top.digest(FIRST) == digest(world.history, budgets_rows(experiments(world.history, 900)))
 
 
 def test_a_version_one_export_reads_as_family_nought_at_the_top_rung(world, observed, tmp_path):

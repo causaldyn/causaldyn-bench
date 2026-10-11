@@ -4,13 +4,14 @@ ties the arm's plan to it.
 An :class:`Observation` is all an arm may read of one world at one rung of the ladder: the history
 (sales, spend and the named controls the measurement layer reads), the quarter it plans (the
 budget, each cell's box, the status quo, the controls' values over the quarter), the window a
-return is read over, and the lift tests, reduced as :func:`causaldyn_bench.budget_regret.lift_rows`
-reduces them, beside the weeks each test is dark and the weeks of cooldown its readout counts after
-them, which a model of the carryover reads a test's change in spend over. A geo family's sales and
-spend carry a geo axis, with each geo's share of the population beside them, and the channels it
-buys nationally named. Its cells are each geo's own channels, geo by geo in the channels' order,
-then each national channel once, its spend summed over the geos it is allotted to; its tests name
-the geos each took dark.
+return is read over, and the lift tests, every one whichever way its sales moved, reduced as
+:func:`causaldyn_bench.budget_regret.lift_rows` reduces them, beside the weeks each test is dark
+and the weeks of cooldown its readout counts after them, which a model of the carryover reads a
+test's change in spend over. A tool whose likelihood cannot take a test drops it itself. A geo
+family's sales and spend carry a geo axis, with each geo's share of the population beside them,
+and the channels it buys nationally named. Its cells are each geo's own channels, geo by geo in
+the channels' order, then each national channel once, its spend summed over the geos it is
+allotted to; its tests name the geos each took dark.
 
 The ladder's tests run in universes of their own, so the history holds none of them. Where it does
 hold them, at an overlapping rung (:func:`causaldyn_bench.scorecard.ladder.overlap`), the
@@ -41,7 +42,7 @@ from pathlib import Path
 
 import numpy as np
 
-from causaldyn_bench.budget_regret import LiftRows
+from causaldyn_bench.budget_regret import LiftRows, falling
 from causaldyn_bench.endogenous_mmm import YEAR, Series
 from causaldyn_bench.lift_calibration import COOLDOWN, STARTS, TEST
 
@@ -234,22 +235,24 @@ def _hash(fields: Mapping[str, np.ndarray]) -> str:
 
 def _first_digest(observation: Observation) -> str:
     """Track M v2's budgets run's digest (:func:`causaldyn_bench.budget_regret.digest`), read off
-    the observation's arrays."""
+    the observation's arrays: over the tests whose sales fell, the rows that run exported
+    (:func:`causaldyn_bench.budget_regret.falling`)."""
     o = observation
     if tuple(o.controls) != LEGACY_CONTROLS or o.population is not None:
         raise ValueError("version 1 exported Track M v2's national worlds alone")
+    lift = falling(o.lift)
     blob = hashlib.sha256()
     for array in (
         o.sales,
         o.spend,
         o.controls["promotion"],
         o.controls["price"],
-        o.lift.x,
-        o.lift.delta_y,
-        o.lift.sigma,
+        lift.x,
+        lift.delta_y,
+        lift.sigma,
     ):
         blob.update(np.ascontiguousarray(array, dtype=float).tobytes())
-    blob.update("|".join(o.channels + o.lift.channel).encode())
+    blob.update("|".join(o.channels + lift.channel).encode())
     return blob.hexdigest()[:16]
 
 
