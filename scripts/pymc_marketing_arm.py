@@ -65,15 +65,27 @@ test's date. CHOICE: the Monday of its first dark week. Each record carries, bes
 multidimensional ``MMM`` with ``dims=("geo",)``, static media alone: each geo's KPI and spend, a
 national channel's spend allotted to the geos by population as the world allots it, ``l_max`` the
 export's kernel length. Its lift likelihood reads each row at one coordinate of every dimension, so
-one geo's change in sales, and a test that took several geos dark holds no such change: the arm
-drops it and counts it under ``lift_dropped_why`` (:func:`pymc_marketing_lift.taken_geo`). The
-family's tests each take several geos, so there every test is dropped, and the fit at any rung is
-the fit with none. The quarter is planned by its own optimiser over every geo's cells, from the
-status quo, at the weekly budget and in each cell's box, each national channel's spend in a geo
-held to the geo's share of the population of the channel's (one equality a geo but the last), and
-recorded one weekly spend a cell. ``forecast``, ``gain`` and ``gain_interval`` are the market's,
-summed over the geos. ``response`` is not mapped: the mapping reads one response of the market's
-spend, where a geo model's is each geo's own curve.
+one geo's change in sales, and a family-8 test takes several geos dark at once: the arm apportions
+each test across its tested geos (:func:`pymc_marketing_lift.apportioned`). CHOICE, the arm's
+assumption and not the tool's: one ROI across a test's geos, as the test's own design assumes. Each
+geo's row withholds the geo's own mean spend over the dark weeks and reads that share of the test's
+change in sales, at an error that lets the ``m`` rows, read as independent on a Gaussian
+likelihood, hold the one test's information. The tool departs from that twice. Its geo model gives
+each geo its own saturation and coefficient on each channel, so a row informs its own geo's curve
+alone, with a share of the test's information, and no common return adds the rows up. And its
+default likelihood is a Gamma of the change's size, whose information about its mean at a fixed
+error is ``(4 a psi'(a) - 3) / sigma**2`` at shape ``a``, the squared z: a row's shape is its test's
+over ``m``, so the five rows of a weak test hold up to 5.49 times its information (at a squared z
+of 0.39), twice it where the test's squared z is 7.8, and 1.5 times it at 15.9. Each row takes its
+test's sign, so a test whose sales did not fall drops its every row: ``lift_rows`` and
+``lift_dropped`` count rows, ``lift_tests`` the tests taken and dropped.
+
+The quarter is planned by its own optimiser over every geo's cells, from the status quo, at the
+weekly budget and in each cell's box, each national channel's spend in a geo held to the geo's
+share of the population of the channel's (one equality a geo but the last), and recorded one weekly
+spend a cell. ``forecast``, ``gain`` and ``gain_interval`` are the market's, summed over the geos.
+``response`` is not mapped: the mapping reads one response of the market's spend, where a geo
+model's is each geo's own curve.
 
 ``--smoke`` samples 2 chains of 100 tuning and 100 kept draws to check the plumbing; its records
 say they are a smoke run, not a result. A version-1 export is fitted as before, by the same code,
@@ -125,7 +137,7 @@ from pymc_marketing.mmm.constraints import (  # ty: ignore[unresolved-import]
     build_default_sum_constraint,
 )
 from pymc_marketing.mmm.tvp import create_hsgp_from_config  # ty: ignore[unresolved-import]
-from pymc_marketing_lift import taken, taken_geo
+from pymc_marketing_lift import apportioned, taken
 
 pytensor.config.numba__cache = False
 
@@ -145,6 +157,11 @@ DRAWS = 400  # the most draws of the forecast and the response a record keeps
 HELD = 4  # draws whose weekly decomposition a record keeps
 LEVEL = 0.9  # the gain interval's
 AGREE = 1e-9  # how near the plan's mean response lies to the optimiser's own, relative to it
+GEO_LIFT = (
+    "each test apportioned across its tested geos at one ROI, the arm's assumption: a geo's row "
+    "withholds its own mean spend over the dark weeks, reads that share s of the change in sales, "
+    "and an error of s * sigma * sqrt(m) for a test of m geos"
+)
 GEO_UNMAPPED = (
     "a geo model's response is each geo's own curve of its own spend, where the mapping reads one "
     "response of the market's spend"
@@ -530,22 +547,20 @@ def plan_geo(path: Path, smoke: bool) -> dict[str, Any]:
         dims=("geo",),
     )
     model.build_model(frame, sales)
-    keep, dropped, why = taken_geo(world)
+    split, keep = apportioned(world)
     rows = int(np.count_nonzero(keep))
     if rows:
-        tested = np.asarray(world["lift_geos"], dtype=bool)[keep]
         model.add_lift_test_measurements(
             pd.DataFrame(
                 {
-                    "channel": [str(c) for c in world["lift_channel"][keep]],
-                    "geo": [names[int(np.flatnonzero(row)[0])] for row in tested],
-                    "x": world["lift_x"][keep],
-                    "delta_x": world["lift_delta_x"][keep],
-                    "delta_y": world["lift_delta_y"][keep],
-                    "sigma": world["lift_sigma"][keep],
+                    "channel": split["channel"][keep],
+                    "geo": [names[int(g)] for g in split["geo"][keep]],
+                    **{key: split[key][keep] for key in ("x", "delta_x", "delta_y", "sigma")},
                 }
             )
         )
+    tests = int(np.asarray(world["lift_channel"]).size)
+    taken_tests = int(np.unique(split["test"][keep]).size)
     seed = int(world["seed"])
     trace = model.fit(frame, sales, random_seed=seed, progressbar=False, **(SMOKE if smoke else {}))
 
@@ -622,13 +637,17 @@ def plan_geo(path: Path, smoke: bool) -> dict[str, Any]:
             "chains": int(posterior.sizes["chain"]),
             "draws": int(posterior.sizes["draw"]),
             "lift_dated": False,
+            "lift": GEO_LIFT,
             "gain_level": LEVEL,
             "smoke": smoke,
         },
         "n/a": {},
         "lift_rows": rows,
-        "lift_dropped": int(world["lift_dropped"]) + dropped,
-        "lift_dropped_why": why,
+        "lift_dropped": int(keep.size) - rows,
+        "lift_tests": {
+            "taken": taken_tests,
+            "dropped": tests - taken_tests + int(world["lift_dropped"]),
+        },
         "error": None,
     }
 

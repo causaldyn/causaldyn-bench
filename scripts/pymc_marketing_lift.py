@@ -8,13 +8,20 @@ counts them. Kept apart from :mod:`pymc_marketing_arm`, which imports PyMC-Marke
 bench's tests read the rule in the bench's environment.
 
 A geo model's likelihood reads each row at one coordinate of its geo axis (``exact_row_indices``):
-a test is one geo's, its change in spend and in sales that geo's. A geo export's test takes a set of
-geos dark and reads their change in sales together, which no row of one geo holds, so on a geo
-export the arm takes a test of one geo alone, and counts the rest by why (:func:`taken_geo`).
+a row is one geo's, its change in spend and in sales that geo's. A geo export's test takes ``m``
+geos dark and reads their change in sales together, so the arm apportions it across them
+(:func:`apportioned`). CHOICE, the arm's and not the tool's: one ROI across a test's geos, as the
+test's own design assumes. Geo ``g``'s row withholds its own spend, ``delta_x_g``, the geo's mean
+weekly spend over the dark weeks; it reads the share ``s_g = delta_x_g / sum delta_x`` of the
+test's change in sales, and an error of ``s_g * sigma * sqrt(m)``. Read as independent, the ``m``
+rows then hold the one test's information about a common return, ``delta_x**2 / sigma**2`` on a
+Gaussian likelihood, and give its estimate, ``delta_y / delta_x``: the rows sum back to the test.
+Each row takes its test's sign, so a test whose sales did not fall drops its every row, counted.
 """
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping
 from typing import Any
 
@@ -32,16 +39,30 @@ def taken(world: Mapping[str, Any]) -> tuple[np.ndarray, int]:
     return keep, int(keep.size - np.count_nonzero(keep))
 
 
-SEVERAL = "a test of several geos, whose change in sales no row of one geo holds"
-AGAINST = "a change in sales that does not follow its change in spend"
-
-
-def taken_geo(world: Mapping[str, Any]) -> tuple[np.ndarray, int, dict[str, int]]:
-    """Which of a geo export's lift rows the likelihood takes, a mask over them: one geo's, whose
-    change in sales follows its change in spend; how many it does not take; and how many of those
-    for each reason, a test of several geos counted as that whatever its sales did."""
-    follows, _ = taken(world)
-    one = np.asarray(world["lift_geos"], dtype=bool).sum(axis=1) == 1
-    keep = follows & one
-    why = {SEVERAL: int(np.count_nonzero(~one)), AGAINST: int(np.count_nonzero(one & ~follows))}
-    return keep, int(keep.size - np.count_nonzero(keep)), why
+def apportioned(world: Mapping[str, Any]) -> tuple[dict[str, np.ndarray], np.ndarray]:
+    """A geo export's tests, each apportioned across its tested geos at one ROI: one row a test and
+    tested geo, ``test`` its test's index, ``geo`` the geo's, ``channel``, ``x`` the geo's mean
+    weekly spend over the dark weeks, ``delta_x`` its negative, and ``delta_y`` and ``sigma`` the
+    test's apportioned; and which of the rows the likelihood takes, a mask over them."""
+    names = [str(c) for c in world["channels"]]
+    spend = np.asarray(world["spend"], dtype=float)  # (weeks, geos, channels)
+    weeks = int(world["lift_weeks"])
+    tested = np.asarray(world["lift_geos"], dtype=bool)
+    parts: dict[str, list[Any]] = {
+        key: [] for key in ("test", "geo", "channel", "x", "delta_x", "delta_y", "sigma")
+    }
+    for i, name in enumerate(str(c) for c in world["lift_channel"]):
+        first = int(world["lift_start"][i]) - 1
+        geos = np.flatnonzero(tested[i])
+        x = spend[first : first + weeks, geos, names.index(name)].mean(axis=0)
+        delta_x = -x
+        share = delta_x / delta_x.sum()
+        parts["test"].append(np.full(geos.size, i))
+        parts["geo"].append(geos)
+        parts["channel"].append(np.full(geos.size, name))
+        parts["x"].append(x)
+        parts["delta_x"].append(delta_x)
+        parts["delta_y"].append(share * float(world["lift_delta_y"][i]))
+        parts["sigma"].append(share * float(world["lift_sigma"][i]) * math.sqrt(geos.size))
+    rows = {key: np.concatenate(value) if value else np.empty(0) for key, value in parts.items()}
+    return rows, rows["delta_x"] * rows["delta_y"] > 0.0
