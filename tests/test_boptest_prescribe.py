@@ -1,4 +1,5 @@
-"""L8.1's harness offline, on a surrogate plant; the live run is the experiment, not a test."""
+"""The prescribe run's harness offline, on a surrogate plant; the live run is the experiment, not a
+test."""
 
 import json
 import math
@@ -251,8 +252,8 @@ def test_the_gate_reads_the_interval(factors: list[float], decision: str) -> Non
 
 
 def test_heating_less_cannot_win_the_gate() -> None:
-    """R12. The naive arm below spends less energy than the adjusted arm at EVERY offset, and
-    only by being colder: read at the baseline's comfort it is the dearer one."""
+    """The trivial win. The naive arm below spends less energy than the adjusted arm at EVERY
+    offset, and only by being colder: read at the baseline's comfort it is the dearer one."""
     naive = [(60.0, 0.9), (30.0, 1.1), (5.0, 1.3), (0.5, 1.5)]
     assert all(n[1] < a[1] for n, a in zip(naive, _ADJUSTED, strict=True))
     row = matched(_replicate(_ADJUSTED, naive))

@@ -124,8 +124,10 @@ def test_the_reported_pole_survives_a_change_of_actuator_units() -> None:
     ``-1.3969`` against ``-1.3970`` on hydronic.
 
     The tolerances are not symmetric on purpose. ``decay`` is invariant algebraically and is held to
-    it; ``b1`` scales only up to the nuisance ridge, which leaks 0.15% of the shift because the
-    penalty sees a column whose scale the substitution changed.
+    it; ``b1`` scales only to within a few tenths of a percent, by the rounding of a fit whose
+    nuisance penalty sees a column the substitution rescaled: +0.13% under JAX 0.11.2 and NumPy
+    2.5.3, -0.30% under JAX 0.10.2 and NumPy 2.4.6 on an AVX2 CPU, where ``decay`` agrees to
+    1.5e-7 and 3.2e-7.
     """
     log = _synthetic_log(weather_gain=0.05)
     lo, span = 15.0, 10.0
@@ -135,7 +137,7 @@ def test_the_reported_pole_survives_a_change_of_actuator_units() -> None:
     assert rescaled.drift[1] - native.drift[1] == pytest.approx(
         -(lo / span) * native.channel[1], abs=1e-4
     )
-    assert rescaled.channel[1] == pytest.approx(native.channel[1] / span, rel=2e-3)
+    assert rescaled.channel[1] == pytest.approx(native.channel[1] / span, rel=5e-3)
     assert rescaled.authority() * span == pytest.approx(native.authority(), rel=1e-3)
     assert rescaled.decay() == pytest.approx(native.decay(), abs=1e-5)
     assert abs(rescaled.drift[1] - native.drift[1]) > 100 * abs(rescaled.decay() - native.decay())
@@ -468,7 +470,8 @@ def _audited(
     radius: float = 0.073,
     alpha: float = 1.0,
 ) -> tuple[HorizonPlan, StepAudit]:
-    """One MPC solve on flat boundary conditions, plus the §40 price of the plan it returned."""
+    """One MPC solve on flat boundary conditions, plus the barrier guarantee's price of the
+    plan it returned."""
     dt = 0.5
     bounds, covariates = jnp.full(16, floor), jnp.zeros((16, 3))
     plan = _mpc_solver(fit, HEAT_PUMP, dt, w_comfort=w_comfort, margin=1.5, iterations=600)(

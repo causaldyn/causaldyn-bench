@@ -1,4 +1,5 @@
-"""P3.3's post-hoc questions offline: the anchoring, and a curve centred where it should be."""
+"""The capped block's post-hoc questions offline: the anchoring, and a curve centred where it should
+be."""
 
 import json
 import math

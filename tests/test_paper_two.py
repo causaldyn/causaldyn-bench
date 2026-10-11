@@ -62,7 +62,7 @@ def test_arms_are_paired_across_splits_in_the_measurement_itself() -> None:
 
 def test_geometric_errors_are_the_one_case_where_residual_steps_recover_the_rate() -> None:
     """Errors ``e_k = 2^-k`` refine with residual ``e_{k-1} - e_k``, so residual / true is
-    ``r - 1 = 1`` (Result 63 (e)), and every derived number the text quotes is known exactly: the
+    ``r - 1 = 1``, and every derived number the text quotes is known exactly: the
     rate and the residual step ratio both read 2 at every refinement, and six digits sit
     ``log2(e_9 * 1e6) = 10.93`` nodes past 9, so at 20 nodes."""
     errors = {k: 2.0**-k for k in range(4, 10)}

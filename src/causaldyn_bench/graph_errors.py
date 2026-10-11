@@ -5,7 +5,7 @@ plan or its evaluation fails silently?
 :meth:`chc.Prescription.evaluate` weights a later panel on the premise that the levers read the
 state and their recorded parents alone. Neither can tell a wrong graph from a right one. The logger
 check (ADR 0028, *experimental*) tests the one implication of the graph both rest on that a panel
-can falsify, the levers' local Markov condition, and warns. Its gate (plans/27, GR2): **a flag that
+can falsify, the levers' local Markov condition, and warns. Its gate: **a flag that
 does not lower the silent-failure rate is not shipped.**
 
 The worlds are the lifecycle market of the library's ``tests/test_lifecycle_loop.py``: 400 units,
@@ -41,7 +41,7 @@ A plan the certificate trusts for at least one step claims two things:
 * that its true mean path stays within the tolerance of the planned trajectory over the steps the
   certificate trusts (``trustworthy_steps``); it fails when the path **leaves** it;
 * that it is within its regret bound of the best schedule in the box. The bound prices the planning
-  objective only (Result 69), so the plan fails when it **loses** more on the true plant than the
+  objective only, so the plan fails when it **loses** more on the true plant than the
   bound plus ``MATERIAL`` of the stakes, doing nothing's regret. A plan that believes its lever
   does nothing can keep the first claim, having predicted that nothing would happen, and fail the
   second.
@@ -53,7 +53,7 @@ improvement over doing nothing that a plan buys on the true plant (Track H's mea
 the check flags under each graph, which on the oracle is its size on these worlds (the 0.9.0 gate:
 within two points of 5%).
 
-By construction, the worlds are CHC's (R19): the track measures whether the check sees what these
+By construction, the worlds are CHC's: the track measures whether the check sees what these
 graph errors leave in a panel, not how common the errors are.
 
 Precision: run with ``JAX_ENABLE_X64=1`` (``just track-q``), the lifecycle test's precision.
@@ -725,10 +725,10 @@ def run_world(name: str, replicates: int, pool: Executor) -> WorldRun:
 
 @dataclass(frozen=True)
 class Gate:
-    """GR2's reading. ``lowered_in``: the worlds where reading the flag as a stop removed failures
-    more often than it refused sound claims, at 5% (:class:`Stop`); the flag is shipped if there is
-    one. ``size``: on every world with an oracle, the flag rate on the panels the true graph planned
-    on, pooled, and whether it is within two points of ``ALPHA``, the 0.9.0 gate."""
+    """The gate's reading. ``lowered_in``: the worlds where reading the flag as a stop removed
+    failures more often than it refused sound claims, at 5% (:class:`Stop`); the flag is shipped if
+    there is one. ``size``: on every world with an oracle, the flag rate on the panels the true
+    graph planned on, pooled, and whether it is within two points of ``ALPHA``, the 0.9.0 gate."""
 
     lowered_in: tuple[str, ...]
     removed: int  # replicates whose failures the stop removed, over every world

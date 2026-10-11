@@ -1,4 +1,4 @@
-# P3.3 after the gate -- POST HOC, not pre-registered
+# The capped block after the gate -- POST HOC, not pre-registered
 
 Produced by `causaldyn_bench.boptest_capped_posthoc` from the scored run's
 `results.json` (its verdict: **INCONCLUSIVE**, precision float64); nothing here changes that verdict.

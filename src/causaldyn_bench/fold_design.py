@@ -3,7 +3,7 @@
 Every other track asks which *method* to run. This one holds the method fixed -- the same
 cross-fitted DML for a direct and a spillover effect, `chc.network_causal.estimate_network_effects`
 -- and varies only the split. Five arms: random rows, random whole units, contiguous graph blocks,
-Emmenegger-style neighbour exclusion, and the variance-optimal design of Result 52
+Emmenegger-style neighbour exclusion, and the variance-optimal design
 (`chc.regret.optimal_fold_partition`).
 
 **The result is an ordering, and the useful half of it is negative.** Measured on `C_12` over 120
@@ -14,7 +14,7 @@ arms, since draw `i` is the same panel under every split:
     arm                  direct                  spillover
     random rows          0.861 [0.692, 1.076]    0.976 [0.847, 1.120]
     random units         1.000 [1.000, 1.000]    1.000 [1.000, 1.000]   <- baseline
-    designed (Result 52) 0.906 [0.776, 1.065]    0.995 [0.888, 1.105]
+    designed             0.906 [0.776, 1.065]    0.995 [0.888, 1.105]
     contiguous blocks    1.370 [1.101, 1.732]    1.357 [1.145, 1.614]
     neighbour exclusion  1.666 [1.276, 2.206]    1.612 [1.307, 1.972]
 
@@ -53,12 +53,12 @@ Three further measurements.
    `[0.873, 1.064]`. Six for six is not proof that the functional is exact; it is the statement
    that at 120 draws nothing here contradicts it, which is what a forecast can claim.
 
-2. *It is an `O(1/g)` effect in the number of independent clusters* (Result 60), visible at
+2. *It is an `O(1/g)` effect in the number of independent clusters*, visible at
    estimator level rather than only in the functional. Contiguous-vs-random-units on `C_12` across
    `g = 2, 4, 8, 20`: `1.370, 1.139, 1.083, 1.047` (direct) and `1.357, 1.067, 1.089, 1.073`
    (spillover); neighbour exclusion `1.666, 1.240, 1.241, 1.078`. A bad split costs 37% more MSE
-   with two clusters and 5% with twenty, and the ORDERING never changes -- which is Result 60's
-   `ordering_is_cluster_invariant` showing up in a real fit. Fold design is a
+   with two clusters and 5% with twenty, and the ORDERING never changes -- which is the
+   design law's cluster-invariant ordering showing up in a real fit. Fold design is a
    **small-cluster-count** instrument: the realistic regime for an experiment run over a handful
    of cities, and exactly not the regime of a simulation with twenty independent replicas.
 
@@ -86,7 +86,7 @@ Scope: synthetic outcomes throughout, on `chc.network_causal.DelayedNetworkPanel
 `m = 12`, `p = 16`, `phi = 0.6`, `lag = 1`, one propagated disturbance in the outcome (without it
 the score is white and no split can move anything). The three topologies are a cycle, a torus and a
 random cubic graph; a real road or power-grid topology is a data-licensing decision and is
-deliberately absent. See plans/24 P2.2.
+deliberately absent.
 """
 
 from __future__ import annotations
@@ -150,7 +150,7 @@ def _topologies() -> dict[str, tuple[tuple[tuple[int, ...], ...] | None, np.ndar
 
 
 def _same_fold_mass(shells: list[np.ndarray], fold: np.ndarray) -> float:
-    """The partition-dependent part of Psi -- Result 52's objective, and Result 61's max-cut."""
+    """The partition-dependent part of Psi -- the variance-optimal design's objective, a max-cut."""
     x = _PHI**_LAG
     q = sum(
         _GAMMAS[d] * _GAMMAS[e] * x ** abs(d - e) * (shells[d] @ shells[e])
@@ -209,7 +209,7 @@ def track_fold_design(clusters: int = 2, seeds: int = 120) -> list[TrackResult]:
     split to use. (Measured, the two are within 2% of each other on this DGP at ``g >= 8``, so the
     choice of baseline changes the table's zero and not its ordering.)
 
-    ``clusters = 2`` is deliberate: the design effect is ``O(1/g)`` (Result 60), so scoring at
+    ``clusters = 2`` is deliberate: the design effect is ``O(1/g)``, so scoring at
     ``g = 20`` would report near-ties and call the question settled.
 
     120 draws is what the two large gaps need to be stable; it does NOT resolve designed against

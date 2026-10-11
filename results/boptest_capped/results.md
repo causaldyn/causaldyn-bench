@@ -1,4 +1,4 @@
-# P3.3 -- the capped block against the taper on the live BOPTEST heat pump
+# The capped block against the taper on the live BOPTEST heat pump
 
 Produced by `causaldyn_bench.boptest_capped` at its pre-registered defaults; the
 pre-registration is that module's docstring, committed before this run.

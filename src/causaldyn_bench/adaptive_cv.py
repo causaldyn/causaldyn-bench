@@ -7,8 +7,8 @@ are known, the budget is a hard constraint, and the objective is a weighted deci
 
 The point is *priority-aware, constrained* planning: a naive split proportional to current backlog
 is blind to which streams matter, so big cheap bursts crowd out small critical ones. An MPC that
-minimises the weighted cost under the budget serves the critical streams and wins -- the user-unique
-benchmark from ``plans/15`` (adaptive-CV-compute), fully synthetic: the queueing model is the task.
+minimises the weighted cost under the budget serves the critical streams and wins -- the
+adaptive-CV-compute benchmark, fully synthetic: the queueing model is the task.
 """
 
 from __future__ import annotations

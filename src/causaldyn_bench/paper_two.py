@@ -15,8 +15,8 @@ the two things a manuscript needs and a leaderboard does not:
    designed-vs-random tie into an unfalsifiable one.
 2. **One convention, stated.** The quadrature table reports RELATIVE max-entry error against the
    exact anchor, and says so in the header. The shipped docstring's table is absolute at ``n = 7``
-   and both at ``n = 5``, which is the mistake Result 63 (j) retracted; a paper table that repeats
-   it would repeat the retraction.
+   and both at ``n = 5``, a mixture once already retracted as a mistake; a paper table that
+   repeats it would repeat the retraction.
 
 Draw counts are seeds: draw ``i`` is ``jax.random.key(i)``. The default 120 is what the two large
 gaps need to be stable and is deliberately more than the ten a leaderboard row uses -- at ten the
@@ -179,8 +179,8 @@ def table_four(node_grid: tuple[int, ...]) -> dict[str, dict[int, float]]:
     where the answer is ``I``; ``n = 7`` is margin 2, where it is ``I/3`` -- so an absolute column
     would make the second look three times better than it is. The refinement residual of
     ``matrix_ratio_certificate`` is reported as a ratio to the true error in the same convention,
-    which is what says whether it majorises (Result 63 (e): always once the per-node rate reaches
-    2, and below that only where the error changes sign or moves its largest entry).
+    which is what says whether it majorises (always once the per-node rate reaches 2, and below
+    that only where the error changes sign or moves its largest entry).
 
     That residual is ``max |value(nodes) - value(nodes - 1)|``, so it is read off the grids this
     table computes anyway rather than by the certificate's second quadrature per row -- at
@@ -247,7 +247,7 @@ def _markdown(
     lines += [
         "",
         "Direct coefficient; the spillover column is in the JSON. The ordering is invariant in `g`"
-        " (Result 60) while the size decays.",
+        " while the size decays.",
         "",
         "## Table 3 -- the law forecasts WHICH topology has a design effect",
         "",
@@ -292,11 +292,11 @@ def _quadrature_markdown(four: dict[str, dict[int, float]]) -> list[str]:
     lines += [
         "",
         "Relative throughout: the exact answer is `I` at `n = 5` and `I/3` at `n = 7`, so an"
-        " absolute column would flatter the second by 3x (Result 63 (j)). The rate is the per-node"
+        " absolute column would flatter the second by 3x. The rate is the per-node"
         " decay `e(nodes - 1) / e(nodes)`. By the reverse triangle inequality residual / true is at"
         " least `|rate - 1|`, with equality when the error keeps its sign and its largest entry: a"
         " rate of 2 always makes the residual majorise the error, and below 2 only a row where that"
-        " premise fails can (Result 63 (e)).",
+        " premise fails can.",
         "",
     ]
     for n in (5, 7):

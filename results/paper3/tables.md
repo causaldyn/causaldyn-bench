@@ -31,7 +31,7 @@ Cost over the uncapped floor. Every row decreases: unlike the taper's `sqrt(2)` 
 
 ## Table 3 -- the stopping MASS is the invariant, not the block length
 
-| schedule | block rounds | delivered mass | fixed point | gap, in caps | Result 56 / delivered |
+| schedule | block rounds | delivered mass | fixed point | gap, in caps | leading form / delivered |
 |---|---|---|---|---|---|
 | constant 0.03 | 376 | 11.2800 | 11.2727 | 0.243 | 1.054 |
 | ramp up 0.01->0.05 | 767 | 10.6083 | 10.6019 | 0.363 | 1.120 |
@@ -45,7 +45,7 @@ The block lengths span nearly an order of magnitude and every delivered mass lan
 
 (a) horizon ladder at `cap = 0.03`:
 
-| T | exact mass | Result 56 - exact | over the ceiling | residual x sqrt(T) |
+| T | exact mass | leading form - exact | over the ceiling | residual x sqrt(T) |
 |---|---|---|---|---|
 | 10,000 | 18.6319 | 0.633608 | 0.942654 | -3.8546 |
 | 100,000 | 62.0287 | 0.659954 | 0.981850 | -3.8579 |
@@ -57,7 +57,7 @@ The gap rises to the ceiling and stops -- it never reaches it, and never exceeds
 
 (b) cap ladder at `T = 4,000`:
 
-| cap | exact mass | Result 56 - exact | ceiling | as a share of the mass |
+| cap | exact mass | leading form - exact | ceiling | as a share of the mass |
 |---|---|---|---|---|
 | 0.316228 | 11.8249 | 0.0595 | 0.0638 | 0.50% |
 | 0.1 | 11.6973 | 0.1871 | 0.2016 | 1.60% |

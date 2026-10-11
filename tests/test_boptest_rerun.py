@@ -1,4 +1,4 @@
-"""D21's harness offline, on a surrogate plant; the live run is the experiment, not a test."""
+"""The rerun's harness offline, on a surrogate plant; the live run is the experiment, not a test."""
 
 import json
 import math
@@ -47,7 +47,7 @@ _SMALL = Design(
 
 
 class _Building(SurrogatePlant):
-    """L8.1's surrogate building with the band's upper edge and the weather in its forecast.
+    """The first run's surrogate building, with the band's upper edge and the weather forecast.
 
     ``tdis_tot`` integrates the zone's distance outside the band and ``ener_tot`` the modulation,
     both in hours from ``initialize`` on. A call without an overwrite gets a proportional
@@ -281,7 +281,7 @@ _ADJUSTED = [(40.0, 1.0), (10.0, 1.2), (1.0, 1.4), (0.0, 1.6)]
         ([1.20, 0.80, 1.10, 0.90, 1.02, 0.97], "INCONCLUSIVE"),
     ],
 )
-def test_the_gate_is_l81s(factors: list[float], decision: str) -> None:
+def test_the_gate_is_the_first_runs(factors: list[float], decision: str) -> None:
     """A naive front dearer by ``factor`` at every comfort has excess ``factor - 1``."""
     replicates = [_replicate(_ADJUSTED, [(d, e * f) for d, e in _ADJUSTED]) for f in factors]
     result = verdict(replicates, Design())
@@ -322,7 +322,7 @@ def test_the_protocol_end_to_end_on_the_surrogate(x64, tmp_path) -> None:
     assert "commit not recorded" in text
     assert markdown(json.loads(json.dumps(results, indent=2))) == text
     same = {**results, "replicates": results["replicates"]}
-    assert "Against L8.1" in markdown(results, same)
+    assert "Against the first run" in markdown(results, same)
     assert "at `3c75870`" in markdown({**results, "chc_commit": "3c75870"})
 
 

@@ -1,4 +1,4 @@
-"""Track H: offline causal control under equilibrium interference (the marketplace moat, plans/20).
+"""Track H: offline causal control under equilibrium interference (the marketplace moat).
 
 Learn an incentive policy from *confounded, switchback-logged* marketplace data where the logging
 policy chased demand (so demand confounds treatment and outcome) and drivers are mobile (SUTVA fails

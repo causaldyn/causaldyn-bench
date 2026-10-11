@@ -93,7 +93,7 @@ reported, as the budgets run reported them, and not read.
 * Robyn's own convergence check fails on most fits: on the pilot DECOMP.RSSD and MAPE converged in
   none of 10 and NRMSE in 5, each model taken from Robyn's clusters.
 
-**By construction** (R19). The worlds, the tests and the oracle are the budgets run's, so what that
+**By construction.** The worlds, the tests and the oracle are the budgets run's, so what that
 run's docstring says of them holds here. Each external arm plans as its tool does, and two tools
 count less of a plan's carryover than the oracle: Meridian's optimiser counts nothing the quarter's
 spend returns after the quarter, and Robyn's plans one steady week whose carryover is the window's

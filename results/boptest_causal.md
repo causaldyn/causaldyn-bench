@@ -679,7 +679,7 @@ Certificate-off rows; the on rows differ only through the single step of the nex
 | 0 | naive | `+1.5391 − 0.0538·T` | 28.6 °C | +0.409 | 15.18% | 89.5% | 5.36% |
 | 1 | naive | `+2.9880 − 0.1321·T` | **22.6 °C** | **+0.214** | **21.73%** | 86.9% | 5.95% |
 
-"No Γ\*" is §40's genuinely empty case: the deficit exceeds `u_max · |channel|`, so nothing certifies
+"No Γ\*" is the barrier guarantee's genuinely empty case: the deficit exceeds `u_max · |channel|`, so nothing certifies
 *even at exact identification*. The share is **monotone in the authority the model believes** —
 0.701 / 0.471 / 0.409 / 0.214 K/h per unit against 7.4 / 7.7 / 15.2 / 21.7% — and within each seed the
 confounded arm believes less, by 1.7× on seed 0 and 2.2× on seed 1. So the audit separates the arms

@@ -57,10 +57,10 @@ and is counted.
 the concave families, and for the S-shaped every split of a grid refined by SLSQP
 (:func:`causaldyn_bench.mmm_decision.oracle`).
 
-**The gate** (the library's MM3 verification): the worst over the six families of each arm's mean
-regret per euro, the robust plan's below AIC's, the difference's 95 % bootstrap interval under
-nought, the worlds resampled by seed with one draw for every family. It fails if AIC's choice
-already does as well.
+**The gate** (the library's verification of its curve families): the worst over the six families
+of each arm's mean regret per euro, the robust plan's below AIC's, the difference's 95 % bootstrap
+interval under nought, the worlds resampled by seed with one draw for every family. It fails if
+AIC's choice already does as well.
 
 **The sample**: 100 seeds from 30 000, each run under all six families, 600 worlds. On the pilot's
 10 seeds both arms' worst family was the logistic, where the paired difference had a standard
@@ -81,7 +81,7 @@ deviation of 0.053 per euro, so 100 seeds put the gate's interval half-width nea
 * every arm that reads the tests has a lower mean than the status quo on every family but the
   true family on the logistic, which plays the status quo there (pilot: in 10 worlds of 10).
 
-**By construction** (R19). A test that never bent a channel's curve reads a line, and every
+**By construction.** A test that never bent a channel's curve reads a line, and every
 family reaches one: the concave families with the coefficient past a million (pilot: 23 to 30
 channels of 30 on each S-shaped family's worlds), the S-shaped with the inflection past the tested
 spend and the coefficient without bound, where the fit's slope is not finite and

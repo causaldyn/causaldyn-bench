@@ -21,7 +21,7 @@
 | neighbour exclusion | 1.666 [1.276, 2.206] | 1.240 [1.030, 1.516] | 1.241 [1.027, 1.524] | 1.078 [0.976, 1.198] |
 | designed folds | 0.906 [0.776, 1.065] | 0.911 [0.781, 1.060] | 0.895 [0.775, 1.043] | 0.977 [0.905, 1.059] |
 
-Direct coefficient; the spillover column is in the JSON. The ordering is invariant in `g` (Result 60) while the size decays.
+Direct coefficient; the spillover column is in the JSON. The ordering is invariant in `g` while the size decays.
 
 ## Table 3 -- the law forecasts WHICH topology has a design effect
 
@@ -44,7 +44,7 @@ Designed against contiguous, so a ratio below 1 is a win for the design.
 | 8 | 262,144 | 4.641e-02 | 1.441 | 0.44 | 1.899e-02 | 1.771 | 1.04 |
 | 9 | 531,441 | 2.758e-02 | 1.682 | 0.68 | 6.133e-03 | 3.097 | 2.10 |
 
-Relative throughout: the exact answer is `I` at `n = 5` and `I/3` at `n = 7`, so an absolute column would flatter the second by 3x (Result 63 (j)). The rate is the per-node decay `e(nodes - 1) / e(nodes)`. By the reverse triangle inequality residual / true is at least `|rate - 1|`, with equality when the error keeps its sign and its largest entry: a rate of 2 always makes the residual majorise the error, and below 2 only a row where that premise fails can (Result 63 (e)).
+Relative throughout: the exact answer is `I` at `n = 5` and `I/3` at `n = 7`, so an absolute column would flatter the second by 3x. The rate is the per-node decay `e(nodes - 1) / e(nodes)`. By the reverse triangle inequality residual / true is at least `|rate - 1|`, with equality when the error keeps its sign and its largest entry: a rate of 2 always makes the residual majorise the error, and below 2 only a row where that premise fails can.
 
 - n = 5: geometric-mean rate 1.60 per node over nodes 4-9, and 1.56 digits at 9; six digits at that rate need 31 nodes, 8.9e+08 points. Residual step ratio `residual(nodes - 1) / residual(nodes)`, which equals the rate only if the errors are geometric: 3.32 at 6, 3.76 at 7, 0.96 at 8, 1.09 at 9.
 

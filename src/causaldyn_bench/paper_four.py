@@ -11,14 +11,15 @@ three ways -- the raw interior residual, the residual conditioned by ``1/|den(T)
 dual-weighted estimate built from the model alone. Two decisions a manuscript needs and a
 certificate does not:
 
-1. **Table 1 is Result 55 (d) from a committed routine.** The eight-horizon table in the research
-   log was first printed by a scratch script with the same solver, seed and box. This regenerates
-   it at the routine's defaults, so the paper quotes nothing a reader cannot rerun.
-2. **Table 2 reports a distribution, not a best case.** Result 55 measured one seed, one width and
-   one optimiser. Here the rank correlations are read over every seed, width and optimiser on the
-   command line -- Adam on fresh collocation points every step and L-BFGS on one fixed draw, the
-   two a PINN practitioner actually reaches for -- and the table prints the minimum, median and
-   maximum of each, and how many configurations put the raw residual on the wrong side of zero.
+1. **Table 1 is the eight-horizon sweep from a committed routine.** That table was first printed
+   by a scratch script with the same solver, seed and box. This regenerates it at the routine's
+   defaults, so the paper quotes nothing a reader cannot rerun.
+2. **Table 2 reports a distribution, not a best case.** The first sweep measured one seed, one
+   width and one optimiser. Here the rank correlations are read over every seed, width and
+   optimiser on the command line -- Adam on fresh collocation points every step and L-BFGS on one
+   fixed draw, the two a PINN practitioner actually reaches for -- and the table prints the
+   minimum, median and maximum of each, and how many configurations put the raw residual on the
+   wrong side of zero.
 
 What would falsify the paper's reading is in the table rather than argued around it: a
 configuration where the raw residual ranks the error correctly, or one where the dual-weighted
@@ -105,7 +106,7 @@ class Summary:
 
 
 def table_one(horizons: tuple[float, ...]) -> BlindnessSweep:
-    """Result 55 (d) at the routine's defaults: seed 0, width 32, Adam for 2500 steps."""
+    """The eight-horizon sweep at the routine's defaults: seed 0, width 32, Adam for 2500 steps."""
     return residual_blindness_sweep(horizons)
 
 

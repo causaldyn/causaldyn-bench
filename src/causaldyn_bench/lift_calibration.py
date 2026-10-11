@@ -12,17 +12,17 @@ one percent of mean weekly sales each. Every history is a fresh draw of the whol
 channel's parameters his reference ones. The fit starts from a retention of 0.5, a scale at the
 mean spend the control group's readouts saw, and the coefficient's least-squares value there.
 
-**The gate** (plans/27, MM5): over 500 histories, the retention's 95 % interval covers the truth
-within two points of 95 %, for paid shopping (PLA), the channel his tests ran on. Reported beside
-it: the scale's and the coefficient's coverage, how often each interval closes, the median width,
-and the median estimate against the truth.
+**The gate** (the first half of the library's lift-test verification): over 500 histories, the
+retention's 95 % interval covers the truth within two points of 95 %, for paid shopping (PLA), the
+channel his tests ran on. Reported beside it: the scale's and the coefficient's coverage, how often
+each interval closes, the median width, and the median estimate against the truth.
 
 **The kill**, measured rather than argued (Lewis and Rao 2015): the same with the noise raised to
 three and ten percent, and on the other two channels, whose tests move sales less; a retention
 whose interval runs to both bounds is one the tests do not identify. A fit that raises rather than
 converge is kept as a reading that covers nothing.
 
-By construction, the world is a reading of Heusch's paper (R19): the track measures whether the
+By construction, the world is a reading of Heusch's paper: the track measures whether the
 intervals are honest where the equation holds exactly, not whether real geo tests follow it.
 
 Precision: run with ``JAX_ENABLE_X64=1`` (``just track-m2-lift``). The histories are dealt to

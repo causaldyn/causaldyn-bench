@@ -1,4 +1,4 @@
-# D21 -- L8.1 rerun: BOPTEST through `chc.prescribe`, the band held, the weather as drivers, the bound as a schedule
+# The rerun: BOPTEST through `chc.prescribe`, the band held, the weather as drivers, the bound as a schedule
 
 Produced by `causaldyn_bench.boptest_rerun` at its pre-registered defaults; the
 pre-registration is that module's docstring, committed before this run.
@@ -155,11 +155,11 @@ Every control step is one `prescribe` call, and only its first action is applied
 | adjusted | 0-2 | 0.3088 | 0.1072 | 0.7478 | 0.981 | 0.996 | 1.83e+01 | 0.072 | 0.071 | 192 | 0 |
 | naive | 0-0 | -- | 0.0858 | 0.4106 | -- | 1.000 | 3.92e+01 | 0.021 | 0.055 | 54 | 0 |
 
-## Against L8.1 (descriptive)
+## Against the first run (descriptive)
 
-The same windows under L8.1's call and chc 0.5.1 (bench `46bb2f9`). Whether each replicate's panel is byte for byte L8.1's, and each baseline beside L8.1's.
+The same windows under the first run's call and chc 0.5.1 (bench `46bb2f9`). Whether each replicate's panel is byte for byte the first run's, and each baseline beside the first run's.
 
-| replicate | same panel | baseline tdis | L8.1 baseline tdis |
+| replicate | same panel | baseline tdis | first run baseline tdis |
 |---|---|---|---|
 | 0 | True | 5.1359 | 5.1359 |
 | 1 | True | 3.4514 | 3.4514 |
@@ -168,7 +168,7 @@ The same windows under L8.1's call and chc 0.5.1 (bench `46bb2f9`). Whether each
 | 4 | True | 4.2318 | 4.2318 |
 | 5 | True | 3.7969 | 3.7969 |
 
-| arm | L8.1 mean saving | D21 mean saving |
+| arm | first run mean saving | rerun mean saving |
 |---|---|---|
 | adjusted | +0.1045 | +0.1473 |
 | naive | +0.2112 | +0.1402 |

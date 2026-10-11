@@ -1,4 +1,4 @@
-"""L8.1 -- the BOPTEST heat pump through ``chc.prescribe``, end to end, pre-registered.
+"""The BOPTEST heat pump through ``chc.prescribe``, end to end, pre-registered.
 
 Handed the log a weather-compensated controller left behind and a graph of why it acted, does the
 façade return a heating schedule that, run closed loop on ``bestest_hydronic_heat_pump``, heats for
@@ -48,10 +48,11 @@ voids the decision, which is then printed with DOES NOT STAND:
   ``no_progress`` -- the zero guess not improved on -- is reported and not gated, because the
   certificate's regret bound prices those plans too.
 
-**R12.** Energy alone is won by heating less. Here it cannot be: energy is read at the baseline's
-discomfort, so an arm that saves energy by heating less is read further along its own front, and
-one whose front stops short of the baseline's comfort has no reading at all and voids the verdict
-(V1). The dual -- discomfort at the baseline's energy -- is reported beside it and not gated.
+**The trivial win.** Energy alone is won by heating less. Here it cannot be: energy is read at the
+baseline's discomfort, so an arm that saves energy by heating less is read further along its own
+front, and one whose front stops short of the baseline's comfort has no reading at all and voids
+the verdict (V1). The dual -- discomfort at the baseline's energy -- is reported beside it and not
+gated.
 
 **Against the baseline** (secondary, descriptive, no decision): each arm's saving
 ``1 - E_arm / E_baseline`` at the baseline's comfort, with the same interval.
@@ -676,7 +677,7 @@ def markdown(results: Mapping[str, Any]) -> str:
     design, gate = results["design"], results["verdict"]
     replicates = results["replicates"]
     lines = [
-        "# L8.1 -- BOPTEST through `chc.prescribe`",
+        "# BOPTEST through `chc.prescribe`",
         "",
         "Produced by `causaldyn_bench.boptest_prescribe` at its pre-registered defaults; the",
         "pre-registration is that module's docstring, committed before this run.",
