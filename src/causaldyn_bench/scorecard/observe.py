@@ -7,7 +7,10 @@ budget, each cell's box, the status quo, the controls' values over the quarter),
 return is read over, and the lift tests, reduced as :func:`causaldyn_bench.budget_regret.lift_rows`
 reduces them, beside the weeks each test is dark and the weeks of cooldown its readout counts after
 them, which a model of the carryover reads a test's change in spend over. A geo family's sales and
-spend carry a geo axis, with each geo's share of the population beside them.
+spend carry a geo axis, with each geo's share of the population beside them, and the channels it
+buys nationally named. Its cells are each geo's own channels, geo by geo in the channels' order,
+then each national channel once, its spend summed over the geos it is allotted to; its tests name
+the geos each took dark.
 
 The ladder's tests run in universes of their own, so the history holds none of them. Where it does
 hold them, at an overlapping rung (:func:`causaldyn_bench.scorecard.ladder.overlap`), the
@@ -85,6 +88,7 @@ class Observation:
     population: Series | None = None  # each geo's share, where the world has a geo axis
     held: Held | None = None
     version: int = VERSION
+    national: tuple[str, ...] = ()  # the channels bought nationally, where there is a geo axis
 
     def __post_init__(self) -> None:
         if self.version not in (FIRST, VERSION):
@@ -109,6 +113,26 @@ class Observation:
             raise ValueError(f"the quarter's controls are the history's, over {self.planned} weeks")
         if not self.lower.shape == self.upper.shape == self.status_quo.shape:
             raise ValueError("the box and the status quo hold one weekly spend a cell")
+        if not set(self.national) <= set(self.channels):
+            raise ValueError(f"the national channels {self.national} are not all {self.channels}")
+        if self.national and self.population is None:
+            raise ValueError("a channel is bought nationally only where there is a geo axis")
+        geos = self.lift.geos
+        if (geos is None) != (self.population is None):
+            raise ValueError("a geo axis's tests name their geos, and only its tests do")
+        if self.population is not None and geos is not None:
+            local = len(self.channels) - len(self.national)
+            cells = self.population.size * local + len(self.national)
+            if self.lower.shape != (cells,):
+                raise ValueError(
+                    f"{self.population.size} geos of {local} own channels and "
+                    f"{len(self.national)} national ones are {cells} cells, not {self.lower.shape}"
+                )
+            axis = set(range(self.population.size))
+            if len(geos) != len(self.lift.channel) or any(
+                not row or len(set(row)) < len(row) or not set(row) <= axis for row in geos
+            ):
+                raise ValueError("each test names distinct geos of the geo axis, one row a test")
         first, last = self.roi_window
         if not 1 <= first <= last <= weeks:
             raise ValueError(f"the window {self.roi_window} lies outside weeks 1 to {weeks}")
@@ -131,6 +155,11 @@ class Observation:
         if version == FIRST:
             return _first_digest(self)
         raise ValueError(f"no export has version {version}")
+
+    @property
+    def market_spend(self) -> Series:
+        """``(weeks, channels)``: the spend summed over the geos, where there is a geo axis."""
+        return self.spend if self.population is None else self.spend.sum(axis=1)
 
 
 def _fields(observation: Observation) -> dict[str, np.ndarray]:
@@ -176,6 +205,12 @@ def _fields(observation: Observation) -> dict[str, np.ndarray]:
     }
     if o.population is not None:
         fields["population"] = np.asarray(o.population, dtype=float)
+        fields["national"] = np.array(o.national, dtype=str)
+        # a geo axis's tests name their geos (Observation's check), one row a test
+        taken = np.zeros((len(o.lift.geos or ()), o.population.size), dtype=bool)
+        for row, geos in enumerate(o.lift.geos or ()):
+            taken[row, list(geos)] = True
+        fields["lift_geos"] = taken
     if o.held is not None:
         fields["held_share"] = np.array(float(o.held.share))
         fields["held_planned"] = np.asarray(o.held.planned, dtype=float)
@@ -269,6 +304,11 @@ def _lift(saved: Mapping[str, np.ndarray]) -> LiftRows:
         delta_y=saved["lift_delta_y"],
         sigma=saved["lift_sigma"],
         dropped=int(saved["lift_dropped"]),
+        geos=(
+            tuple(tuple(int(g) for g in np.flatnonzero(row)) for row in saved["lift_geos"])
+            if "lift_geos" in saved
+            else None
+        ),
     )
 
 
@@ -300,6 +340,7 @@ def _second(saved: Mapping[str, np.ndarray]) -> Observation:
             if "held_share" in saved
             else None
         ),
+        national=tuple(str(c) for c in saved["national"]) if "national" in saved else (),
     )
 
 

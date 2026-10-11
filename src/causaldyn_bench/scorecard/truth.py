@@ -1,11 +1,11 @@
 """The scorecard's oracle: the best plan in the box at the budget, for any number of cells, each
 with an effect that may move over the quarter.
 
-A *cell* is one thing a plan spends on: one of Track M v2's channels, or later a channel in one
-geo. Its spend is one weekly level held over the quarter's 13 weeks, and its adstock over the
-quarter and the kernel's tail after it, ``H = 13 + L - 1`` weeks, is affine in that level: the
-history's carryover plus the level times the reach of one unit a week. Its worth is what it
-returns over those weeks,
+A *cell* is one thing a plan spends on: one of Track M v2's channels, a channel in one geo, or a
+channel bought nationally (:func:`geo_cells`). Its spend is one weekly level held over the
+quarter's 13 weeks, and its adstock over the quarter and the kernel's tail after it,
+``H = 13 + L - 1`` weeks, is affine in that level: the history's carryover plus the level times the
+reach of one unit a week. Its worth is what it returns over those weeks,
 
     worth(w) = sum_t effect_t * curve(carry_t + w * reach_t),
 
@@ -42,13 +42,16 @@ import itertools
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import NamedTuple
 
 import numpy as np
+from chc.geo_world import GeoMediaWorld
+from chc.response import Hill, MichaelisMenten, Saturation, Tanh
 from numpy.typing import ArrayLike
 from scipy.optimize import brentq, minimize
 
-from causaldyn_bench.endogenous_mmm import Curve, MediaMixWorld, Series
-from causaldyn_bench.mmm_decision import GRID, PLANNED, STARTS, Plan, Quarter
+from causaldyn_bench.endogenous_mmm import CURVES, LN3, YEAR, Curve, MediaMixWorld, Series
+from causaldyn_bench.mmm_decision import BOX, GRID, PLANNED, STARTS, Plan, Quarter
 
 STEPS = 2_000  # the dynamic programme's steps of the budget above the cells' floors
 APART = 4  # a grid point this many points or fewer from a start, along every axis, is no start
@@ -126,14 +129,7 @@ def cells(
     on ``curves``, one a channel, each at the channel's ``saturation``, his ``lambda``; and the
     channel's constant effect, or ``effect``, a path a channel over the quarter and the kernel's
     tail, ``(channels, 13 + L - 1)``."""
-    length = world.kernel_length
-    horizon = PLANNED + length - 1
-    history = quarter.history
-    weeks = history.shape[0]
-    # the week each of the horizon's weeks reads at each lag of the kernel, numbered from 0
-    source = weeks + np.arange(horizon)[:, None] - np.arange(length)[None, :]
-    before = source < weeks
-    during = (source >= weeks) & (source < weeks + PLANNED)
+    horizon = PLANNED + world.kernel_length - 1
     channels = len(world.channels)
     paths = (
         np.repeat(np.asarray(world.effect, dtype=float)[:, None], horizon, axis=1)
@@ -145,9 +141,146 @@ def cells(
     curves = curves or world.curves()
     out = []
     for c, lam in enumerate(world.saturation):
-        kernel = world.kernel(c)
-        spent = np.where(before, history[np.minimum(source, weeks - 1), c], 0.0)
-        out.append(Cell(spent @ kernel, during @ kernel, curves[c], lam, paths[c]))
+        carry, reach = _adstocks(quarter.history[:, c], world.kernel(c))
+        out.append(Cell(carry, reach, curves[c], lam, paths[c]))
+    return tuple(out)
+
+
+def _adstocks(history: Series, kernel: Series) -> tuple[Series, Series]:
+    """A cell's adstock over the quarter and the kernel's tail as ``carry + weekly * reach``: the
+    carryover of ``history``, its weekly spend before the quarter, through ``kernel``, its weights
+    from lag 0, and the reach of one unit a week over the quarter, nothing spent after it."""
+    length = kernel.size
+    weeks = history.size
+    # the week each of the horizon's weeks reads at each lag of the kernel, numbered from 0
+    source = weeks + np.arange(PLANNED + length - 1)[:, None] - np.arange(length)[None, :]
+    before = source < weeks
+    during = (source >= weeks) & (source < weeks + PLANNED)
+    spent = np.where(before, history[np.minimum(source, weeks - 1)], 0.0)
+    return spent @ kernel, during @ kernel
+
+
+def geo_curve(saturation: Saturation, people: float) -> tuple[Curve, float]:
+    """chc's curve of the spend per head, in a geo of ``people``, as a curve of the geo's spend
+    and its ``lambda``: ``Tanh(K)`` is ``tanh`` at ``2 / (K people)``, and ``Hill(K, 1)``,
+    Michaelis-Menten, ``michaelis-menten`` at ``ln 3 / (K people)`` (Maxima).
+
+    Raises:
+        ValueError: another curve.
+    """
+    scale = float(saturation.scale)
+    if isinstance(saturation, Tanh):
+        return CURVES["tanh"], 2.0 / (scale * people)
+    if isinstance(saturation, MichaelisMenten) or (
+        isinstance(saturation, Hill) and float(saturation.slope) == 1.0
+    ):
+        return CURVES["michaelis-menten"], LN3 / (scale * people)
+    raise ValueError(f"a geo cell reads Tanh and Hill of slope 1 alone, not {saturation!r}")
+
+
+class GeoCell(NamedTuple):
+    """Where one of a geo world's cells comes from: its ``channel``, its weekly ``spend`` over the
+    history, the population ``people`` its curve is read at, and ``effect``, what the curve's
+    ceiling returns a week over every geo it reaches."""
+
+    channel: int
+    spend: Series
+    people: float
+    effect: float
+
+
+def geo_parts(world: GeoMediaWorld) -> tuple[GeoCell, ...]:
+    """Each of ``world``'s cells: each geo's own channels, geo by geo in the channels' order, then
+    each national channel.
+
+    A geo's own channel lifts ``P_g beta_{g,c} h_c(a / P_g)`` at home and spills ``s / 2`` of that
+    into each of its two neighbours, so its cell returns ``1 + s`` times its lift at home. A
+    national channel's spend per head, ``share_g a / P_g = a / sum P``, is the same in every geo,
+    so its geos' lifts are one cell: its spend summed over the geos, the curve read at the whole
+    population, times ``sum_g P_g beta_{g,c}`` (Maxima).
+
+    Raises:
+        ValueError: the world's lifts drift, whose effect over the quarter is a forecast.
+    """
+    if world.mix.drift > 0.0:
+        raise ValueError("a geo world whose lifts drift is not planned here")
+    channels = world.mix.channels
+    spill = 1.0 + world.mix.spillover
+    own = [
+        GeoCell(c, world.spend[g, :, c], float(people), float(people * world.effect[g, c]) * spill)
+        for g, people in enumerate(world.population)
+        for c, channel in enumerate(channels)
+        if not channel.national
+    ]
+    return (
+        *own,
+        *(
+            GeoCell(
+                c,
+                world.spend[:, :, c].sum(axis=0),
+                float(world.population.sum()),
+                float(world.population @ world.effect[:, c]),
+            )
+            for c, channel in enumerate(channels)
+            if channel.national
+        ),
+    )
+
+
+def geo_kernel(retention: float, length: int) -> Series:
+    """The normalised geometric kernel from lag 0, chc.geo_world's carryover."""
+    weights = retention ** np.arange(length)
+    return weights / weights.sum()
+
+
+def geo_spend(world: GeoMediaWorld) -> Series:
+    """``(weeks, cells)``: each cell's weekly spend over the history (:func:`geo_parts`)."""
+    return np.column_stack([part.spend for part in geo_parts(world)])
+
+
+def geo_quarter(world: GeoMediaWorld, box: tuple[float, float] = BOX) -> Quarter:
+    """The quarter after ``world``'s history over its cells (:func:`geo_spend`): its budget and
+    status quo last year's mean weekly spend, and each cell's box ``box`` times its mean."""
+    spend = geo_spend(world)
+    mean = spend[-YEAR:].mean(axis=0)
+    return Quarter(
+        budget=PLANNED * float(mean.sum()),
+        lower=box[0] * mean,
+        upper=box[1] * mean,
+        status_quo=mean,
+        history=spend,
+    )
+
+
+def allotted(world: GeoMediaWorld, weekly: ArrayLike) -> Series:
+    """``(geos, channels)``: a weekly spend on each cell (:func:`geo_parts`) as each geo spends
+    it, a national channel's allotted to the geos by population."""
+    national = [c for c, channel in enumerate(world.mix.channels) if channel.national]
+    local = [c for c in range(len(world.mix.channels)) if c not in national]
+    weekly = np.asarray(weekly, dtype=float)
+    geos = world.mix.geos
+    if weekly.shape != (geos * len(local) + len(national),):
+        raise ValueError(f"{geos} geos' cells are not {weekly.shape}")
+    out = np.empty((geos, len(world.mix.channels)))
+    out[:, local] = weekly[: geos * len(local)].reshape(geos, len(local))
+    out[:, national] = world.shares[:, None] * weekly[geos * len(local) :]
+    return out
+
+
+def geo_cells(world: GeoMediaWorld, quarter: Quarter) -> tuple[Cell, ...]:
+    """Each of ``world``'s cells (:func:`geo_parts`) over the quarter after ``quarter.history``,
+    its spend a cell, through the mix's kernel."""
+    parts = geo_parts(world)
+    if len(parts) != quarter.history.shape[1]:
+        raise ValueError(f"{len(parts)} cells against a history of {quarter.history.shape[1]}")
+    mix = world.mix
+    horizon = PLANNED + mix.length - 1
+    out = []
+    for i, part in enumerate(parts):
+        channel = mix.channels[part.channel]
+        carry, reach = _adstocks(quarter.history[:, i], geo_kernel(channel.retention, mix.length))
+        curve, lam = geo_curve(channel.curve, part.people)
+        out.append(Cell(carry, reach, curve, lam, np.full(horizon, part.effect)))
     return tuple(out)
 
 

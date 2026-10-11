@@ -232,7 +232,9 @@ class LiftRows:
     """Geo tests as PyMC-Marketing's lift measurements take them: a weekly spend ``x``, its change
     ``delta_x`` and the weekly change in sales ``delta_y`` with its standard error ``sigma``; and
     each test's first dark week ``start``, numbered from 1 as the world's weeks are, which dates it
-    for a tool that calibrates on a test's window."""
+    for a tool that calibrates on a test's window. A geo test names the geos it took dark, ``geos``,
+    each row's numbered from 0 along the geo axis, and reads ``x`` and ``delta_y`` summed over
+    them; a national test names none."""
 
     channel: tuple[str, ...]
     start: tuple[int, ...]
@@ -241,6 +243,7 @@ class LiftRows:
     delta_y: Series
     sigma: Series
     dropped: int  # tests whose sales did not fall, which the measurement cannot take
+    geos: tuple[tuple[int, ...], ...] | None = None
 
 
 def lift_rows(tests: dict[str, tuple[LiftTest, ...]]) -> LiftRows:

@@ -17,14 +17,23 @@ family drew the world, so two families' worlds that share a history share its qu
 
 CHOICE: the price reading's error runs on from the history's last reading less the true price
 there, its error exactly unless that reading was clipped.
+
+A geo world's quarter (:func:`geo_shadow`, a world :mod:`chc.geo_world` drew) runs on the same way
+geo by geo: its base on the season every geo shares, every channel's lift at the status quo, each
+national channel's allotted to the geos by population, its carryover from the history and its
+spillover included, and fresh noise of the world's size a geo. Its variates come from the family's
+own stream, ``(100 + f, 3, seed)``.
 """
 
 from __future__ import annotations
 
+import dataclasses
 import math
 from dataclasses import dataclass
 
+import jax
 import numpy as np
+from chc.geo_world import GeoMediaWorld
 from numpy.typing import ArrayLike, NDArray
 
 from causaldyn_bench.endogenous_mmm import (
@@ -123,3 +132,49 @@ def shadow(
         observed_promotion=observed_promotion,
         observed_price=observed_price,
     )
+
+
+@dataclass(frozen=True)
+class GeoShadow:
+    """A geo world's quarter at the status quo: each series ``(weeks, geos)``."""
+
+    week: NDArray[np.int64]  # T + 1, ..., T + 13, numbered as the history's are
+    base: Series
+    media: Series  # every channel's lift at the status quo, at home and spilled in
+    noise: Series
+    sales: Series  # each geo's KPI, the sum of the three
+
+
+def lifted(world: GeoMediaWorld, weekly: Series, weeks: int) -> Series:
+    """``(geos, weeks)``: what the world's media lift in each geo over the ``weeks`` after its
+    history, every geo spending ``weekly``, ``(geos, channels)``, in each of the quarter's weeks
+    and nothing after them, the history's carryover included: :meth:`GeoMediaWorld.lift` run on,
+    at double precision."""
+    history = world.spend.shape[1]
+    spent = np.zeros((world.mix.geos, weeks, len(world.mix.channels)))
+    spent[:, :PLANNED] = np.asarray(weekly, dtype=float)[:, None, :]
+    spend = np.concatenate([world.spend, spent], axis=1)
+    drift = np.ones((spend.shape[1], spend.shape[2]))  # geo cells are planned without drift
+    longer = dataclasses.replace(world, spend=spend, drift=drift)
+    with jax.enable_x64(True):
+        return np.asarray(longer.lift(spend), dtype=float)[:, history:]
+
+
+def geo_shadow(world: GeoMediaWorld, family: int, seed: int) -> GeoShadow:
+    """The quarter after ``world``'s history, which family ``family`` drew from ``seed``, at the
+    status quo of its cells (:func:`causaldyn_bench.scorecard.truth.geo_quarter`).
+
+    Raises:
+        ValueError: the world's lifts drift.
+    """
+    draw = rng(family, Role.CONTINUATION, seed)
+    history = world.spend.shape[1]
+    week = np.arange(history + 1, history + PLANNED + 1)
+    season = np.sin(2.0 * math.pi * (week - 1) / YEAR)  # chc counts its weeks from 0
+    # each geo's base per head times its population is its base in week 0, where the season is 0
+    base = world.base[:, :1] * (1.0 + world.mix.season * season)
+    quarter = truth.geo_quarter(world)
+    media = lifted(world, truth.allotted(world, quarter.status_quo), PLANNED)
+    noise = world.mix.noise * np.sqrt(world.population)[:, None]
+    noise = noise * draw.standard_normal((world.mix.geos, PLANNED))
+    return GeoShadow(week, base.T, media.T, noise.T, (base + media + noise).T)

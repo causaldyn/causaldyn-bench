@@ -100,13 +100,21 @@ def _moved(observed: Observation) -> dict[str, Observation]:
         "lift x": replace(o, lift=replace(lift, x=lift.x * 1.001)),
         "lift delta x": replace(o, lift=replace(lift, delta_x=lift.delta_x * 1.001)),
         "lift dropped": replace(o, lift=replace(lift, dropped=lift.dropped + 1)),
-        "geos": replace(
-            o,
-            sales=np.column_stack([o.sales, o.sales]),
-            spend=np.stack([o.spend, o.spend], axis=1),
-            population=np.array([0.5, 0.5]),
-        ),
+        "geos": _geos(o),
     }
+
+
+def _geos(o: Observation) -> Observation:
+    """``o`` as two geos that each ran its history, every channel bought nationally, each test in
+    the first geo."""
+    return dataclasses.replace(
+        o,
+        sales=np.column_stack([o.sales, o.sales]),
+        spend=np.stack([o.spend, o.spend], axis=1),
+        population=np.array([0.5, 0.5]),
+        national=o.channels,
+        lift=dataclasses.replace(o.lift, geos=((0,),) * len(o.lift.channel)),
+    )
 
 
 def test_the_digest_reads_everything_an_arm_reads(observed):
@@ -171,6 +179,69 @@ def test_a_geo_axis_is_exported_with_its_population(observed, tmp_path):
     back = read(archive(geo, tmp_path))
     _same(back, geo)
     np.testing.assert_array_equal(back.population, [0.5, 0.5])
+    assert back.national == observed.channels
+    assert back.lift.geos == ((0,),) * len(observed.lift.channel)
+
+
+def test_a_national_export_holds_no_geo_field_and_its_digest_is_unmoved(observed, tmp_path):
+    """The geo fields enter an export only with a geo axis, so every national world's digest, and
+    every record that echoes it, stands."""
+    with np.load(archive(observed, tmp_path)) as saved:
+        assert not {"population", "national", "lift_geos"} & set(saved.files)
+    assert observed.lift.geos is None and observed.national == ()
+
+
+def test_the_digest_reads_a_geo_axis_s_national_channels_and_its_tests_geos(observed):
+    geo = _geos(observed)
+    lift = geo.lift
+    assert lift.geos is not None
+    moved = {
+        "national": dataclasses.replace(
+            geo,
+            national=observed.channels[:2],
+            lower=np.concatenate([geo.lower[:1], geo.lower]),
+            upper=np.concatenate([geo.upper[:1], geo.upper]),
+            status_quo=np.concatenate([geo.status_quo[:1], geo.status_quo]),
+        ),
+        "geos": dataclasses.replace(
+            geo, lift=dataclasses.replace(lift, geos=((1,), *lift.geos[1:]))
+        ),
+        "both geos": dataclasses.replace(
+            geo, lift=dataclasses.replace(lift, geos=((0, 1), *lift.geos[1:]))
+        ),
+    }
+    stamps = {name: o.digest() for name, o in moved.items()}
+    assert geo.digest() not in stamps.values() and len(set(stamps.values())) == len(stamps)
+
+
+@pytest.mark.parametrize(
+    ("change", "match"),
+    [
+        ({"national": ("radio",)}, "are not all"),
+        ({"population": None, "sales": np.zeros(156), "spend": np.zeros((156, 3))}, "only where"),
+        ({"national": ()}, "are 6 cells"),
+        ({"lift": "national"}, "name their geos"),
+        ({"lift": ((),)}, "distinct geos"),
+        ({"lift": ((0, 0),)}, "distinct geos"),
+        ({"lift": ((2,),)}, "distinct geos"),
+        ({"lift": "short"}, "distinct geos"),
+    ],
+)
+def test_a_malformed_geo_observation_is_refused(observed, change, match):
+    geo = _geos(observed)
+    lift = geo.lift
+    assert lift.geos is not None
+    if "lift" in change:
+        value = change.pop("lift")
+        rows = len(lift.channel)
+        if value == "national":
+            change["lift"] = dataclasses.replace(lift, geos=None)
+        elif value == "short":
+            change["lift"] = dataclasses.replace(lift, geos=lift.geos[1:])
+        else:
+            change["lift"] = dataclasses.replace(lift, geos=(*value, *lift.geos[1:rows]))
+    with pytest.raises(ValueError, match=match):
+        dataclasses.replace(geo, **change)
 
 
 @pytest.mark.parametrize(

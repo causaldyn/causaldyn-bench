@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 
 from causaldyn_bench.scorecard.mapping import DRAWS, TOLERANCE, Walking, channels, residual
+from causaldyn_bench.scorecard.returns import drawn_returns
 from causaldyn_bench.scorecard.track_m2 import TRACK_M2
 
 RETENTION = (0.3, 0.55, 0.8)
@@ -248,15 +249,30 @@ def test_a_response_maps_every_channel_and_no_other(observed):
         channels({**response, "parameters": fewer}, observed.channels)
 
 
-def test_a_geo_observation_is_not_read(observed):
+def test_a_geo_observation_is_read_on_its_spend_summed_over_the_geos(observed):
+    """A response is the whole market's: split over two geos, each spending half of every week's
+    spend, the history reads as it did, to the bit, and an arm's returns with it; a slip still
+    fails the check."""
+    half = observed.spend / 2.0
     geo = dataclasses.replace(
         observed,
-        sales=observed.sales[:, None],
-        spend=observed.spend[:, None, :],
-        population=np.ones(1),
+        sales=np.column_stack([observed.sales / 2.0, observed.sales / 2.0]),
+        spend=np.stack([half, half], axis=1),
+        population=np.array([0.5, 0.5]),
+        national=observed.channels,
+        lift=dataclasses.replace(observed.lift, geos=()),
     )
-    with jax.enable_x64(True), pytest.raises(ValueError, match="geo"):
-        residual(_record(observed, "pymc"), geo)
+    np.testing.assert_array_equal(geo.market_spend, observed.spend)
+    for tool in ("pymc", "robyn"):
+        response = _record(observed, tool)
+        with jax.enable_x64(True):
+            assert residual(response, geo) == residual(response, observed) <= TOLERANCE
+        ours, theirs = drawn_returns(response, geo), drawn_returns(response, observed)
+        np.testing.assert_array_equal(ours.roi, theirs.roi)
+        np.testing.assert_array_equal(ours.marginal, theirs.marginal)
+    slipped = dataclasses.replace(geo, spend=np.stack([half, 1.01 * half], axis=1))
+    with jax.enable_x64(True):
+        assert residual(_record(observed, "pymc"), slipped) > TOLERANCE
 
 
 def _adstock(spend, retention, length):

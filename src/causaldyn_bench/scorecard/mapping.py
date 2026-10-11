@@ -29,7 +29,10 @@ A coefficient that moves is held past the history's last week at that week's (:c
 the one convention a return that counts all of its carryover needs (:mod:`.returns`).
 
 The check reads the history's spend from the observation the record was fitted to, and runs at
-float64, as every scored run does.
+float64, as every scored run does. On a geo observation the spend is summed over the geos: a
+response is the whole market's, as a tool that fits the national series gives it. A response with
+a geo axis, a channel's parameters and decomposition for each geo, is not mapped: the record would
+need a geo axis on every parameter and on the decomposition, and the check would run geo by geo.
 """
 
 from __future__ import annotations
@@ -214,8 +217,6 @@ def residual(response: Mapping[str, Any], observation: Observation) -> float:
             the history's weeks, or its decomposition does not cover every channel, every draw and
             every week.
     """
-    if observation.population is not None:
-        raise ValueError("a geo observation's response is not mapped: national families alone")
     _float64()
     names = observation.channels
     parsed = drawn(response, names)
@@ -246,7 +247,7 @@ def residual(response: Mapping[str, Any], observation: Observation) -> float:
                 f"{name}'s decomposition is {totals.shape} totals and {weekly.shape} weeks, not "
                 f"{(len(built),)} and {(len(held), weeks)}"
             )
-        spend = observation.spend[:, c]
+        spend = observation.market_spend[:, c]
         returns = np.stack([np.asarray(draw[c](spend)) for draw in built])
         worst = max(
             worst,

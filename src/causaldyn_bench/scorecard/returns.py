@@ -13,6 +13,10 @@ weeks, a drifted world's or a dynamic linear model's, is held past the last week
 the world and every arm alike: the one convention that needs no forecast of the coefficient, and
 changes nothing for one that holds still.
 
+A geo world's returns are the market's: a channel's return summed over the geos, over its spend
+summed over them (:func:`true_geo_returns`), and an arm's draws are read on the spend summed over
+the geos, as a response of the whole market (:mod:`.mapping`).
+
 Written over every draw at once, where chc reads one channel at a time; its tests hold the two to
 each other draw by draw.
 """
@@ -25,11 +29,13 @@ from functools import partial
 from typing import Any
 
 import numpy as np
+from chc.geo_world import GeoMediaWorld
 from numpy.typing import NDArray
 
 from causaldyn_bench.endogenous_mmm import MediaMixWorld, Series
 from causaldyn_bench.scorecard.mapping import drawn
 from causaldyn_bench.scorecard.observe import Observation
+from causaldyn_bench.scorecard.truth import geo_curve, geo_kernel, geo_parts
 
 
 @dataclass(frozen=True, eq=False)
@@ -100,6 +106,41 @@ def true_returns(history: MediaMixWorld, window: tuple[int, int]) -> Returns:
     return Returns(window, np.array(roi), np.array(marginal))
 
 
+def true_geo_returns(world: GeoMediaWorld, window: tuple[int, int]) -> Returns:
+    """Each channel's ROI and mROI on ``window`` in a geo world, the market's: what its cells
+    return, at home and spilled into the neighbours, over what they spent, a national channel one
+    cell of its spend summed over the geos (:func:`.truth.geo_parts`).
+
+    Raises:
+        ValueError: the world's lifts drift.
+    """
+    parts = geo_parts(world)
+    mix = world.mix
+    first, last = window
+    roi, marginal = [], []
+    for c, channel in enumerate(mix.channels):
+        weights = geo_kernel(channel.retention, mix.length)[None, :]
+        returned = sloped = spent = 0.0
+        for part in (part for part in parts if part.channel == c):
+            curve, lam = geo_curve(channel.curve, part.people)
+            one, slope = _window_returns(
+                part.spend,
+                window,
+                weights,
+                np.full((1, part.spend.size), part.effect),
+                lambda a, curve=curve, lam=lam: curve.value(a, lam),
+                lambda a, along, curve=curve, lam=lam: curve.slope(a, lam) * along,
+            )
+            # each part's return per euro back to its return, so the parts sum
+            here = float(part.spend[first - 1 : last].sum())
+            returned += float(one[0]) * here
+            sloped += float(slope[0]) * here
+            spent += here
+        roi.append(returned / spent)
+        marginal.append(sloped / spent)
+    return Returns(window, np.array(roi), np.array(marginal))
+
+
 def _value(scale: Series, slope: Series, tanh: NDArray[np.bool_], adstock: Series) -> Series:
     """Each draw's curve, ``tanh(z)`` or ``z^n / (1 + z^n)`` at ``z`` its adstock over its scale."""
     z = adstock / scale[:, None]
@@ -138,6 +179,7 @@ def drawn_returns(response: Mapping[str, Any], observation: Observation) -> Retu
     parsed = drawn(response, observation.channels)
     length, normalized = int(response["length"]), bool(response["normalized"])
     weeks = observation.sales.shape[0]
+    spend = observation.market_spend
     lags = np.arange(length)
     roi, marginal = [], []
     for c, name in enumerate(observation.channels):
@@ -150,7 +192,7 @@ def drawn_returns(response: Mapping[str, Any], observation: Observation) -> Retu
             effect = np.repeat(effect[:, None], weeks, axis=1)
         tanh = np.array([curve == "Tanh" for curve in d.curves])
         one, slope = _window_returns(
-            observation.spend[:, c],
+            spend[:, c],
             observation.roi_window,
             weights,
             effect,
