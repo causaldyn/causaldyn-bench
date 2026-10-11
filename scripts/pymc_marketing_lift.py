@@ -16,7 +16,9 @@ weekly spend over the dark weeks; it reads the share ``s_g = delta_x_g / sum del
 test's change in sales, and an error of ``s_g * sigma * sqrt(m)``. Read as independent, the ``m``
 rows then hold the one test's information about a common return, ``delta_x**2 / sigma**2`` on a
 Gaussian likelihood, and give its estimate, ``delta_y / delta_x``: the rows sum back to the test.
-Each row takes its test's sign, so a test whose sales did not fall drops its every row, counted.
+The geo arm reads them on a Normal likelihood for that reason, where a national export's rows keep
+the tool's Gamma. Each row takes its test's sign, so a test whose sales did not fall drops its
+every row, counted.
 """
 
 from __future__ import annotations

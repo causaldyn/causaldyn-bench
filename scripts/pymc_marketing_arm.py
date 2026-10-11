@@ -11,9 +11,9 @@ Each world is fitted as a practitioner fits PyMC-Marketing 1.2.0's media-mix mod
   ``LogisticSaturation``, the world's forms; the observed promotion indicator and price as
   controls; three yearly harmonics, as Heusch's (2026a) realistic specification;
 * every geo test its lift likelihood takes entered through ``add_lift_test_measurements``, as the
-  bench reduced it. An export carries every test, whichever way its sales moved; the likelihood
-  takes a test whose sales fell, so the arm drops the rest and counts them (``lift_dropped``,
-  :mod:`pymc_marketing_lift`);
+  bench reduced it, at the tool's default likelihood, a Gamma of the change's size. An export
+  carries every test, whichever way its sales moved; the likelihood takes a test whose sales fell,
+  so the arm drops the rest and counts them (``lift_dropped``, :mod:`pymc_marketing_lift`);
 * NUTS at PyMC's defaults: 4 chains of 1000 tuning and 1000 kept draws, ``target_accept`` 0.8;
 * the quarter planned by its own optimiser, ``budget_optimizer(start, end).allocate_budget``, at
   the bench's weekly budget and box, starting the week after the history so the history's
@@ -70,15 +70,18 @@ each test across its tested geos (:func:`pymc_marketing_lift.apportioned`). CHOI
 assumption and not the tool's: one ROI across a test's geos, as the test's own design assumes. Each
 geo's row withholds the geo's own mean spend over the dark weeks and reads that share of the test's
 change in sales, at an error that lets the ``m`` rows, read as independent on a Gaussian
-likelihood, hold the one test's information. The tool departs from that twice. Its geo model gives
-each geo its own saturation and coefficient on each channel, so a row informs its own geo's curve
-alone, with a share of the test's information, and no common return adds the rows up. And its
-default likelihood is a Gamma of the change's size, whose information about its mean at a fixed
-error is ``(4 a psi'(a) - 3) / sigma**2`` at shape ``a``, the squared z: a row's shape is its test's
-over ``m``, so the five rows of a weak test hold up to 5.49 times its information (at a squared z
-of 0.39), twice it where the test's squared z is 7.8, and 1.5 times it at 15.9. Each row takes its
-test's sign, so a test whose sales did not fall drops its every row: ``lift_rows`` and
-``lift_dropped`` count rows, ``lift_tests`` the tests taken and dropped.
+likelihood, hold the one test's information. So the arm reads these rows on a Normal likelihood,
+``dist=pymc.dims.Normal``, where the identity is exact. The tool's default, a Gamma of the change's
+size, has an information about its mean at a fixed error of ``(4 a psi'(a) - 3) / sigma**2`` at
+shape ``a``, the squared z; a row's shape is its test's over ``m``, so on the Gamma the five rows of
+a weak test would hold up to 5.49 times its information (at a squared z of 0.39), twice it where the
+test's squared z is 7.8, and 1.5 times it at 15.9: a handicap the apportionment, not the tool, would
+make. A national export's tests keep the Gamma, one row a test. The tool still departs from the
+identity once: its geo model gives each geo its own saturation and coefficient on each channel, so
+a row informs its own geo's curve alone, with a share of the test's information, and no common
+return adds the rows up. Each row takes its test's sign, so a test whose sales did not fall drops
+its every row: ``lift_rows`` and ``lift_dropped`` count rows, ``lift_tests`` the tests taken and
+dropped.
 
 The quarter is planned by its own optimiser over every geo's cells, from the status quo, at the
 weekly budget and in each cell's box, each national channel's spend in a geo held to the geo's
@@ -123,6 +126,7 @@ from typing import Any
 import arviz as az  # ty: ignore[unresolved-import]
 import numpy as np
 import pandas as pd
+import pymc.dims as pmd  # ty: ignore[unresolved-import]
 import pytensor  # ty: ignore[unresolved-import]
 import xarray as xr  # ty: ignore[unresolved-import]
 from geo_export import cells, geo, panel
@@ -160,7 +164,7 @@ AGREE = 1e-9  # how near the plan's mean response lies to the optimiser's own, r
 GEO_LIFT = (
     "each test apportioned across its tested geos at one ROI, the arm's assumption: a geo's row "
     "withholds its own mean spend over the dark weeks, reads that share s of the change in sales, "
-    "and an error of s * sigma * sqrt(m) for a test of m geos"
+    "and an error of s * sigma * sqrt(m) for a test of m geos, read on a Normal likelihood"
 )
 GEO_UNMAPPED = (
     "a geo model's response is each geo's own curve of its own spend, where the mapping reads one "
@@ -557,7 +561,8 @@ def plan_geo(path: Path, smoke: bool) -> dict[str, Any]:
                     "geo": [names[int(g)] for g in split["geo"][keep]],
                     **{key: split[key][keep] for key in ("x", "delta_x", "delta_y", "sigma")},
                 }
-            )
+            ),
+            dist=pmd.Normal,
         )
     tests = int(np.asarray(world["lift_channel"]).size)
     taken_tests = int(np.unique(split["test"][keep]).size)
