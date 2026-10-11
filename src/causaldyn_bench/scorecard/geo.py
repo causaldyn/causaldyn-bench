@@ -68,7 +68,7 @@ from chc.response import Hill, Tanh
 from causaldyn_bench.endogenous_mmm import YEAR
 from causaldyn_bench.mmm_decision import PLANNED
 from causaldyn_bench.scorecard.continuation import GeoShadow, geo_shadow
-from causaldyn_bench.scorecard.family import Truth
+from causaldyn_bench.scorecard.family import Truth, number
 from causaldyn_bench.scorecard.ladder import geo_rung
 from causaldyn_bench.scorecard.observe import Observation
 from causaldyn_bench.scorecard.returns import true_geo_returns
@@ -81,13 +81,22 @@ WEEKS = 104
 SPREADS = (0.2, 0.6)  # the range each channel's spread of the geos' effects is drawn from
 BASE = 19.0  # a geo's base per head a week, at the median
 NOISE = 230.0  # the standard deviation of one head's KPI a week
+POPULATION = 1e5  # a geo's median population, chc's default
 POLICIES: MappingProxyType[str, float] = MappingProxyType({"policy-0": 0.0, "policy-0.5": 0.5})
 
 
-def mix(policy: float, seed: int, geos: int = GEOS) -> GeoMediaMix:
-    """The mix world ``seed`` is drawn from, its spreads drawn from the family's stream; ``geos``
-    other than ten for a test alone."""
-    spreads = rng(FAMILY, Role.PARAMETERS, seed).uniform(*SPREADS, 3)
+def mix(
+    policy: float,
+    seed: int,
+    geos: int = GEOS,
+    *,
+    family: int = FAMILY,
+    population: float = POPULATION,
+    noise: float = NOISE,
+) -> GeoMediaMix:
+    """The mix world ``seed`` is drawn from, its spreads drawn from family ``family``'s stream:
+    this family's, or one that changes its geos' count, median population and noise a head."""
+    spreads = rng(family, Role.PARAMETERS, seed).uniform(*SPREADS, 3)
     with jax.enable_x64(True):
         channels = (
             MediaChannel(
@@ -107,7 +116,14 @@ def mix(policy: float, seed: int, geos: int = GEOS) -> GeoMediaMix:
             ),
         )
     return GeoMediaMix(
-        channels, geos=geos, weeks=WEEKS, base=BASE, noise=NOISE, policy=policy, length=8
+        channels,
+        geos=geos,
+        weeks=WEEKS,
+        population=population,
+        base=BASE,
+        noise=noise,
+        policy=policy,
+        length=8,
     )
 
 
@@ -121,11 +137,12 @@ class World:
     shadow: GeoShadow
 
 
-def drawn(environment: str, seed: int, generator: GeoMediaMix) -> World:
-    """The world ``generator`` draws from ``seed``, at double precision, and its quarter."""
+def drawn(environment: str, seed: int, generator: GeoMediaMix, family: int = FAMILY) -> World:
+    """The world ``generator`` draws from ``seed``, at double precision, and its quarter, run on
+    from family ``family``'s stream."""
     with jax.enable_x64(True):
         history = generator.draw(seed)
-    return World(environment, seed, history, geo_shadow(history, FAMILY, seed))
+    return World(environment, seed, history, geo_shadow(history, family, seed))
 
 
 def window(history: GeoMediaWorld) -> tuple[int, int]:
@@ -163,7 +180,7 @@ class Geo:
         history = world.history
         quarter = geo_quarter(history)
         return Observation(
-            family=FAMILY,
+            family=number(self),
             environment=world.environment,
             seed=world.seed,
             k=k,
@@ -179,7 +196,7 @@ class Geo:
             upper=quarter.upper,
             status_quo=quarter.status_quo,
             roi_window=window(history),
-            lift=geo_rung(history, FAMILY, world.seed, k),
+            lift=geo_rung(history, number(self), world.seed, k),
             population=history.shares,
             national=tuple(c.name for c in history.mix.channels if c.national),
         )
