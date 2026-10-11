@@ -25,7 +25,7 @@ from chc.response import (
 )
 from scipy.optimize import brentq
 
-from causaldyn_bench.endogenous_mmm import CURVES, EndogenousMediaMix, _media
+from causaldyn_bench.endogenous_mmm import CURVES, EndogenousMediaMix, _bursts, _calendar, _media
 
 SEEDS = range(40)
 
@@ -121,6 +121,30 @@ def test_with_every_mechanism_off_spend_follows_only_its_plan() -> None:
     assert np.all(quiet.bidding == 1.0)
     tilt = np.log(quiet.spend / np.array([60.0, 40.0, 10.0])) - 0.15 * quiet.seasonality[:, None]
     assert np.abs(tilt).max() < 0.5  # the planning noise alone, sd 0.1
+    np.testing.assert_allclose(tilt, quiet.plan_noise, rtol=0.0, atol=1e-14)
+
+
+def test_the_plan_noise_is_the_log_plans_own_draw() -> None:
+    """The world keeps the noise its log plan drew, a normal of sd 0.1 a week and channel, which
+    every mechanism leaves alone: with all of them on, it is what remains of the log spend once
+    each is taken off."""
+    world = EndogenousMediaMix().simulate(3)
+    week = world.week
+    ahead = np.sum([_calendar(week + lead)[0] > 0.0 for lead in (1, 2, 3)], axis=0, dtype=float)
+    planned = (
+        np.log([60.0, 40.0, 10.0])
+        + np.log(world.budget)[:, None]
+        + 0.15 * world.seasonality[:, None]
+        + ahead[:, None] * np.array([0.4, 0.4, 0.0])
+    )
+    rest = np.log(world.spend) - planned
+    rest[:, 0] -= np.log(world.bidding)
+    rest[:, 2] -= np.log(_bursts(week))
+    np.testing.assert_allclose(rest, world.plan_noise, rtol=0.0, atol=1e-13)
+    noise = np.concatenate(
+        [EndogenousMediaMix().simulate(seed).plan_noise.ravel() for seed in range(20)]
+    )
+    assert noise.std() == pytest.approx(0.1, rel=0.03, abs=0.0)  # 9360 draws: sd 0.73 %
 
 
 @pytest.mark.parametrize("curve", sorted(CURVES))

@@ -252,6 +252,7 @@ class MediaMixWorld(Market):
     discount: Series
     budget: Series  # the quarterly multiplier Q_t
     bidding: Series  # PLA's multiplier rho_t
+    plan_noise: Series  # (weeks, channels) the log plan's own noise, his Eq. 4's; unobserved
     observed_promotion: NDArray[np.bool_]
     observed_price: Series
     retention: tuple[float, ...]
@@ -391,11 +392,12 @@ class EndogenousMediaMix:
         ahead = np.sum([_calendar(week + lead)[0] > 0.0 for lead in (1, 2, 3)], axis=0, dtype=float)
         budget = _budget(premedia) if self.budget_feedback else np.ones(weeks)
         channels = len(self.channels)
+        plan_noise = rng.normal(0.0, 0.1, (weeks, channels))
         log_plan = (
             np.log(np.array(self.planned_spend))[None, :]
             + np.log(budget)[:, None]
             + 0.15 * seasonality[:, None]
-            + rng.normal(0.0, 0.1, (weeks, channels))
+            + plan_noise
         )
         if self.anticipatory:
             log_plan += ahead[:, None] * np.array(self.anticipation)[None, :]
@@ -438,6 +440,7 @@ class EndogenousMediaMix:
             discount=discount,
             budget=budget,
             bidding=bidding,
+            plan_noise=plan_noise,
             observed_promotion=observed_promotion,
             observed_price=observed_price,
             retention=self.retention,

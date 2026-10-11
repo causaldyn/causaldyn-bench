@@ -12,7 +12,8 @@ The worlds of other families that are built on Track M v2's are read the same wa
 against, whatever moved the world's effect. Where a channel's tests ran in the market whose history
 an arm reads, an overlapping rung (:func:`causaldyn_bench.scorecard.ladder.overlap`), the arm reads
 :func:`overlapping`'s observation, and :func:`truth` reads the returns on the history as it ran
-them.
+them. :func:`respent` is a history whose business spent otherwise, and :func:`settled` the world of
+a history whose effect holds still.
 """
 
 from __future__ import annotations
@@ -55,6 +56,27 @@ def still(history: MediaMixWorld) -> Series:
     """Each channel's effect path where the effect holds still: its coefficient in every week."""
     horizon = PLANNED + history.kernel_length - 1
     return np.repeat(np.asarray(history.effect, dtype=float)[:, None], horizon, axis=1)
+
+
+def respent(history: MediaMixWorld, spend: Series) -> MediaMixWorld:
+    """``history`` had its business spent ``spend``, ``(weeks, channels)``: each channel's media
+    and the sales follow the spend, and all the business read before media, its budget and its
+    bidding rule among it, stays."""
+    media = np.column_stack([history._effect_of(c, spend[:, c]) for c in range(spend.shape[1])])
+    return dataclasses.replace(
+        history, spend=spend, media=media, sales=history.premedia + media.sum(axis=1)
+    )
+
+
+def settled(
+    environment: str, seed: int, generator: EndogenousMediaMix, history: MediaMixWorld
+) -> World:
+    """The world of ``history``, which ``generator`` drew from ``seed``, where each channel's effect
+    holds still: the path the best plan is made for is the one the quarter realises."""
+    path = still(history)
+    return World(
+        environment, seed, generator, history, shadow(generator, history, seed, path), path, path
+    )
 
 
 def window(history: Market) -> tuple[int, int]:
