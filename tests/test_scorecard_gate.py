@@ -338,3 +338,131 @@ def test_a_look_refuses_records_it_cannot_pair():
         Gate(QUARTERS).read(records, "a", "b", margin=0.01, axis="profit")
     with pytest.raises(ValueError, match="regret is not scored"):
         Gate(QUARTERS).read(records, "a", "c", margin=0.01)
+
+
+def _hall_by_the_paper(x):
+    """Hall (1992) eq. 2.2 with section 2.4's mean: ``sqrt(n) T_1(S)``, ``S = (mean - 0) / sigma``,
+    ``a = 1/3``, ``b = 1/6``, ``sigma`` and ``gamma`` on divisor ``n``."""
+    n = x.size
+    sigma = math.sqrt(float(np.mean((x - x.mean()) ** 2)))
+    gamma = float(np.mean((x - x.mean()) ** 3)) / sigma**3
+    s, a, b = float(x.mean()) / sigma, 1.0 / 3.0, 1.0 / 6.0
+    return math.sqrt(n) * (s + a * gamma * s**2 + a**2 * gamma**2 * s**3 / 3.0 + b * gamma / n)
+
+
+def _skewed(environments, worlds, seed, shape=2.0):
+    """Right-skewed differences of mean 0: a gamma law's less its mean."""
+    rng = np.random.default_rng(seed)
+    return 0.05 * (rng.gamma(shape, 1.0, size=(environments, worlds)) - shape)
+
+
+@pytest.mark.parametrize("margin", [-0.02, 0.0, 0.01, 0.05])
+def test_halls_reader_reads_his_cubic_of_the_studentised_mean(margin):
+    differences = _skewed(2, 30, 31)
+    gate_ = Gate((30,), reader="hall")
+    (look,) = gate_.read(_records(differences), "a", "b", margin=margin)
+    x = margin - differences.ravel()
+    assert look.statistic == pytest.approx(_hall_by_the_paper(x), rel=1e-12, abs=1e-12)
+    assert (look.worlds, look.n, look.boundary) == (30, 60, pytest.approx(norm.isf(ALPHA)))
+    assert (look.mean, look.sd) == pytest.approx((differences.mean(), differences.std(ddof=1)))
+    assert look.verdict == ("shown" if look.statistic >= norm.isf(ALPHA) else "not shown")
+    tail = float(norm.sf(look.statistic))
+    expected = 1.0 if tail >= 0.5 else max(tail, gate.FLOOR)
+    assert gate_.level((look,)) == pytest.approx(expected, rel=1e-9, abs=0.0)
+
+
+def test_halls_reader_never_falls_as_the_margin_rises_past_johnsons_turning_point():
+    """Johnson's (1978) quadratic, Hall's cubic without ``c^2 T^3 / 3``, turns where
+    ``T = -1 / (2 c)``; the margins here carry ``T`` past it, so that mutant fails."""
+    differences = _skewed(2, 20, 32, shape=0.5)
+    x = -differences.ravel()
+    gamma = float(np.mean((x - x.mean()) ** 3)) / float(x.std()) ** 3
+    c = gamma / (3.0 * math.sqrt(x.size))
+    margins = np.linspace(-0.2, 0.4, 241)
+    t = (margins + x.mean()) / (x.std() / math.sqrt(x.size))
+    assert c < 0.0
+    assert t.min() < -1.0 / (2.0 * c) < t.max()
+    records = _records(differences)
+    gate_ = Gate((20,), reader="hall")
+    statistics = [gate_.read(records, "a", "b", margin=float(m))[0].statistic for m in margins]
+    assert np.all(np.diff(statistics) > 0.0)
+
+
+def _levels(draws, mean):
+    """The share of rows the Student-t reading and Hall's show ``mean(row) < mean`` at, the
+    margin being the true mean."""
+    n = draws.shape[1]
+    x = mean - draws
+    centre, sigma = x.mean(axis=1), x.std(axis=1)
+    skew = np.mean((x - centre[:, None]) ** 3, axis=1) / sigma**3
+    student_t = centre / (x.std(axis=1, ddof=1) / math.sqrt(n))
+    halls = gate.hall(centre / (sigma / math.sqrt(n)), n, skew)
+    return (
+        float(np.mean(student_t >= student.isf(ALPHA, n - 1))),
+        float(np.mean(halls >= norm.isf(ALPHA))),
+    )
+
+
+def _replicated(draw, replicates, seed):
+    rng = np.random.default_rng(seed)
+    chunk, levels = 20_000, np.zeros(2)
+    for _ in range(replicates // chunk):
+        levels += _levels(*draw(rng, chunk))
+    return levels / (replicates // chunk)
+
+
+def test_at_240_worlds_hall_holds_alpha_where_skewed_differences_lift_students_level():
+    """Differences skewed like a gamma law of shape 2 (skewness sqrt(2), excess kurtosis 3), read
+    at their true mean: Student's t shows 0.033, Hall's 0.026. Hall's residual is of order
+    ``1/n``, not 0: the band is three Monte Carlo SEs and 0.001."""
+    replicates, n = 200_000, 240
+    student_level, hall_level = _replicated(
+        lambda rng, rows: (rng.gamma(2.0, 1.0, size=(rows, n)), 2.0), replicates, 41
+    )
+    se = math.sqrt(ALPHA * (1 - ALPHA) / replicates)
+    assert student_level > ALPHA + 0.006
+    assert abs(hall_level - ALPHA) <= 3 * se + 0.001
+    assert abs(hall_level - ALPHA) < (student_level - ALPHA) / 4
+
+
+def test_on_symmetric_differences_hall_reads_as_student_does_to_first_order():
+    """On normal differences at 240 worlds Hall's reader shows 0.026 where Student's t shows
+    0.025 exactly: the two agree to order ``n^(-1/2)`` and part by order ``1/n``."""
+    replicates, n = 200_000, 240
+    student_level, hall_level = _replicated(
+        lambda rng, rows: (rng.normal(0.0, 1.0, size=(rows, n)), 0.0), replicates, 42
+    )
+    se = math.sqrt(ALPHA * (1 - ALPHA) / replicates)
+    # Student's t is exact on normal differences; Hall's normal tail is off by order 1/n
+    assert abs(student_level - ALPHA) <= 3 * se
+    assert abs(hall_level - student_level) <= 1.0 / n
+    # without skew Hall's level is the normal tail of T on divisor n, Student's the t tail on
+    # n - 1: they differ by order 1/n, a quarter as much at four times the worlds
+    gaps = []
+    for worlds in (30, 120):
+        half = np.linspace(0.01, 0.2, worlds)
+        sample = np.concatenate([-half, half])
+        offset = 1.96 * sample.std(ddof=1) / math.sqrt(sample.size)
+        differences = (sample - offset).reshape(2, worlds)
+        records = _records(differences)
+        levels = [
+            Gate((worlds,), reader=r).level(
+                Gate((worlds,), reader=r).read(records, "a", "b", margin=0.0)
+            )
+            for r in ("student", "hall")
+        ]
+        gaps.append(abs(levels[0] - levels[1]))
+    assert 0.0 < gaps[1] < 0.3 * gaps[0]
+    assert gaps[1] < 1.0 / 240
+
+
+@pytest.mark.parametrize(
+    ("make", "match"),
+    [
+        (lambda: Gate(QUARTERS, reader="hall"), "one look, not 4"),
+        (lambda: Gate((40,), reader="bootstrap"), "Student's t or Hall's"),  # ty: ignore[invalid-argument-type]
+    ],
+)
+def test_a_gate_refuses_a_reader_it_cannot_read(make, match):
+    with pytest.raises(ValueError, match=match):
+        make()

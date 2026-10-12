@@ -35,6 +35,16 @@ Maurer and Bretz's (2013) graphical procedure for group sequential designs, with
 looking back at every look read. It holds the familywise error at ``alpha`` under any dependence
 between the comparisons, since every boundary falls as ``alpha`` rises; the move to Student's t
 holds it as nearly as it holds one comparison's size.
+
+**Hall's reader** (``Gate(looks, reader="hall")``), for a gate of one look, removes the skewness of
+the paired differences from the statistic instead of moving the boundary to Student's t. Skewed
+differences leave the Student-t reading off its nominal level by a term of order ``n^(-1/2)``: where
+the differences skew to the right, the claim shows more often than ``alpha``. Hall (1992, eq. 2.2,
+with ``a = 1/3`` and ``b = 1/6`` for a mean, section 2.4) reads ``x = delta`` less each difference,
+``T = sqrt(n) mean(x) / sigma``, ``sigma`` and the skewness ``gamma`` of ``x`` on divisor ``n``, by
+the monotone cubic ``g(T) = T + c T^2 + c^2 T^3 / 3 + c / 2``, ``c = gamma / (3 sqrt(n))``, whose
+law is the standard normal's to order ``1/n`` (:func:`hall`). The claim is shown where ``g(T)``
+reaches the look's boundary on the normal scale, and the level is ``g(T)``'s normal tail.
 """
 
 from __future__ import annotations
@@ -52,7 +62,7 @@ from scipy.stats import norm
 from scipy.stats import t as student
 
 from causaldyn_bench.endogenous_mmm import Series
-from causaldyn_bench.scorecard.scoring import WorldRecord, paired
+from causaldyn_bench.scorecard.scoring import WorldRecord, look, paired
 
 ALPHA = 0.025  # one-sided: a paired 95 % interval's upper end
 REACH = 10.0  # standard deviations the grid runs from its mean where no boundary cuts it
@@ -61,7 +71,9 @@ CHUNK = 1 << 22  # kernel entries evaluated at once, bounding a convolution's me
 FLOOR = 1e-12  # the least sequential level read; a comparison that crosses below it reads it
 
 Verdict = Literal["shown", "futile", "continue", "not shown"]
+Reader = Literal["student", "hall"]
 K = TypeVar("K")
+F = TypeVar("F", float, Series)
 
 
 def spent(t: float, alpha: float = ALPHA) -> float:
@@ -97,8 +109,8 @@ class Look:
     n: int  # the paired differences it reads: its worlds of every environment
     mean: float
     sd: float
-    statistic: float  # (margin - mean) / (sd / sqrt(n))
-    boundary: float  # the look's boundary, moved to Student's t on n - 1 degrees of freedom
+    statistic: float  # (margin - mean) / (sd / sqrt(n)); Hall's g(T) by his reader
+    boundary: float  # moved to Student's t on n - 1 degrees of freedom; by Hall's, unmoved
     verdict: Verdict
 
 
@@ -116,21 +128,27 @@ class Crossings:
 @dataclass(frozen=True)
 class Gate:
     """The looks a run's comparisons are read at, each a count of every environment's worlds, a
-    futility threshold on the standard-normal scale or none, and the one-sided ``alpha`` the looks
-    spend.
+    futility threshold on the standard-normal scale or none, the one-sided ``alpha`` the looks
+    spend, and the reader of a look: Student's t, or Hall's transform for a gate of one look.
 
     Raises:
         ValueError: on looks that do not increase strictly from at least 2 worlds, an ``alpha``
-            outside (0, 1/2), or a futility threshold not below every boundary but the last.
+            outside (0, 1/2), a futility threshold not below every boundary but the last, or
+            Hall's reader on more than one look.
     """
 
     looks: tuple[int, ...]
     futility: float | None = None
     alpha: float = ALPHA
+    reader: Reader = "student"
 
     def __post_init__(self) -> None:
         if not self.looks or self.looks[0] < 2:
             raise ValueError(f"a gate's first look reads at least 2 worlds: {self.looks}")
+        if self.reader not in ("student", "hall"):
+            raise ValueError(f"a look is read by Student's t or Hall's transform: {self.reader!r}")
+        if self.reader == "hall" and len(self.looks) > 1:
+            raise ValueError(f"Hall's reader reads a gate of one look, not {len(self.looks)}")
         _check(self.fractions, self.alpha)
         if self.futility is not None and self.futility >= min(self.bounds[:-1], default=math.inf):
             raise ValueError(
@@ -173,6 +191,8 @@ class Gate:
             ValueError: as :func:`~causaldyn_bench.scorecard.scoring.paired` does on a look.
         """
         held = _held(records)
+        if self.reader == "hall":
+            return self._hall(records, first, second, margin, axis, held)
         environments = len({record.environment for record in records})
 
         def seen() -> Iterator[tuple[int, int, float, float]]:
@@ -183,6 +203,34 @@ class Gate:
                 yield worlds, worlds * environments, difference.mean, difference.sd
 
         return _reading(seen(), self.bounds, margin, self.futility)
+
+    def _hall(
+        self,
+        records: Sequence[WorldRecord],
+        first: str,
+        second: str,
+        margin: float,
+        axis: str,
+        held: int,
+    ) -> tuple[Look, ...]:
+        """The gate's one look read by Hall's transform, where the records hold it whole."""
+        (worlds,) = self.looks
+        if worlds > held:
+            return ()
+        difference = paired(records, first, second, worlds, axis).difference
+        # paired has checked every world of the look scores both arms on the axis
+        values = np.array(
+            [
+                getattr(r.arms[first], axis) - getattr(r.arms[second], axis)
+                for r in look(records, worlds)
+            ]
+        )
+        statistic = _hall_statistic(margin - values)
+        (boundary,) = self.bounds
+        verdict: Verdict = "shown" if statistic >= boundary else "not shown"
+        return (
+            Look(worlds, values.size, difference.mean, difference.sd, statistic, boundary, verdict),
+        )
 
     def level(self, looks: Sequence[Look]) -> float:
         """The least one-sided ``alpha`` in ``[FLOOR, 1/2)`` at which one of ``looks``, a reading
@@ -200,8 +248,13 @@ class Gate:
         if len(looks) > len(self.looks):
             raise ValueError(f"{len(looks)} looks read on a gate of {len(self.looks)}")
         # each statistic on the normal scale at the same tail, which a boundary crosses as the
-        # Student move would
-        scaled = [float(norm.isf(student.sf(look.statistic, look.n - 1))) for look in looks]
+        # Student move would; Hall's reader reads it there already
+        scaled = [
+            look.statistic
+            if self.reader == "hall"
+            else float(norm.isf(student.sf(look.statistic, look.n - 1)))
+            for look in looks
+        ]
 
         def excess(log_alpha: float) -> float:
             bounds = boundaries(self.fractions, math.exp(log_alpha))
@@ -213,6 +266,16 @@ class Gate:
         if excess(low) >= 0.0:
             return FLOOR
         return math.exp(brentq(excess, low, high, xtol=1e-12))
+
+
+def hall(statistic: F, n: int, skew: F) -> F:  # noqa: UP047 -- CI runs 3.11
+    """Hall's (1992) monotone cubic ``g(T) = T + c T^2 + c^2 T^3 / 3 + c / 2``,
+    ``c = skew / (3 sqrt(n))``, of the studentised mean ``statistic`` of ``n`` values whose sample
+    skewness is ``skew``, both on divisor ``n``: its law is the standard normal's to order ``1/n``.
+    Its slope ``(1 + c T)^2`` is never negative.
+    """
+    c = skew / (3.0 * math.sqrt(n))
+    return statistic + c * statistic**2 + c * c * statistic**3 / 3.0 + c / 2.0
 
 
 def holm(levels: Mapping[K, float], alpha: float = ALPHA) -> frozenset[K]:  # noqa: UP047 -- CI runs 3.11
@@ -276,6 +339,17 @@ def _reading(
         if verdict != "continue":
             break
     return tuple(looks)
+
+
+def _hall_statistic(x: Series) -> float:
+    """Hall's ``g(T)`` of the mean of ``x`` above 0, where values that do not spread show a gap of
+    either sign plainly."""
+    n = x.size
+    mean, sigma = float(x.mean()), float(x.std())
+    if sigma == 0.0:
+        return _statistic(mean, 0.0)
+    skew = float(np.mean((x - mean) ** 3)) / sigma**3
+    return float(hall(mean / (sigma / math.sqrt(n)), n, skew))
 
 
 def _statistic(gap: float, se: float) -> float:
