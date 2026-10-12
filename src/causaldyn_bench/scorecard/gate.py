@@ -53,7 +53,7 @@ import math
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from functools import cache, cached_property
-from typing import Literal, TypeVar
+from typing import Literal, TypeVar, overload
 
 import numpy as np
 from scipy.optimize import brentq
@@ -73,7 +73,6 @@ FLOOR = 1e-12  # the least sequential level read; a comparison that crosses belo
 Verdict = Literal["shown", "futile", "continue", "not shown"]
 Reader = Literal["student", "hall"]
 K = TypeVar("K")
-F = TypeVar("F", float, Series)
 
 
 def spent(t: float, alpha: float = ALPHA) -> float:
@@ -268,7 +267,11 @@ class Gate:
         return math.exp(brentq(excess, low, high, xtol=1e-12))
 
 
-def hall(statistic: F, n: int, skew: F) -> F:  # noqa: UP047 -- CI runs 3.11
+@overload
+def hall(statistic: float, n: int, skew: float) -> float: ...
+@overload
+def hall(statistic: Series, n: int, skew: Series) -> Series: ...
+def hall(statistic: float | Series, n: int, skew: float | Series) -> float | Series:
     """Hall's (1992) monotone cubic ``g(T) = T + c T^2 + c^2 T^3 / 3 + c / 2``,
     ``c = skew / (3 sqrt(n))``, of the studentised mean ``statistic`` of ``n`` values whose sample
     skewness is ``skew``, both on divisor ``n``: its law is the standard normal's to order ``1/n``.
