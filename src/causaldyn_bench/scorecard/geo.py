@@ -42,11 +42,11 @@ is exact: every cell is concave. The ladder
 is geo experiments read by difference-in-differences
 (:func:`~causaldyn_bench.scorecard.ladder.geo_rung`), noisy ones: on the family's first 30 pilot
 worlds at policy 0 a reading of a world without noise is off the true change, relative to it, by
-+0.06 on the mean with a standard deviation of 0.35 for search, +0.21 (1.19) for social and +0.13
-(0.71) for TV, from the spend's weekly jitter and the season, and exact without both. A test's
-standard error is read in time, from placebo readings that hold that error too: on the family's
-first 100 pilot worlds of each environment a 95 % interval holds the true change for 0.920 to 0.958
-of a channel's tests. The quarter at the status quo, the target of an arm's forecast, is the
++0.00 on the mean with a standard deviation of 0.28 for search, +0.00 (1.04) for social and +0.01
+(0.63) for TV, from the spend's weekly jitter, and exact without it. A test's standard error is
+read in time, from placebo readings that hold that error too: on the family's first 100 pilot
+worlds of each environment a 95 % interval holds the true change for 0.925 to 0.950 of a channel's
+tests. The quarter at the status quo, the target of an arm's forecast, is the
 market's, the geos' KPI summed
 (:func:`~causaldyn_bench.scorecard.continuation.geo_shadow`); and a channel's returns are the
 market's (:func:`~causaldyn_bench.scorecard.returns.true_geo_returns`).
