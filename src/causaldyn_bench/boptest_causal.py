@@ -1127,13 +1127,15 @@ class SafetyAudit:
 
     @property
     def gamma(self) -> float:
-        """The MSM sensitivity level that realises :attr:`radius` at a unit gap.
+        """The MSM sensitivity level that realises :attr:`radius` in the channel's own units.
 
         ``certify_safety`` takes ``(gamma, cvar_gap)`` and uses them only through
-        ``Delta = (G-1)/(G+1)*gap``, so the pair is a convention rather than two facts. Fixing the
-        gap at 1 makes ``Delta`` the radius itself in the channel's own units and makes the
-        certificate's ``gamma_star`` invertible by the same formula -- the threshold radius a step
-        tolerates is ``(G*-1)/(G*+1)`` K/h per unit of travel, with no second convention to carry.
+        ``Delta = (G-1)/(G+1)*gap*||B_hat(x0)||``, the gap a share of the channel's size at the
+        plan's first state, so the pair is a convention rather than two facts. A gap of
+        ``1/||B_hat(x0)||`` makes ``Delta`` the radius itself in the channel's own units and makes
+        the certificate's ``gamma_star`` invertible by the same formula -- the threshold radius a
+        step tolerates is ``(G*-1)/(G*+1)`` K/h per unit of travel, with no second convention to
+        carry.
         """
         return (1.0 + self.radius) / (1.0 - self.radius)
 
@@ -1206,6 +1208,10 @@ def _audit_plan(
     from chc.barrier import robust_safety_filter
     from chc.plan import CausalPlan, certify_safety
 
+    temp, nominal = jnp.asarray(plan.states[0]), float(plan.actions[0])
+    zero = jnp.zeros(())
+    drift = float(fit.rate(temp, covariates[0], zero))
+    channel = float(jax.grad(lambda u: fit.rate(temp, covariates[0], u))(zero))
     certificate = certify_safety(
         CausalPlan(
             actions=plan.actions[:, None],
@@ -1224,13 +1230,9 @@ def _audit_plan(
         dt,
         alpha=audit.alpha,
         gamma=audit.gamma,
-        cvar_gap=1.0,
+        cvar_gap=1.0 / abs(channel),
         u_max=case.action_hi,
     )
-    temp, nominal = jnp.asarray(plan.states[0]), float(plan.actions[0])
-    zero = jnp.zeros(())
-    drift = float(fit.rate(temp, covariates[0], zero))
-    channel = float(jax.grad(lambda u: fit.rate(temp, covariates[0], u))(zero))
     allowed = robust_safety_filter(
         nominal, channel, audit.radius, case.action_hi, drift, audit.alpha * (float(temp) - floor)
     )
