@@ -78,11 +78,22 @@ spend following the season. The four weeks before a test do not read it. The sec
 own variance: ``A + c^2 B`` for a test at the slope ``c``, ``A`` and ``B`` the tested and the other
 geos' summed variances, the even and the odd geos' trading places from one test to the next; one
 weekly noise pooled over a channel's tests fits neither. A placebo reading holds both.
+
+An *understated* rung (:func:`understated`) is a rung whose tests report their standard error
+``factor`` times too small, as an analysis does that reads a geo's noise as independent from week
+to week where it carries over: under a first-order autoregression of coefficient ``phi`` a sum over
+12 weeks has ``1 + 2 sum_{k<12} (1 - k/12) phi^k`` times the variance of 12 independent weeks, so
+such an analysis understates its error by a factor of 1.63 at ``phi = 0.5`` and 2.43 at
+``phi = 0.8`` (Maxima). Its readings are the rung's own; a 95 % interval on its standard error holds
+the true change about as often as one of ``1.96 / factor`` of the rung's standard errors does,
+``2 Phi(1.96 / factor) - 1``: 0.67 at a factor of 2 and 0.49 at 3. It tests how an arm reads a
+test whose error is understated.
 """
 
 from __future__ import annotations
 
 import dataclasses
+import math
 from dataclasses import dataclass
 
 import jax
@@ -104,6 +115,7 @@ from causaldyn_bench.lift_calibration import (
 from causaldyn_bench.scorecard.seeds import Role, rng
 
 RUNGS = tuple(range(len(STARTS) + 1))  # the tests a channel may get: none to all of his four
+UNDERSTATED = (2.0, 3.0)  # the factors an understated rung's tests understate their error by
 SHARES = (0.5, 1.0)  # the shares of the market an overlapping rung's tests may run in
 GEO_STARTS = (20, 44, 68, 92)  # a geo world's tests' first dark weeks, of its 104
 # a geo reading's weights over its weeks before and its readout, and their correlation with
@@ -184,6 +196,21 @@ def overlap(
     sales = share * universes.sales_treated + (1.0 - share) * universes.sales_control
     history = dataclasses.replace(world, spend=spend, media=media, sales=sales)
     return Overlap(history, {channel: tests}, universes.spend_control.copy(), share)
+
+
+def understated(rows: LiftRows, factor: float) -> LiftRows:
+    """``rows`` as an analysis reports them that understates each test's error ``factor`` times:
+    each standard error the rung's own over ``factor``, every other column the rung's own; see the
+    module.
+
+    Raises:
+        ValueError: on a factor not finite or below 1, which would overstate the error.
+    """
+    if not (math.isfinite(factor) and factor >= 1.0):
+        raise ValueError(
+            f"a rung understates its tests' error by a finite factor of 1 or more, not {factor}"
+        )
+    return dataclasses.replace(rows, sigma=rows.sigma / factor)
 
 
 def dark_geos(geos: int, test: int) -> tuple[int, ...]:
