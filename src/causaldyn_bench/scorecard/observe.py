@@ -18,8 +18,13 @@ hold them, at an overlapping rung (:func:`causaldyn_bench.scorecard.ladder.overl
 observation says so (:class:`Held`): the share of the market that ran them, and each test's
 channel's spend as planned over its dark weeks, which the history no longer shows.
 
-**Version 2**, what :func:`export` writes, names the family, the environment and the rung, and its
-digest reads every array the export holds, so nothing an arm reads lies outside it. **Version 1**
+**Version 2**, what :func:`export` writes by default, names the family, the environment and the
+rung, and its digest reads every array the export holds, so nothing an arm reads lies outside it.
+**Version 3** is version 2 with each test's gap in each week of its readout (``lift_gaps``), for a
+tool that reads a test's carryover from its shape rather than its sum; its digest reads the gaps
+too. An observation is exported at its ``version``, so a run asks for the gaps by observing at
+:data:`SERIES`; every number of version 2 is the same in version 3, and a version-3 observation
+gives version 2's digest when a record fitted to version 2 asks for it. **Version 1**
 is what Track M v2's budgets run exported; :func:`read` reads it as an observation of family 0 at
 the top rung, its environment the directory it was written to, and :meth:`Observation.digest`
 computes its digest by that run's rule, so a record fitted to a version-1 export is still scored
@@ -48,6 +53,7 @@ from causaldyn_bench.lift_calibration import COOLDOWN, STARTS, TEST
 
 VERSION = 2
 FIRST = 1  # the version Track M v2's budgets run exported, read with family 0 at the top rung
+SERIES = 3  # version 2 with each test's gap week by week over its readout
 LEGACY_CONTROLS = ("promotion", "price")  # the controls version 1 exported, under these names
 
 
@@ -67,7 +73,8 @@ class Observation:
     """One world at one rung, as an arm reads it. Weeks are numbered from 1; ``sales`` is
     ``(weeks,)`` and ``spend`` ``(weeks, channels)``, each with a geo axis before the channels where
     ``population`` is given; the box and the status quo hold a weekly spend for each cell.
-    ``held`` is given where the history holds the lift tests, and None where they ran apart."""
+    ``held`` is given where the history holds the lift tests, and None where they ran apart.
+    ``version`` is the export's; version 3 needs the tests' weekly gaps."""
 
     family: int
     environment: str
@@ -92,10 +99,17 @@ class Observation:
     national: tuple[str, ...] = ()  # the channels bought nationally, where there is a geo axis
 
     def __post_init__(self) -> None:
-        if self.version not in (FIRST, VERSION):
+        if self.version not in (FIRST, VERSION, SERIES):
             raise ValueError(f"no export has version {self.version}")
+        if self.version == SERIES:
+            gaps = self.lift.gaps
+            rows = (len(self.lift.channel), TEST + COOLDOWN)
+            if gaps is None or np.shape(gaps) != rows or not np.isfinite(gaps).all():
+                raise ValueError(f"version {SERIES} holds each test's weekly gaps, finite, {rows}")
         if (self.future_controls is None) != (self.version == FIRST):
-            raise ValueError("the quarter's controls are given in version 2, and only there")
+            raise ValueError(
+                "the quarter's controls are given in version 2 and later, and only there"
+            )
         weeks = self.sales.shape[0]
         geos = () if self.population is None else (self.population.size,)
         if self.sales.shape != (weeks, *geos):
@@ -149,10 +163,11 @@ class Observation:
 
     def digest(self, version: int | None = None) -> str:
         """The hash an arm's record must echo: by ``version``'s rule, this observation's own by
-        default. Version 1's reads Track M v2's national export alone."""
+        default. Version 1's reads Track M v2's national export alone; version 3's needs the
+        tests' weekly gaps, and version 2's is read off a version-3 observation as well."""
         version = self.version if version is None else version
-        if version == VERSION:
-            return _hash(_fields(self))
+        if version in (VERSION, SERIES):
+            return _hash(_fields(self, version))
         if version == FIRST:
             return _first_digest(self)
         raise ValueError(f"no export has version {version}")
@@ -163,11 +178,15 @@ class Observation:
         return self.spend if self.population is None else self.spend.sum(axis=1)
 
 
-def _fields(observation: Observation) -> dict[str, np.ndarray]:
-    """Every array a version-2 export holds but its digest."""
+def _fields(observation: Observation, version: int = VERSION) -> dict[str, np.ndarray]:
+    """Every array an export of ``version``, 2 or 3, holds but its digest."""
     o = observation
     if o.future_controls is None:
         raise ValueError("a version-1 observation is read, never exported")
+    if version == SERIES and o.lift.gaps is None:
+        raise ValueError(
+            f"a version-{SERIES} export holds the tests' weekly gaps, and these have none"
+        )
     names = tuple(o.controls)
     weeks = o.sales.shape[0]
 
@@ -176,7 +195,7 @@ def _fields(observation: Observation) -> dict[str, np.ndarray]:
         return np.column_stack(columns) if columns else np.zeros((length, 0))
 
     fields = {
-        "version": np.array(VERSION),
+        "version": np.array(version),
         "family": np.array(o.family),
         "environment": np.array(o.environment),
         "seed": np.array(o.seed),
@@ -212,6 +231,8 @@ def _fields(observation: Observation) -> dict[str, np.ndarray]:
         for row, geos in enumerate(o.lift.geos or ()):
             taken[row, list(geos)] = True
         fields["lift_geos"] = taken
+    if version == SERIES:
+        fields["lift_gaps"] = np.asarray(o.lift.gaps, dtype=float).reshape(-1, TEST + COOLDOWN)
     if o.held is not None:
         fields["held_share"] = np.array(float(o.held.share))
         fields["held_planned"] = np.asarray(o.held.planned, dtype=float)
@@ -257,19 +278,22 @@ def _first_digest(observation: Observation) -> str:
 
 
 def export(observation: Observation, directory: Path) -> Path:
-    """``observation`` as ``directory/world_<seed>.npz``, written once.
+    """``observation`` as ``directory/world_<seed>.npz`` at its version, written once. An archive
+    of the world at another version is kept where it holds the same world by its own version's
+    rule: the arms run on the archive.
 
     Raises:
         RuntimeError: the directory already holds an export of the world with other bits.
     """
-    fields = _fields(observation)
+    fields = _fields(observation, observation.version)
     stamp = _hash(fields)
     path = directory / f"world_{observation.seed}.npz"
     if path.exists():
-        archived = read(path).digest()
-        if archived != stamp:
+        saved = read(path)
+        archived, ours = saved.digest(), observation.digest(saved.version)
+        if archived != ours:
             raise RuntimeError(
-                f"{path} holds the world with digest {archived}, not {stamp}: a world is exported "
+                f"{path} holds the world with digest {archived}, not {ours}: a world is exported "
                 "once, and its arms run on the archive"
             )
         return path
@@ -312,12 +336,14 @@ def _lift(saved: Mapping[str, np.ndarray]) -> LiftRows:
             if "lift_geos" in saved
             else None
         ),
+        gaps=saved.get("lift_gaps"),
     )
 
 
 def _second(saved: Mapping[str, np.ndarray]) -> Observation:
-    if int(saved["version"]) != VERSION:
-        raise ValueError(f"this bench reads exports of version {FIRST} and {VERSION} alone")
+    version = int(saved["version"])
+    if version not in (VERSION, SERIES):
+        raise ValueError(f"this bench reads exports of versions {FIRST} to {SERIES} alone")
     names = tuple(str(name) for name in saved["control_names"])
     return Observation(
         family=int(saved["family"]),
@@ -344,6 +370,7 @@ def _second(saved: Mapping[str, np.ndarray]) -> Observation:
             else None
         ),
         national=tuple(str(c) for c in saved["national"]) if "national" in saved else (),
+        version=version,
     )
 
 

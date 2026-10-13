@@ -1,7 +1,8 @@
 """What an arm reads of a world: the export it runs on, written once and read back bit for bit, the
 digest that covers every array of it, and the budgets run's version-1 exports, still read and
 still digested by that run's rule. An overlapping rung's export says where its history holds the
-tests, and the digest reads that too."""
+tests, and the digest reads that too. Version 3 adds each test's weekly gaps, which sum to its
+change, and leaves every number and digest of version 2 as it was."""
 
 import dataclasses
 
@@ -9,10 +10,11 @@ import numpy as np
 import pytest
 
 from causaldyn_bench.budget_regret import budgets_rows, digest, experiments, export, lift_rows
-from causaldyn_bench.lift_calibration import COOLDOWN, STARTS, TEST
+from causaldyn_bench.lift_calibration import COOLDOWN, PRE, STARTS, TEST
 from causaldyn_bench.mmm_decision import PLANNED, Quarter
 from causaldyn_bench.scorecard import ladder, observe
-from causaldyn_bench.scorecard.observe import FIRST, VERSION, Held, Observation, read
+from causaldyn_bench.scorecard.geo import GEO
+from causaldyn_bench.scorecard.observe import FIRST, SERIES, VERSION, Held, Observation, read
 from causaldyn_bench.scorecard.observe import export as archive
 from causaldyn_bench.scorecard.track_m2 import TRACK_M2, overlapping, truth
 
@@ -32,6 +34,8 @@ def _same(a: Observation, b: Observation) -> None:
         left, right = getattr(a, field.name), getattr(b, field.name)
         if field.name == "lift":
             for part in dataclasses.fields(left):
+                if part.name == "gaps" and SERIES not in (a.version, b.version):
+                    continue  # version 2 exports no gaps
                 np.testing.assert_array_equal(getattr(left, part.name), getattr(right, part.name))
         elif field.name in ("controls", "future_controls"):
             assert list(left) == list(right)
@@ -259,7 +263,7 @@ def test_a_malformed_geo_observation_is_refused(observed, change, match):
 @pytest.mark.parametrize(
     ("change", "match"),
     [
-        ({"version": 3}, "no export has version"),
+        ({"version": 4}, "no export has version"),
         ({"future_controls": None}, "given in version 2"),
         ({"spend": np.zeros((156, 2))}, "spend is"),
         ({"sales": np.zeros(155)}, "spend is"),
@@ -349,3 +353,82 @@ def test_malformed_held_tests_are_refused(world, held, share, planned, match):
     planned = over.held.planned if planned is None else planned
     with pytest.raises(ValueError, match=match):
         dataclasses.replace(over, held=Held(share, planned))
+
+
+def test_each_test_s_weekly_gaps_sum_to_its_change(world, observed):
+    """A national test's gaps are its groups' difference over the dark weeks and the cooldown, and
+    sum to the change a dark week times the dark weeks; the rows the budgets run kept keep
+    theirs."""
+    lift = observed.lift
+    assert lift.gaps is not None and lift.gaps.shape == (len(lift.channel), TEST + COOLDOWN)
+    np.testing.assert_allclose(lift.gaps.sum(axis=1), TEST * lift.delta_y, rtol=1e-13, atol=0)
+    tests = ladder.rung(world.history, 905, len(STARTS))
+    readouts = [t.difference[PRE : PRE + TEST + COOLDOWN] for c in tests for t in tests[c]]
+    np.testing.assert_array_equal(lift.gaps, readouts)
+    empty = TRACK_M2.observe(world, 0).lift.gaps
+    assert empty is not None and empty.shape == (0, TEST + COOLDOWN)
+
+    world = TRACK_M2.world("drawn", 900)
+    every = TRACK_M2.observe(world, len(STARTS)).lift
+    kept = observe.falling(every)
+    fell = every.delta_y < 0.0
+    assert kept.gaps is not None and every.gaps is not None and not fell.all()
+    np.testing.assert_array_equal(kept.gaps, every.gaps[fell])
+
+
+def test_a_geo_test_s_weekly_gaps_are_its_reading_week_by_week():
+    world = GEO.world("policy-0.5", GEO.pilots["policy-0.5"][3])
+    lift = GEO.observe(world, 4).lift
+    assert lift.gaps is not None and lift.gaps.shape == (12, TEST + COOLDOWN)
+    np.testing.assert_array_equal(lift.gaps.sum(axis=1) / TEST, lift.delta_y)
+
+
+def test_a_version_three_export_holds_the_gaps_and_version_two_s_numbers(observed, tmp_path):
+    """The same observation at version 3: every array of version 2 with the same bits, the gaps
+    beside them, a digest of its own that reads them, and version 2's digest when a record fitted
+    to version 2 asks for it."""
+    series = dataclasses.replace(observed, version=SERIES)
+    second = archive(observed, tmp_path / "two")
+    third = archive(series, tmp_path / "three")
+    with np.load(second) as two, np.load(third) as three:
+        assert set(three.files) - set(two.files) == {"lift_gaps"}
+        for name in two.files:
+            if name not in ("version", "digest"):
+                np.testing.assert_array_equal(three[name], two[name])
+        assert int(three["version"]) == SERIES and int(two["version"]) == VERSION
+    back = read(third)
+    assert back.version == SERIES
+    _same(back, series)
+    assert back.digest() == series.digest() != observed.digest()
+    assert back.digest(VERSION) == read(second).digest() == observed.digest()
+    nudged = observed.lift.gaps.copy()
+    nudged[3, 5] *= 1.0 + 1e-12
+    moved = dataclasses.replace(series, lift=dataclasses.replace(series.lift, gaps=nudged))
+    assert moved.digest() != series.digest() and moved.digest(VERSION) == observed.digest()
+    with pytest.raises(ValueError, match="these have none"):
+        read(second).digest(SERIES)
+
+
+def test_a_world_archived_at_version_two_is_kept_for_its_version_three(world, observed, tmp_path):
+    path = archive(observed, tmp_path)
+    written = path.read_bytes()
+    assert archive(dataclasses.replace(observed, version=SERIES), tmp_path) == path
+    assert path.read_bytes() == written
+    other = dataclasses.replace(TRACK_M2.observe(world, 3), version=SERIES)
+    with pytest.raises(RuntimeError, match="exported once"):
+        archive(other, tmp_path)
+
+
+@pytest.mark.parametrize(
+    ("gaps", "match"),
+    [
+        (None, "weekly gaps"),
+        (np.zeros((12, TEST)), "weekly gaps"),
+        (np.full((12, TEST + COOLDOWN), np.nan), "weekly gaps, finite"),
+    ],
+)
+def test_a_version_three_observation_without_its_gaps_is_refused(observed, gaps, match):
+    with pytest.raises(ValueError, match=match):
+        dataclasses.replace(
+            observed, version=SERIES, lift=dataclasses.replace(observed.lift, gaps=gaps)
+        )

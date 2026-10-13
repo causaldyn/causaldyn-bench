@@ -219,14 +219,19 @@ def dark_geos(geos: int, test: int) -> tuple[int, ...]:
     return tuple(range(test % 2, geos, 2))
 
 
-def _geo_reading(ours: Series, theirs: Series, first: int, slope: float) -> float:
-    """The change a geo test reads from its tested geos' KPI ``ours`` and the others' ``theirs``,
-    its first dark week ``first`` counted from 0: the gap over the dark weeks and the cooldown, each
-    group's KPI less its mean over the ``PRE`` weeks before, the others' times ``slope``, a dark
-    week."""
+def _geo_gaps(ours: Series, theirs: Series, first: int, slope: float) -> Series:
+    """The gap a geo test reads in each week of its dark weeks and cooldown from its tested geos'
+    KPI ``ours`` and the others' ``theirs``, its first dark week ``first`` counted from 0: each
+    group's KPI less its mean over the ``PRE`` weeks before, the others' times ``slope``."""
     pre = slice(first - PRE, first)
     gap = (ours - float(ours[pre].mean())) - slope * (theirs - float(theirs[pre].mean()))
-    return float(gap[first : first + TEST + COOLDOWN].sum()) / TEST
+    return gap[first : first + TEST + COOLDOWN]
+
+
+def _geo_reading(ours: Series, theirs: Series, first: int, slope: float) -> float:
+    """The change a geo test reads: its gaps (:func:`_geo_gaps`) summed over the dark weeks and the
+    cooldown, a dark week."""
+    return float(_geo_gaps(ours, theirs, first, slope).sum()) / TEST
 
 
 def _slope(ours: Series, theirs: Series, first: int, length: int) -> float:
@@ -280,7 +285,9 @@ def geo_rung(world: GeoMediaWorld, family: int, seed: int, k: int) -> LiftRows:
     module. Each row names its tested geos. Every test is a row, whichever way its KPI moved, as
     :func:`causaldyn_bench.budget_regret.lift_rows` keeps it. A test's standard error is read in
     time (:func:`placebo_error`), at the slope its reading reads: its weeks are clear of every
-    test, so the channel's universe and the universe had it held no test agree on it.
+    test, so the channel's universe and the universe had it held no test agree on it. A row's gaps
+    are its reading week by week (:func:`_geo_gaps`); every week's is read against the same
+    pre-period means, so their errors are correlated across the weeks.
 
     Raises:
         ValueError: a rung off the ladder, a world with fewer than two geos, or one too short for a
@@ -295,7 +302,7 @@ def geo_rung(world: GeoMediaWorld, family: int, seed: int, k: int) -> LiftRows:
         raise ValueError(f"the tests' readouts run past the world's {weeks} weeks")
     starts = GEO_STARTS[len(GEO_STARTS) - k :]
     columns: dict[str, list] = {
-        key: [] for key in ("channel", "start", "x", "change", "sigma", "geos")
+        key: [] for key in ("channel", "start", "x", "change", "sigma", "geos", "gaps")
     }
     size = world.mix.noise * np.sqrt(world.population)[:, None]
     with jax.enable_x64(True):
@@ -321,6 +328,7 @@ def geo_rung(world: GeoMediaWorld, family: int, seed: int, k: int) -> LiftRows:
                 float(world.spend[list(treated), first : first + TEST, c].sum(axis=0).mean())
             )
             columns["change"].append(_geo_reading(ours, theirs, first, slope))
+            columns["gaps"].append(_geo_gaps(ours, theirs, first, slope))
             columns["sigma"].append(placebo_error(logged + noise, treated, first, world.mix.length))
             columns["geos"].append(treated)
     x = np.array(columns["x"], dtype=float)
@@ -333,4 +341,5 @@ def geo_rung(world: GeoMediaWorld, family: int, seed: int, k: int) -> LiftRows:
         sigma=np.array(columns["sigma"], dtype=float),
         dropped=0,
         geos=tuple(columns["geos"]),
+        gaps=np.array(columns["gaps"], dtype=float).reshape(-1, TEST + COOLDOWN),
     )

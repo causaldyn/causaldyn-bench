@@ -241,7 +241,9 @@ class LiftRows:
     each test's first dark week ``start``, numbered from 1 as the world's weeks are, which dates it
     for a tool that calibrates on a test's window. A geo test names the geos it took dark, ``geos``,
     each row's numbered from 0 along the geo axis, and reads ``x`` and ``delta_y`` summed over
-    them; a national test names none."""
+    them; a national test names none. ``gaps`` is each test's change in sales in each week of its
+    readout, its dark weeks and the cooldown after them, ``(rows, weeks)``: a row sums to
+    ``delta_y`` times the dark weeks, so a tool that reads the carryover's shape reads it there."""
 
     channel: tuple[str, ...]
     start: tuple[int, ...]
@@ -251,6 +253,7 @@ class LiftRows:
     sigma: Series
     dropped: int  # tests left out: by the budgets run's export alone (:func:`falling`)
     geos: tuple[tuple[int, ...], ...] | None = None
+    gaps: Series | None = None
 
 
 def lift_rows(tests: dict[str, tuple[LiftTest, ...]]) -> LiftRows:
@@ -259,8 +262,9 @@ def lift_rows(tests: dict[str, tuple[LiftTest, ...]]) -> LiftRows:
     ``x`` is the control's mean weekly spend over the dark weeks and ``delta_x = -x``. ``delta_y``
     is the gap summed over the dark weeks and the cooldown after them, so the carryover the
     darkness cost is counted, over the dark weeks. ``sigma`` scales the weekly gap's noise, read
-    from the pre-test weeks of every test of the channel, to that sum. Every test is a row,
-    whichever way its sales moved: keeping a test on its reading truncates on the outcome.
+    from the pre-test weeks of every test of the channel, to that sum. ``gaps`` is the gap in each
+    of those weeks. Every test is a row, whichever way its sales moved: keeping a test on its
+    reading truncates on the outcome.
     """
     columns: dict[str, list] = {
         "channel": [],
@@ -269,6 +273,7 @@ def lift_rows(tests: dict[str, tuple[LiftTest, ...]]) -> LiftRows:
         "delta_x": [],
         "delta_y": [],
         "sigma": [],
+        "gaps": [],
     }
     after = slice(PRE, PRE + TEST + COOLDOWN)
     for name, channel_tests in tests.items():
@@ -285,6 +290,7 @@ def lift_rows(tests: dict[str, tuple[LiftTest, ...]]) -> LiftRows:
             columns["delta_x"].append(-level)
             columns["delta_y"].append(change)
             columns["sigma"].append(noise * math.sqrt(TEST + COOLDOWN) / TEST)
+            columns["gaps"].append(test.difference[after])
     return LiftRows(
         channel=tuple(columns["channel"]),
         start=tuple(columns["start"]),
@@ -293,6 +299,7 @@ def lift_rows(tests: dict[str, tuple[LiftTest, ...]]) -> LiftRows:
         delta_y=np.array(columns["delta_y"]),
         sigma=np.array(columns["sigma"]),
         dropped=0,
+        gaps=np.array(columns["gaps"], dtype=float).reshape(-1, TEST + COOLDOWN),
     )
 
 
@@ -316,6 +323,7 @@ def falling(rows: LiftRows) -> LiftRows:
         sigma=np.asarray(rows.sigma)[fell],
         dropped=rows.dropped + int(fell.size - kept.size),
         geos=None if rows.geos is None else tuple(rows.geos[i] for i in kept),
+        gaps=None if rows.gaps is None else np.asarray(rows.gaps)[fell],
     )
 
 
