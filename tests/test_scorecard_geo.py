@@ -4,7 +4,8 @@ season by exactly its factor; every cell's worth is what chc's world lifts over 
 oracle, exact on concave cells, is checked against chc's own world, a dense grid on two geos and a
 search written apart from it; the geo tests read by difference-in-differences, exact on a world that
 holds still outside them, their standard error read in time from placebo readings, the readings
-and the standard errors nesting under common random numbers;
+and the standard errors nesting under common random numbers, and an understated rung's
+standard errors theirs over its factor;
 the quarter at the status quo and the returns are chc's world run on; and every world exports,
 reads back and scores, the oracle's own plan at nought."""
 
@@ -19,6 +20,7 @@ import pytest
 from chc.geo_world import GeoMediaWorld
 from chc.response import Hill
 from scipy.optimize import minimize
+from scipy.stats import norm
 
 from causaldyn_bench.budget_regret import TIE
 from causaldyn_bench.lift_calibration import COOLDOWN, PRE, TEST
@@ -27,7 +29,14 @@ from causaldyn_bench.scorecard import truth
 from causaldyn_bench.scorecard.continuation import geo_shadow, lifted
 from causaldyn_bench.scorecard.family import number
 from causaldyn_bench.scorecard.geo import FAMILY, GEO, POLICIES, mix, window
-from causaldyn_bench.scorecard.ladder import GEO_STARTS, dark_geos, geo_rung, placebo_error
+from causaldyn_bench.scorecard.ladder import (
+    GEO_STARTS,
+    UNDERSTATED,
+    dark_geos,
+    geo_rung,
+    placebo_error,
+    understated,
+)
 from causaldyn_bench.scorecard.observe import VERSION, export, read
 from causaldyn_bench.scorecard.returns import drawn_returns, true_geo_returns
 from causaldyn_bench.scorecard.scoring import WorldRecord, score_world
@@ -533,6 +542,41 @@ def test_on_the_familys_worlds_a_geo_tests_error_over_its_standard_error_has_a_s
     z = np.array(z)
     assert z.size == 360
     assert abs(float(np.std(z, ddof=1)) - 1.0) <= 4.0 / math.sqrt(2 * (z.size - 1))
+
+
+def test_an_understated_rung_is_the_rung_with_its_standard_errors_its_factor_times_too_small():
+    """On the family's first 20 pilot worlds at policy 0, 240 tests: an understated rung's rows are
+    the rung's but for each standard error, the rung's over the factor, and a 95 % interval on it
+    holds the true change for 0.708 of the tests at a factor of 2 and 0.471 at 3, each within four
+    binomial standard errors of ``2 Phi(1.96 / factor) - 1``, 0.673 and 0.486, where the rung's own
+    holds it for 0.942. A factor below 1, which overstates the error, and one not finite are
+    refused."""
+    z = []
+    for seed in GEO.pilots["policy-0"][:20]:
+        world = GEO.world("policy-0", seed).history
+        rows = geo_rung(world, 8, seed, 4)
+        for factor in UNDERSTATED:
+            less = understated(rows, factor)
+            np.testing.assert_array_equal(less.sigma, rows.sigma / factor)
+            assert less.sigma is not rows.sigma
+            for field in dataclasses.fields(rows):
+                if field.name != "sigma":
+                    assert getattr(less, field.name) is getattr(rows, field.name)
+        names = [c.name for c in world.mix.channels]
+        for row, (channel, start) in enumerate(zip(rows.channel, rows.start, strict=True)):
+            true = _true_change(world, names.index(channel), GEO_STARTS.index(start))
+            z.append((rows.delta_y[row] - true) / rows.sigma[row])
+    z = np.abs(np.array(z))
+    assert z.size == 240
+    quantile = float(norm.ppf(0.975))
+    assert float(np.mean(z < quantile)) >= 0.95 - 4.0 * math.sqrt(0.95 * 0.05 / z.size)
+    for factor in (2.0, 3.0):
+        expected = 2.0 * float(norm.cdf(quantile / factor)) - 1.0
+        covered = float(np.mean(factor * z < quantile))
+        assert abs(covered - expected) <= 4.0 * math.sqrt(expected * (1.0 - expected) / z.size)
+    for factor in (0.5, math.inf, math.nan):
+        with pytest.raises(ValueError, match="finite factor of 1 or more"):
+            understated(rows, factor)
 
 
 def _placebo_kpi() -> np.ndarray:
