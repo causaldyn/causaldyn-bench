@@ -344,6 +344,20 @@ def test_on_two_geos_no_point_of_a_dense_grid_beats_the_oracle_and_its_best_refi
     assert plan.worth * (1 - 1e-10) <= refined <= plan.worth + TIE * quarter.budget
 
 
+def sloped_reading(ours: np.ndarray, theirs: np.ndarray, first: int) -> float:
+    """A geo test's reading from week ``first``: each group's KPI less its mean over the ``PRE``
+    weeks before, the others' times the least-squares slope of ``ours`` on ``theirs`` over the weeks
+    clear of the kernel's first seven and of every test's window, summed over the readout."""
+    clear = np.ones(ours.size, dtype=bool)
+    clear[:7] = False
+    for start in GEO_STARTS:
+        clear[start - 1 - PRE : start - 1 + TEST + COOLDOWN] = False
+    slope = np.polyfit(theirs[clear], ours[clear], 1)[0]
+    before = slice(first - PRE, first)
+    gap = ours - ours[before].mean() - slope * (theirs - theirs[before].mean())
+    return float(gap[first : first + TEST + COOLDOWN].sum()) / TEST
+
+
 def _true_change(world: GeoMediaWorld, c: int, j: int) -> float:
     """What the ``j``-th test of channel ``c`` costs its tested geos over its readout, a dark
     week, from chc's world: its lift with the geos dark less its lift as spent."""
@@ -390,6 +404,20 @@ def test_on_a_world_that_holds_still_outside_its_tests_the_reading_is_the_true_c
         assert rows.delta_y[row] == pytest.approx(true, rel=1e-9, abs=0.0)
 
 
+def test_on_a_world_whose_base_moves_with_the_season_alone_the_reading_is_the_true_change():
+    """Without the spend's jitter and the noise, the season moves each geo's base and not its
+    media, so the two groups' KPI are not in proportion: a control scaled by their ratio before the
+    test reads the season's movement over the readout. They are on a line, and a control scaled by
+    its slope reads the change chc's world lifts."""
+    seed = GEO.pilots["policy-0"][7]
+    world = _world(seed, spend_noise=0.0, noise=0.0)
+    rows = geo_rung(world, 8, seed, 4)
+    names = [c.name for c in world.mix.channels]
+    for row, (channel, start) in enumerate(zip(rows.channel, rows.start, strict=True)):
+        true = _true_change(world, names.index(channel), GEO_STARTS.index(start))
+        assert rows.delta_y[row] == pytest.approx(true, rel=1e-9, abs=0.0)
+
+
 def test_a_geo_test_whose_kpi_rose_is_exported():
     """Dropping a test on its reading truncates on the outcome: every test of the rung is a row,
     whichever way its KPI moved, and nothing is dropped."""
@@ -397,7 +425,7 @@ def test_a_geo_test_whose_kpi_rose_is_exported():
     world = GEO.world("policy-0", seed).history
     rows = geo_rung(world, 8, seed, 4)
     assert rows.dropped == 0 and len(rows.channel) == 12
-    assert int(np.sum(rows.delta_y >= 0.0)) == 8
+    assert int(np.sum(rows.delta_y >= 0.0)) == 4
     names = [c.name for c in world.mix.channels]
     assert sorted(zip(rows.channel, rows.start, strict=True)) == sorted(
         itertools.product(names, GEO_STARTS)
@@ -407,7 +435,7 @@ def test_a_geo_test_whose_kpi_rose_is_exported():
 def test_each_channels_tests_run_in_a_universe_of_their_own():
     """A channel's universe is the world's base and its media with every test of the rung dark,
     and noise of the world's size from the family's tests' stream, ``(108, 2, seed, c + 1)``; each
-    test reads its geos against the others, scaled over the four weeks before it."""
+    test reads its geos against the others, at the slope of their co-movement outside the tests."""
     seed = GEO.pilots["policy-0.5"][3]
     world = GEO.world("policy-0.5", seed).history
     rows = geo_rung(world, 8, seed, 4)
@@ -422,9 +450,7 @@ def test_each_channels_tests_run_in_a_universe_of_their_own():
         for j, start in enumerate(GEO_STARTS):
             ours = kpi[list(dark_geos(10, j))].sum(axis=0)
             theirs = kpi[list(dark_geos(10, j + 1))].sum(axis=0)
-            before = slice(start - 1 - PRE, start - 1)
-            gap = ours - ours[before].mean() / theirs[before].mean() * theirs
-            reading = gap[start - 1 : start - 1 + TEST + COOLDOWN].sum() / TEST
+            reading = sloped_reading(ours, theirs, start - 1)
             held = [
                 i
                 for i, (n, s) in enumerate(zip(rows.channel, rows.start, strict=True))
@@ -437,11 +463,12 @@ def test_each_channels_tests_run_in_a_universe_of_their_own():
 def test_on_worlds_still_but_for_their_noise_a_geo_tests_standard_error_is_its_groupings():
     """On worlds that hold still but for the noise, a tenth of the family's: the reading less the
     true change, over its noise's standard deviation, ``sigma_u sqrt(Q + Q^2 / P) / TEST`` with
-    ``sigma_u`` the tested geos' noise beside the others' at the ratio, has a standard deviation of
-    1 within four standard errors, and so has it over the test's standard error. The even and the
-    odd geos' noises differ by their ratio, and a test's standard error follows its own: within a
-    channel its log moves with the noise's with a slope of 1, where one weekly noise pooled over the
-    channel's tests does not move at all."""
+    ``sigma_u`` the tested geos' noise beside the others' at the reading's slope, has a standard
+    deviation of 1 within four standard errors, and so has it over the test's standard error. The
+    even and the odd geos' noises differ, and a test's standard error follows its own: within a
+    channel its log moves with the noise's with a slope of 1 within four of its standard errors,
+    clustered by channel, where one weekly noise pooled over the channel's tests does not move at
+    all."""
     z, read, noises, errors = [], [], [], []
     for seed in GEO.pilots["policy-0"][:40]:
         world = _world(seed, spend_noise=0.0, season=0.0, noise=23.0)
@@ -449,16 +476,20 @@ def test_on_worlds_still_but_for_their_noise_a_geo_tests_standard_error_is_its_g
         rows = geo_rung(world, 8, seed, 4)
         assert rows.dropped == 0
         sizes = 23.0**2 * world.population
-        kpi = quiet.kpi
         names = [c.name for c in world.mix.channels]
         for c in range(3):
+            normals = np.random.default_rng((108, 2, seed, c + 1)).standard_normal((10, 104))
+            kpi = quiet.kpi + 23.0 * np.sqrt(world.population)[:, None] * normals
             spreads, sigmas = [], []
             for j, start in enumerate(GEO_STARTS):
                 ours = list(dark_geos(10, j))
                 theirs = [g for g in range(10) if g not in ours]
-                pre = slice(start - 1 - PRE, start - 1)
-                ratio = kpi[ours, pre].sum() / kpi[theirs, pre].sum()
-                variance = float(sizes[ours].sum() + ratio**2 * sizes[theirs].sum())
+                clear = np.ones(104, dtype=bool)
+                clear[:7] = False
+                for s in GEO_STARTS:
+                    clear[s - 1 - PRE : s - 1 + TEST + COOLDOWN] = False
+                slope = np.polyfit(kpi[theirs][:, clear].sum(0), kpi[ours][:, clear].sum(0), 1)[0]
+                variance = float(sizes[ours].sum() + slope**2 * sizes[theirs].sum())
                 spread = math.sqrt(variance * (12 + 12**2 / PRE)) / TEST
                 row = next(
                     i
@@ -477,8 +508,12 @@ def test_on_worlds_still_but_for_their_noise_a_geo_tests_standard_error_is_its_g
     for values in (z, read):
         assert abs(float(np.std(values, ddof=1)) - 1.0) <= 4.0 / math.sqrt(2 * (values.size - 1))
         assert abs(float(np.mean(values))) <= 4.0 / math.sqrt(values.size)
-    assert float(np.std(noises)) > 0.2  # the groupings' noises do differ
-    assert float(noises @ errors / (noises @ noises)) == pytest.approx(1.0, abs=0.05)
+    assert float(np.std(noises)) > 0.15  # the groupings' noises do differ
+    slope = float(noises @ errors / (noises @ noises))
+    # a channel's four tests share their groupings' noises: the slope's error clusters by channel
+    scores = ((errors - slope * noises) * noises).reshape(-1, 4).sum(axis=1)
+    error = math.sqrt(float(scores @ scores)) / float(noises @ noises)
+    assert abs(slope - 1.0) <= 4.0 * error < 0.5
 
 
 @pytest.mark.parametrize("name", list(POLICIES))
@@ -527,8 +562,9 @@ def test_a_tests_standard_error_widens_its_placebo_readings_by_a_ts_spread_at_th
     """Over independent weeks two placebo readings ``h`` weeks apart correlate by ``rho(h)``,
     Maxima's exact values for four weeks before and twelve of readout and 0 from 16; the standard
     error is the readings' root mean square times ``sqrt(nu / (nu - 2))``,
-    ``nu = n^2 / sum rho(|f - f'|)^2``. A universe with two effective readings or fewer is
-    refused."""
+    ``nu = n^2 / sum rho(|f - f'|)^2``, each reading at the slope of the groups' KPI over the weeks
+    clear of the kernel's first, of every geo test's window and of the test's own. A universe with
+    two effective readings or fewer is refused."""
     rho = np.array([1, 35 / 48, 11 / 24, 3 / 16, -1 / 12, -5 / 48, -1 / 8, -7 / 48, -1 / 6])
     rho = np.concatenate([rho, [-3 / 16, -5 / 24, -11 / 48, -1 / 4, -3 / 16, -1 / 8, -1 / 16, 0]])
     kpi, treated, first = _placebo_kpi(), (0, 2), 30
@@ -541,9 +577,15 @@ def test_a_tests_standard_error_widens_its_placebo_readings_by_a_ts_spread_at_th
             if f + after <= first - PRE or f - PRE >= first + after
         ]
     )
+    clear = np.ones(104, dtype=bool)
+    clear[: LENGTH - 1] = False
+    for start in (*(s - 1 for s in GEO_STARTS), first):
+        clear[start - PRE : start + after] = False
+    slope = np.polyfit(theirs[clear], ours[clear], 1)[0]
     readings = []
     for f in firsts:
-        gap = ours - ours[f - PRE : f].mean() / theirs[f - PRE : f].mean() * theirs
+        before = slice(f - PRE, f)
+        gap = ours - ours[before].mean() - slope * (theirs - theirs[before].mean())
         readings.append(gap[f : f + after].sum() / TEST)
     lags = np.minimum(np.abs(firsts[:, None] - firsts[None, :]), 16)
     nu = firsts.size**2 / float(np.sum(rho[lags] ** 2))

@@ -37,6 +37,20 @@ LENGTH = 8  # the kernel's
 HORIZON = PLANNED + LENGTH - 1
 
 
+def sloped_reading(ours: np.ndarray, theirs: np.ndarray, first: int) -> float:
+    """A geo test's reading from week ``first``: each group's KPI less its mean over the ``PRE``
+    weeks before, the others' times the least-squares slope of ``ours`` on ``theirs`` over the weeks
+    clear of the kernel's first seven and of every test's window, summed over the readout."""
+    clear = np.ones(ours.size, dtype=bool)
+    clear[:7] = False
+    for start in GEO_STARTS:
+        clear[start - 1 - PRE : start - 1 + TEST + COOLDOWN] = False
+    slope = np.polyfit(theirs[clear], ours[clear], 1)[0]
+    before = slice(first - PRE, first)
+    gap = ours - ours[before].mean() - slope * (theirs - theirs[before].mean())
+    return float(gap[first : first + TEST + COOLDOWN].sum()) / TEST
+
+
 def test_the_family_draws_its_three_environments_from_its_own_blocks():
     assert number(FEW_GEOS) == FAMILY == 10 and tuple(FEW_GEOS.pilots) == tuple(FEW_GEOS.scored)
     assert {name: geos.count for name, geos in SIZES.items()} == {
@@ -305,9 +319,7 @@ def test_on_three_geos_a_test_takes_two_geos_dark_or_one_and_every_test_is_expor
     for j, start in enumerate(GEO_STARTS):
         ours = kpi[list(dark_geos(3, j))].sum(axis=0)
         theirs = kpi[list(dark_geos(3, j + 1))].sum(axis=0)
-        before = slice(start - 1 - PRE, start - 1)
-        gap = ours - ours[before].mean() / theirs[before].mean() * theirs
-        reading = gap[start - 1 : start - 1 + TEST + COOLDOWN].sum() / TEST
+        reading = sloped_reading(ours, theirs, start - 1)
         held = [
             i
             for i, (n, s) in enumerate(zip(rows.channel, rows.start, strict=True))

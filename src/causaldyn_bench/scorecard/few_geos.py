@@ -27,15 +27,15 @@ three geos the alternate geos a test takes dark are geos 0 and 2 in the first an
 geo 1 alone in the second and fourth, each read against the others, and a test's standard error is
 read in time from placebo readings whose count does not depend on the geos: every test reads, and
 every one is exported. The tests are weak: on the first 30 pilot worlds of each environment the
-median test's standard error is 2.21 times its true change on three geos, 1.16 on eight, 1.41 on
-fifty small ones, and 1.01 on family 8's ten. Their intervals hold: at k = 4 on those worlds a 95 %
-interval holds the true change for 0.875 to 0.942 of a channel's tests on three geos, 0.925 to
-0.958 on eight and 0.933 to 0.967 on fifty, where family 8's hold 0.925 to 0.942. A test of one geo
+median test's standard error is 2.19 times its true change on three geos, 1.13 on eight, 1.43 on
+fifty small ones, and 0.98 on family 8's ten. Their intervals hold: at k = 4 on those worlds a 95 %
+interval holds the true change for 0.925 to 0.950 of a channel's tests on three geos, 0.933 to
+0.958 on eight and 0.933 to 0.983 on fifty, where family 8's hold 0.917 to 0.950. A test of one geo
 is no worse than a test of two: on the first 100 pilot worlds of three geos the tests of geo 1
-alone hold 0.910 and those of geos 0 and 2 hold 0.967, where family 8's tests in the same weeks hold
-0.918 and 0.970 on its 100; without the season they hold 0.945 and 0.948, so the gap is the
-season's phase, not the count of geos. A rule that exports no test of one geo was rejected: on
-three geos it drops half of every rung's tests for a coverage that family 8's own tests share.
+alone hold 0.938 and those of geos 0 and 2 hold 0.957, where family 8's tests in the same weeks hold
+0.925 and 0.952 on its 100; without the season they hold 0.948 and 0.938. A rule that exports no
+test of one geo was rejected: on three geos it drops half of every rung's tests for a coverage that
+family 8's own tests share.
 
 Every cell is concave, as in family 8, so the oracle is exact.
 """
