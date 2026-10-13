@@ -93,7 +93,7 @@ def test_a_geo_exports_apportioned_rows_are_read_on_a_normal_likelihood(arm, tmp
     assert kwargs["dist"] is not dims.Gamma
     with np.load(path) as world:
         split, keep = lift.apportioned(world)
-    assert len(rows) == int(keep.sum()) == 20
+    assert len(rows) == int(keep.sum()) == 40
     expected = pd.DataFrame(
         {
             "channel": split["channel"][keep],

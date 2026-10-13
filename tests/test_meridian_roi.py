@@ -63,12 +63,12 @@ def test_a_channel_whose_pooled_roi_is_not_positive_keeps_the_default_and_is_nam
     assert why["down"] == "its pooled ROI, -0.5, is not positive"
 
 
-def test_on_a_geo_export_whose_tests_rose_two_channels_keep_the_default(tmp_path):
-    """Pilot world 3 of policy 0 at the top rung: eight of its twelve tests rose, and social's and
-    TV's pool below nought, which the arm once built into a NaN prior; at rung 0 no channel has a
+def test_on_a_geo_export_whose_tests_rose_a_channel_keeps_the_default(tmp_path):
+    """Pilot world 4 of policy 0 at the top rung: four of its twelve tests rose, and social's pool
+    falls below nought, which the arm once built into a NaN prior; at rung 0 no channel has a
     test."""
-    world = GEO.world("policy-0", GEO.pilots["policy-0"][3])
-    for k, expected in ((4, ["social", "tv"]), (0, ["search", "social", "tv"])):
+    world = GEO.world("policy-0", GEO.pilots["policy-0"][4])
+    for k, expected in ((4, ["social"]), (0, ["search", "social", "tv"])):
         with np.load(export(GEO.observe(world, k), tmp_path / str(k))) as saved:
             channels = [str(c) for c in saved["channels"]]
             pools = roi.pooled(saved, channels)
@@ -76,4 +76,4 @@ def test_on_a_geo_export_whose_tests_rose_two_channels_keep_the_default(tmp_path
         assert list(why) == expected
         if k == 4:
             assert pools["search"]["roi"] > 0.0 and pools["search"]["rows"] == 4
-            assert pools["social"]["roi"] < 0.0 and pools["tv"]["roi"] < 0.0
+            assert pools["tv"]["roi"] > 0.0 and pools["social"]["roi"] < 0.0

@@ -37,7 +37,7 @@ def test_on_a_geo_export_whose_tests_rose_the_arm_drops_them_itself(tmp_path):
         assert world["lift_channel"].size == 12 and int(world["lift_dropped"]) == 0
         keep, dropped = lift.taken(world)
         np.testing.assert_array_equal(keep, world["lift_delta_y"] < 0.0)
-    assert (int(keep.sum()), dropped) == (4, 8)
+    assert (int(keep.sum()), dropped) == (8, 4)
 
 
 def test_on_a_national_export_the_rows_are_the_ladders_and_the_arm_drops_the_one_that_rose(
@@ -116,4 +116,4 @@ def test_on_the_familys_geo_export_each_test_splits_into_its_five_geos(tmp_path)
         np.testing.assert_array_equal(rows["geo"][at], np.flatnonzero(world["lift_geos"][test]))
         _sums_back(world, rows, test)
     np.testing.assert_array_equal(keep, np.repeat(world["lift_delta_y"] < 0.0, 5))
-    assert int(keep.sum()) == 20
+    assert int(keep.sum()) == 40
