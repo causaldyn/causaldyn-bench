@@ -30,7 +30,8 @@ the even geos in the first and third test, the odd ones in the second and fourth
 difference-in-differences against the other geos. Its four tests start in weeks 20, 44, 68 and 92
 of the 104, 24 weeks apart, the last one's readout closing in week 103. Each channel's tests run in
 a universe of their own: the world's base and spend, the channel dark in the tested geos and weeks,
-and fresh noise of the world's size in every geo and week, drawn from the family's stream
+and fresh noise of the world's size and law in every geo and week
+(:func:`~causaldyn_bench.scorecard.geo_noise.kpi_noise`), drawn from the family's stream
 ``(100 + f, 2, seed, c + 1)`` for the ``c``-th channel. The history holds none of it. A test's
 carryover dies out before the next one's readout opens, as on Track M v2, so the rungs nest under
 common random numbers here too.
@@ -112,6 +113,7 @@ from causaldyn_bench.lift_calibration import (
     Setting,
     lift_tests,
 )
+from causaldyn_bench.scorecard.geo_noise import kpi_noise
 from causaldyn_bench.scorecard.seeds import Role, rng
 
 RUNGS = tuple(range(len(STARTS) + 1))  # the tests a channel may get: none to all of his four
@@ -304,18 +306,19 @@ def geo_rung(world: GeoMediaWorld, family: int, seed: int, k: int) -> LiftRows:
     columns: dict[str, list] = {
         key: [] for key in ("channel", "start", "x", "change", "sigma", "geos", "gaps")
     }
-    size = world.mix.noise * np.sqrt(world.population)[:, None]
     with jax.enable_x64(True):
         logged = world.base + np.asarray(world.lift(world.spend), dtype=float)
     for c, channel in enumerate(world.mix.channels):
-        noise = size * rng(family, Role.TESTS, seed, c + 1).standard_normal((geos, weeks))
+        shocks = rng(family, Role.TESTS, seed, c + 1).standard_normal((geos, weeks))
         dark = world.spend.copy()
         for start in starts:
             dark[
                 list(dark_geos(geos, GEO_STARTS.index(start))), start - 1 : start - 1 + TEST, c
             ] = 0.0
         with jax.enable_x64(True):
-            kpi = world.base + np.asarray(world.lift(dark), dtype=float) + noise
+            level = world.base + np.asarray(world.lift(dark), dtype=float)
+        noise = kpi_noise(world, level, shocks)
+        kpi = level + noise
         for start in starts:
             treated = dark_geos(geos, GEO_STARTS.index(start))
             control = [g for g in range(geos) if g not in treated]

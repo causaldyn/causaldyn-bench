@@ -69,6 +69,7 @@ from causaldyn_bench.endogenous_mmm import YEAR
 from causaldyn_bench.mmm_decision import PLANNED
 from causaldyn_bench.scorecard.continuation import GeoShadow, geo_shadow
 from causaldyn_bench.scorecard.family import Truth, number
+from causaldyn_bench.scorecard.geo_noise import LogNormalNoise
 from causaldyn_bench.scorecard.ladder import geo_rung
 from causaldyn_bench.scorecard.observe import Observation
 from causaldyn_bench.scorecard.returns import true_geo_returns
@@ -93,9 +94,12 @@ def mix(
     family: int = FAMILY,
     population: float = POPULATION,
     noise: float = NOISE,
+    lognormal: bool = False,
 ) -> GeoMediaMix:
     """The mix world ``seed`` is drawn from, its spreads drawn from family ``family``'s stream:
-    this family's, or one that changes its geos' count, median population and noise a head."""
+    this family's, or one that changes its geos' count, median population and noise a head, and
+    draws the noise log-normal about the KPI's level
+    (:class:`~causaldyn_bench.scorecard.geo_noise.LogNormalNoise`) where ``lognormal``."""
     spreads = rng(family, Role.PARAMETERS, seed).uniform(*SPREADS, 3)
     with jax.enable_x64(True):
         channels = (
@@ -115,7 +119,7 @@ def mix(
                 national=True,
             ),
         )
-    return GeoMediaMix(
+    return (LogNormalNoise if lognormal else GeoMediaMix)(
         channels,
         geos=geos,
         weeks=WEEKS,
