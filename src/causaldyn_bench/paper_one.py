@@ -62,7 +62,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from chc.regret import (
+from chc.research.regret import (
     clustered_lower_bound_certificate,
     composition_transfer_certificate,
     end_to_end_c2_certificate,

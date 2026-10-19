@@ -2,7 +2,7 @@
 
 import dataclasses
 
-from chc.deep_galerkin import BlindnessSweep
+from chc.research.deep_galerkin import BlindnessSweep
 
 from causaldyn_bench.paper_four import Configuration, summarise
 

@@ -1,4 +1,5 @@
-"""Non-CHC dynamics baselines for Tracks A/B (the tree surrogate lives in ``chc.surrogate``).
+"""Non-CHC dynamics baselines for Tracks A/B (the tree surrogate lives in
+``chc.research.surrogate``).
 
 ``LinearFitDynamics`` is the DLM / linear-state-space competitor from the strategy matrix: a
 least-squares linear next-state model ``x_{t+1} = A x_t + B u_t + c`` fit from transitions. For a

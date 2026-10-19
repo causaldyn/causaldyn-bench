@@ -47,11 +47,8 @@ from pathlib import Path
 from typing import TypedDict
 
 import numpy as np
-from chc.regret import (
-    capped_exploration_policy,
-    minimax_exploration_certificate,
-    multivariate_van_trees_certificate,
-)
+from chc.regret import capped_exploration_policy, minimax_exploration_certificate
+from chc.research.regret import multivariate_van_trees_certificate
 
 # The knobs the capped-exploration certificates share. These are the defaults of every certificate
 # below; naming them once here is what lets `plant_constants` check itself against the library.

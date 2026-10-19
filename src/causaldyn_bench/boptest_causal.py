@@ -14,8 +14,8 @@ zone. Regress the temperature rate on ``(1, T, u)`` and the outdoor term lands i
 
 so ``Cov(u, eps) < 0`` and the fitted control channel is biased **downward**: the estimator credits
 the heating to a milder outdoors instead of to the actuator. That is the same identification failure
-as ``chc.benchmark.CausalDynamicsTask``, except the plant is a Modelica building emulator rather
-than a synthetic system and the confounder is real weather.
+as ``chc.research.benchmark.CausalDynamicsTask``, except the plant is a Modelica building emulator
+rather than a synthetic system and the confounder is real weather.
 
 Which way that bias moves the *controller* is a property of the cost, not of the bias. Under a
 quadratic tracking objective an attenuated channel under-actuates. Under BOPTEST's

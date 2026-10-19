@@ -99,5 +99,9 @@ python-version = "3.14"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
-# a name chc's top level only serves with a warning is imported from its module here
-filterwarnings = ["error:chc\\.\\w+ leaves the top level:DeprecationWarning"]
+# a name chc's top level, or a chc module's path from before 0.19.0, only serves with a warning is
+# imported from where it lives here
+filterwarnings = [
+    "error:chc\\.\\w+ leaves the top level:DeprecationWarning",
+    "error:chc\\.\\w+\\.\\w+ leaves chc\\.\\w+ in 0\\.20\\.0:DeprecationWarning",
+]

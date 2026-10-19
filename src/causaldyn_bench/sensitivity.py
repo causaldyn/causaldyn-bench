@@ -22,7 +22,7 @@ The method lives in ``chc.regret``; this track scores it.
 
 from __future__ import annotations
 
-from chc.regret import confounding_robust_tracking_benchmark
+from chc.research.regret import confounding_robust_tracking_benchmark
 
 from causaldyn_bench.tracks import TrackResult
 

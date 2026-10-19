@@ -1,7 +1,7 @@
 """Track M: the two axes of the media-planning problem, and which one the plant decides."""
 
 import pytest
-from chc.mmm import MmmReport, run_marketing_mix
+from chc.research.mmm import MmmReport, run_marketing_mix
 
 from causaldyn_bench.allocation import CARRYOVER_DOMINANT, track_allocation
 

@@ -33,7 +33,7 @@ from pathlib import Path
 
 import numpy as np
 from chc.network_causal import graph_shells
-from chc.regret import exact_matrix_ratio_moment, optimal_fold_partition
+from chc.research.regret import exact_matrix_ratio_moment, optimal_fold_partition
 
 from causaldyn_bench.fold_design import (
     _GAMMAS,

@@ -1,8 +1,8 @@
 """Track M: allocation over time -- which axis of the media-planning problem actually pays.
 
-The MMM case study (``chc.mmm``) as a scored track. Four rules read one confounded weekly log and
-are audited on the true plant at matched budget, so the comparison is about allocation and not
-about how much was spent:
+The MMM case study (``chc.research.mmm``) as a scored track. Four rules read one confounded weekly
+log and are audited on the true plant at matched budget, so the comparison is about allocation and
+not about how much was spent:
 
 * ``CHC-adjusted`` -- the season adjusted for, the whole horizon optimised;
 * ``myopic-greedy`` -- the SAME identified fit, spent on this week's return alone;
@@ -36,7 +36,7 @@ between two orderings, and only when there is one.
 from __future__ import annotations
 
 import numpy as np
-from chc.mmm import MarketingMixSystem, MmmReport, run_marketing_mix
+from chc.research.mmm import MarketingMixSystem, MmmReport, run_marketing_mix
 
 from causaldyn_bench.tracks import TrackResult
 
@@ -63,7 +63,7 @@ def track_allocation(seed: int = 0, horizon: int = 12) -> list[TrackResult]:
     baseline the plant produces on its own and would compress every arm into the last digit; and
     lift rather than lift per unit spend, because under diminishing returns that metric rewards
     under-investment -- the confounded arm scores HIGHER on it while earning less, which is the
-    trap ``chc.mmm`` pinned with a test.
+    trap ``chc.research.mmm`` pinned with a test.
     """
     report = run_marketing_mix(horizon=horizon, seed=seed)
     return [

@@ -4,7 +4,7 @@ Every other track asks which *method* to run. This one holds the method fixed --
 cross-fitted DML for a direct and a spillover effect, `chc.network_causal.estimate_network_effects`
 -- and varies only the split. Five arms: random rows, random whole units, contiguous graph blocks,
 Emmenegger-style neighbour exclusion, and the variance-optimal design
-(`chc.regret.optimal_fold_partition`).
+(`chc.research.regret.optimal_fold_partition`).
 
 **The result is an ordering, and the useful half of it is negative.** Measured on `C_12` over 120
 draws at `g = 2` clusters, MSE relative to the random-unit split, with 95% PAIRED bootstrap
@@ -103,7 +103,7 @@ from chc.network_causal import (
     graph_shells,
     torus_adjacency,
 )
-from chc.regret import optimal_fold_partition
+from chc.research.regret import optimal_fold_partition
 
 from causaldyn_bench.tracks import TrackResult
 
