@@ -49,6 +49,7 @@ import math
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import numpy as np
 from numpy.typing import NDArray
@@ -178,11 +179,20 @@ class Market(ABC):
     """A market's weekly history as a geo test reads it: each week's sales and each channel's spend
     and effect, ``(weeks, channels)``. A world of any form is one through :meth:`_effect_of`."""
 
-    channels: tuple[str, ...]
-    week: NDArray[np.int64]  # 1, 2, ..., weeks
-    sales: Series
-    media: Series  # (weeks, channels) each channel's true effect
-    spend: Series  # (weeks, channels)
+    # read-only, as the frozen dataclasses that implement it hold them; declared for the type
+    # checker alone, since a property here would be a dataclass field's inherited default
+    if TYPE_CHECKING:
+
+        @property
+        def channels(self) -> tuple[str, ...]: ...
+        @property
+        def week(self) -> NDArray[np.int64]: ...  # 1, 2, ..., weeks
+        @property
+        def sales(self) -> Series: ...
+        @property
+        def media(self) -> Series: ...  # (weeks, channels) each channel's true effect
+        @property
+        def spend(self) -> Series: ...  # (weeks, channels)
 
     def geo_test(
         self,

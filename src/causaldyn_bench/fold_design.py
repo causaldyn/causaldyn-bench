@@ -91,6 +91,9 @@ deliberately absent.
 
 from __future__ import annotations
 
+import functools
+import operator
+
 import jax
 import numpy as np
 from chc.network_causal import (
@@ -152,10 +155,13 @@ def _topologies() -> dict[str, tuple[tuple[tuple[int, ...], ...] | None, np.ndar
 def _same_fold_mass(shells: list[np.ndarray], fold: np.ndarray) -> float:
     """The partition-dependent part of Psi -- the variance-optimal design's objective, a max-cut."""
     x = _PHI**_LAG
-    q = sum(
-        _GAMMAS[d] * _GAMMAS[e] * x ** abs(d - e) * (shells[d] @ shells[e])
-        for d in range(3)
-        for e in range(3)
+    q = functools.reduce(
+        operator.add,
+        (
+            _GAMMAS[d] * _GAMMAS[e] * x ** abs(d - e) * (shells[d] @ shells[e])
+            for d in range(3)
+            for e in range(3)
+        ),
     )
     same = fold[:, None] == fold[None, :]
     return float(q[same].sum())
