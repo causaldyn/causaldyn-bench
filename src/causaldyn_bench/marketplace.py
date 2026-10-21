@@ -18,6 +18,7 @@ from chc.marketplace import (
     calibrate_naive_causal,
     calibrate_predictive,
     calibrate_shared_state,
+    fit_equilibrium,
     interference_bias,
     pessimistic_equilibrium_allocation,
     sutva_allocation,
@@ -32,7 +33,7 @@ def _allocations(market: SharedStateMarket, logs: dict, radius: float = 1.0) -> 
         "predictive-MOPO": sutva_allocation(market, calibrate_predictive(logs), radius),
         "naive-causal": sutva_allocation(market, calibrate_naive_causal(logs), radius),
         "equilibrium-CHC": pessimistic_equilibrium_allocation(
-            market, calibrate_shared_state(logs), radius=radius
+            market, calibrate_shared_state(logs), radius=radius, equilibrium=fit_equilibrium(logs)
         ),
     }
 

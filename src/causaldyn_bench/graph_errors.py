@@ -422,6 +422,9 @@ def prescribe(panel: chc.Panel, adjustment: chc.CausalGraph | Sequence[str]) -> 
         horizon=HORIZON,
         dt=DT,
         tolerance=TOLERANCE,
+        # the track's published numbers were read under the relative radius and polynomial nuisances
+        radius="relative",
+        nuisance_knots=None,
     )
 
 

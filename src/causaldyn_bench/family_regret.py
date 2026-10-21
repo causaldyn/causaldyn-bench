@@ -209,7 +209,8 @@ def candidates(tests: Sequence[LiftTest], length: int) -> dict[str, LiftFit | st
     fits: dict[str, LiftFit | str] = {}
     for family in CANDIDATES:
         try:
-            fits[family] = fit_lift(tests, template(family, tests, length))
+            # the track's published numbers were read under independent errors
+            fits[family] = fit_lift(tests, template(family, tests, length), serial="independent")
         except (RuntimeError, ValueError) as error:  # a family the tests cannot fit is none
             fits[family] = f"{type(error).__name__}: {error}"
     return fits

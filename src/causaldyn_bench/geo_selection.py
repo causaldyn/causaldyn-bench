@@ -568,7 +568,8 @@ def score_arm(
     tests = lift_tests(panel, chosen, sales)
     fit: LiftFit | None
     try:
-        fit = fit_lift(tests, template(panel, chosen, tests))
+        # the track's published numbers were read under independent errors
+        fit = fit_lift(tests, template(panel, chosen, tests), serial="independent")
         failure = None
     except (RuntimeError, ValueError) as error:
         fit, failure = None, f"{type(error).__name__}: {error}"

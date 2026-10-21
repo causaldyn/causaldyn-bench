@@ -18,12 +18,12 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 from chc import HybridDynamics, QuadraticCost
-from chc.benchmark import InventoryTask, PricingTask, SupportShiftTask
 from chc.causal import ConfoundedLinearSystem
 from chc.control import projected_gradient_control
 from chc.dynamics import DampedOscillator
 from chc.estimators import BackdoorOLS, DoubleML
 from chc.integrate import rk4_step, rollout
+from chc.research.benchmark import InventoryTask, PricingTask, SupportShiftTask
 from chc.residual import MLPResidual, ZeroResidual
 from chc.train import fit_residual, one_step_mse
 
@@ -72,7 +72,7 @@ def fit_dynamics_models(seed: int = 0, steps: int = 1500, n: int = 2000) -> dict
     dlm = LinearFitDynamics().fit(np.asarray(xs), np.asarray(us), np.asarray(x_next))
     tree = None
     try:
-        from chc.surrogate import GradientBoostedDynamics
+        from chc.research.surrogate import GradientBoostedDynamics
 
         tree = GradientBoostedDynamics().fit(np.asarray(xs), np.asarray(us), np.asarray(x_next))
     except ImportError:

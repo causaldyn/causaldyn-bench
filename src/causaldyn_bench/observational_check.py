@@ -32,9 +32,9 @@ his four go-dark tests on every channel, the noise a percent of mean weekly sale
   ``g.m / g.g``, ``g`` the gaps it predicts and ``m`` the world's own, from the generator.
 
 ``least_gamma`` is read at an effect-scale gap of 1, the channel's own predicted lift, as
-``chc.sensitivity``'s example sets it. It is a floor under the ``Gamma`` the observational channel
-needs: it lies at or under the one the noise-free factor needs whenever the factor's interval
-covers that factor.
+``chc.research.sensitivity``'s example sets it. It is a floor under the ``Gamma`` the observational
+channel needs: it lies at or under the one the noise-free factor needs whenever the factor's
+interval covers that factor.
 
 **The gate** (the second half of the library's lift-test verification): on paid shopping, the
 channel his tests ran on, over 500 histories, the check is valid and has power. The ``F`` rejects
@@ -203,7 +203,10 @@ def check_history(seed: int) -> tuple[Reading, ...]:
     for column, name in enumerate(world.channels):
         true = true_channel(generator, name, world.kernel_length)
         try:
-            fit = fit_lift(tests[name], template(tests[name], world.kernel_length))
+            # the track's published numbers were read under independent errors
+            fit = fit_lift(
+                tests[name], template(tests[name], world.kernel_length), serial="independent"
+            )
         except RuntimeError as error:
             failure = f"lift: {error}"
             missing = Check.missing(failure)

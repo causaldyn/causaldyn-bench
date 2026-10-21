@@ -4,8 +4,8 @@ One command produces all five.
 
     uv run python -m causaldyn_bench.paper_one --out results/paper1
 
-Nothing here re-derives a model. Every number is read off a certificate in ``chc.regret`` --
-:func:`composition_transfer_certificate` (the order-doubling lemma),
+Nothing here re-derives a model. Every number is read off a certificate in
+``chc.research.regret`` -- :func:`composition_transfer_certificate` (the order-doubling lemma),
 :func:`multivariate_interference_certificate` and :func:`exposure_map_certificate` (the two- and
 three-channel bottleneck), :func:`end_to_end_c2_certificate` (both regimes),
 :func:`clustered_lower_bound_certificate` (the two-sided floor) and :func:`regret_scaling` (the
@@ -62,7 +62,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from chc.regret import (
+from chc.research.regret import (
     clustered_lower_bound_certificate,
     composition_transfer_certificate,
     end_to_end_c2_certificate,

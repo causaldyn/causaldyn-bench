@@ -4,7 +4,7 @@ import json
 
 import numpy as np
 import pytest
-from chc.regret import CompositionTransferCurve
+from chc.research.regret import CompositionTransferCurve
 
 from causaldyn_bench import paper_one
 from causaldyn_bench.paper_one import (

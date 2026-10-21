@@ -5,8 +5,8 @@ One command produces all four.
     uv run python -m causaldyn_bench.paper_two --out results/paper2
 
 The measurements themselves live in :mod:`causaldyn_bench.fold_design` (Track N) and in
-``chc.regret``; nothing is recomputed here with a second copy of the DGP. What this module adds is
-the two things a manuscript needs and a leaderboard does not:
+``chc.research.regret``; nothing is recomputed here with a second copy of the DGP. What this module
+adds is the two things a manuscript needs and a leaderboard does not:
 
 1. **Intervals.** Every ratio in the paper is a ratio of mean squared errors between two splits of
    the SAME draws, so the interval is a PAIRED percentile bootstrap: resample draw indices once and
@@ -33,7 +33,7 @@ from pathlib import Path
 
 import numpy as np
 from chc.network_causal import graph_shells
-from chc.regret import exact_matrix_ratio_moment, optimal_fold_partition
+from chc.research.regret import exact_matrix_ratio_moment, optimal_fold_partition
 
 from causaldyn_bench.fold_design import (
     _GAMMAS,

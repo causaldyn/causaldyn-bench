@@ -44,13 +44,13 @@ deterministic and the fitted class contains it, so the adjusted arm recovers ``3
 seed of **both** policies -- adjustment neither helps nor harms a randomised design, where the
 unadjusted fit already sits at ``+2.985 +- 0.037``. The confounded-and-unadjusted arm returns
 ``-1.053 +- 0.025`` over ``[-1.107, -0.969]``: the estimator concludes the actuator pushes the
-pendulum backwards, on all five seeds. That is the sign flip of ``chc.benchmark.CausalDynamicsTask``
-reproduced on third-party physics rather than on a self-authored DGP, and a controller built on it
-does exactly what the sign says: scored by Gymnasium's own reward over a 200-step upright-regulation
-episode, the de-confounded arm lands **3.1% off an oracle built from the environment's own
-dynamics** (0.3289 against 0.3189) while the confounded one costs **1537.04** -- the actuator
-saturated at its bound on every step of every seed, pushing the wrong way, and the pendulum on the
-floor 5 times out of 5.
+pendulum backwards, on all five seeds. That is the sign flip of
+``chc.research.benchmark.CausalDynamicsTask`` reproduced on third-party physics rather than on a
+self-authored DGP, and a controller built on it does exactly what the sign says: scored by
+Gymnasium's own reward over a 200-step upright-regulation episode, the de-confounded arm lands
+**3.1% off an oracle built from the environment's own dynamics** (0.3289 against 0.3189) while the
+confounded one costs **1537.04** -- the actuator saturated at its bound on every step of every seed,
+pushing the wrong way, and the pendulum on the floor 5 times out of 5.
 
 Three findings that were not designed in and are worth stating plainly:
 
@@ -434,6 +434,8 @@ def fit_pendulum(
         degree=0,
         folds=folds,
         ridge=ridge,
+        # the track's published numbers were read under the polynomial nuisances
+        nuisance_knots=None,
     )
     coupling = float(fit.residual.channel[0, 0, 0])
     gain = float(fit.residual.channel[1, 0, 0])

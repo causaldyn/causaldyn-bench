@@ -74,7 +74,7 @@ Four things, in the order they matter:
 1. **The confounded arm gets the sign wrong on every seed.** Not attenuated — reversed. The range
    `[−1.107, −0.969]` does not come near zero, so this is not a noisy estimate that happened to
    cross over; the estimator is confident that pushing the pendulum clockwise accelerates it
-   anticlockwise. This is `chc.benchmark.CausalDynamicsTask`'s headline sign flip reproduced on
+   anticlockwise. This is `chc.research.benchmark.CausalDynamicsTask`'s headline sign flip reproduced on
    third-party physics rather than on a self-authored DGP.
 2. **Adjustment recovers the constant to 7 digits.** The plant is deterministic and the fitted class
    contains it, so the Robinson residual is exactly zero and the recovery is exact up to float64.

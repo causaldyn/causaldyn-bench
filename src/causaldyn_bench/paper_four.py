@@ -5,10 +5,10 @@ One command produces both.
     uv run python -m causaldyn_bench.paper_four --out results/paper4
 
 Nothing here trains a model with a second copy of the solver: every configuration is one call to
-:func:`chc.deep_galerkin.residual_blindness_sweep`, which solves the anti-monotone LQ mean-field
-game at horizons approaching the obstruction ``T* = 0.8036`` in one fixed box and scores each solve
-three ways -- the raw interior residual, the residual conditioned by ``1/|den(T)|``, and the
-dual-weighted estimate built from the model alone. Two decisions a manuscript needs and a
+:func:`chc.research.deep_galerkin.residual_blindness_sweep`, which solves the anti-monotone LQ
+mean-field game at horizons approaching the obstruction ``T* = 0.8036`` in one fixed box and scores
+each solve three ways -- the raw interior residual, the residual conditioned by ``1/|den(T)|``, and
+the dual-weighted estimate built from the model alone. Two decisions a manuscript needs and a
 certificate does not:
 
 1. **Table 1 is the eight-horizon sweep from a committed routine.** That table was first printed
@@ -39,7 +39,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from statistics import median
 
-from chc.deep_galerkin import BlindnessSweep, MeanFieldOptimizer, residual_blindness_sweep
+from chc.research.deep_galerkin import BlindnessSweep, MeanFieldOptimizer, residual_blindness_sweep
 
 _HORIZONS = (0.30, 0.40, 0.50, 0.60, 0.68, 0.72, 0.76, 0.79)
 

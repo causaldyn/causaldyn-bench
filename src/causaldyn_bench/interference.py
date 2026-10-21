@@ -44,7 +44,7 @@ class ZoneIncentiveGame:
         """Follower equilibrium via ``chc.games`` (softmax congestion fixed point) given ``u``.
 
         ``beta*congestion = 5 < 6``, so the map is certified contracting
-        (``chc.games.congestion_contraction_certificate``) and the solve converges.
+        (``chc.research.games.congestion_contraction_certificate``) and the solve converges.
         """
         _, attract = self._demand_attract()
         return softmax_congestion_equilibrium(

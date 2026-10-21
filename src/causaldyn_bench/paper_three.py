@@ -5,10 +5,10 @@ One command produces all six.
     uv run python -m causaldyn_bench.paper_three --out results/paper3
 
 Nothing here re-derives a model. Tables 1-5 are read off certificates in ``chc.regret`` --
-:func:`minimax_exploration_certificate` (the local-minimax floor and the policies that meet it),
+:func:`minimax_exploration_certificate` (the local-minimax floor and the policies that meet it) and
 :func:`capped_exploration_policy` (the matching policy under a constant or a varying per-round
-cap) and :func:`multivariate_van_trees_certificate` (the multivariate van Trees floor) -- so a
-table and the library cannot drift.
+cap) -- and in ``chc.research.regret`` -- :func:`multivariate_van_trees_certificate` (the
+multivariate van Trees floor) -- so a table and the library cannot drift.
 Table 6 is the one simulation in this module: every certificate charges a round the van Trees
 floor, so none of them can say whether an actual estimator attains it, and :func:`table_six` runs
 one on the certificate's own plant.
@@ -47,11 +47,8 @@ from pathlib import Path
 from typing import TypedDict
 
 import numpy as np
-from chc.regret import (
-    capped_exploration_policy,
-    minimax_exploration_certificate,
-    multivariate_van_trees_certificate,
-)
+from chc.regret import capped_exploration_policy, minimax_exploration_certificate
+from chc.research.regret import multivariate_van_trees_certificate
 
 # The knobs the capped-exploration certificates share. These are the defaults of every certificate
 # below; naming them once here is what lets `plant_constants` check itself against the library.

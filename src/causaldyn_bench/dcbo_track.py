@@ -220,6 +220,8 @@ def chc_decisions(
         x0=jnp.zeros(1),
         integrator="euler",
         seed=seed,
+        # the track's published numbers were read under the polynomial nuisances
+        nuisance_knots=None,
     )
     magnitudes = np.asarray(prescription.schedule.magnitudes, dtype=float)
     return tuple(Decision(("X", "Z"), (float(x), float(z))) for x, z in magnitudes)

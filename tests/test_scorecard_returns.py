@@ -43,9 +43,13 @@ def _slice(observed):
 def _chc(channel, observed, c, length):
     """chc's ROI and mROI of one channel on the observation's window, the series run on past the
     history for the ``length - 1`` weeks a kernel of ``length`` carries it into, with nothing
-    spent."""
+    spent. The series already carries the tail, so chc extends it by none."""
     spend = np.concatenate([observed.spend[:, c], np.zeros(length - 1)])
-    return roi(channel, spend, _slice(observed)), marginal_roi(channel, spend, _slice(observed))
+    window = _slice(observed)
+    return (
+        roi(channel, spend, window, tail=False),
+        marginal_roi(channel, spend, window, tail=False),
+    )
 
 
 def test_a_worlds_channels_are_its_own_media_week_by_week(drawn_world):

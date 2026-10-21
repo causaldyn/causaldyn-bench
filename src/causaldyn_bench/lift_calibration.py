@@ -161,7 +161,8 @@ def fit_history(job: tuple[int, int]) -> Reading:
     world = EndogenousMediaMix().simulate(seed)
     tests = lift_tests(world, setting, seed=10_000 + seed)
     try:
-        fit = fit_lift(tests, template(tests, world.kernel_length))
+        # the track's published numbers were read under independent errors
+        fit = fit_lift(tests, template(tests, world.kernel_length), serial="independent")
     except RuntimeError as error:  # the fit says it did not converge: a reading, not a crash
         return Reading.failed(seed, str(error))
     return read(fit, seed)

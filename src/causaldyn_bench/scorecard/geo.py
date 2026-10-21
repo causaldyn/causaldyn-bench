@@ -22,11 +22,11 @@ M v2's 40 drawn pilot worlds media are 0.168 of the sales and the sentiment and 
 noise at 0.0007.
 
 Each environment is one ``policy``, 0 and 0.5: how far the log's spend rises with the season, the
-confounding of :mod:`chc.mmm`. At one seed the two policies draw the same variates, so the policy
-alone moves the spend; each environment draws its worlds from a block of seeds of its own, as every
-family's do. Every other parameter is chc's default: populations log-normal about 1e5 with a log-SD
-of 1, bases per head with 0.2, each geo's intensity on a channel with 0.5, a week's spend jitter
-with 0.3, a season of 0.2 of the base, no spillover and no drift.
+confounding of :mod:`chc.research.mmm`. At one seed the two policies draw the same variates, so the
+policy alone moves the spend; each environment draws its worlds from a block of seeds of its own, as
+every family's do. Every other parameter is chc's default: populations log-normal about 1e5 with a
+log-SD of 1, bases per head with 0.2, each geo's intensity on a channel with 0.5, a week's spend
+jitter with 0.3, a season of 0.2 of the base, no spillover and no drift.
 
 The decision is the quarter after the history over the world's cells: each geo's own channels, geo
 by geo, then TV once, its plan allotted to the geos by population

@@ -243,6 +243,8 @@ def prescription(
         dt=design.dt,
         tolerance=design.tolerance,
         x0=jnp.asarray([temp]),
+        # the track's published numbers were read under the polynomial nuisances
+        nuisance_knots=None,
     )
 
 

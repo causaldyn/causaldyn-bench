@@ -196,7 +196,10 @@ def myopic(channels: Sequence[Channel]) -> tuple[Channel, ...]:
 
 def identified(tests: dict[str, tuple[LiftTest, ...]], length: int) -> dict[str, LiftFit]:
     """CHC's reading of each channel from its own geo tests alone, :func:`chc.lift.fit_lift`."""
-    return {name: fit_lift(t, template(t, length)) for name, t in tests.items()}
+    # the track's published numbers were read under independent errors
+    return {
+        name: fit_lift(t, template(t, length), serial="independent") for name, t in tests.items()
+    }
 
 
 def reading(fit: LiftFit) -> dict[str, float]:
