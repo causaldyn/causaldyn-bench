@@ -71,9 +71,11 @@
 
 | rank | method | value |
 |---|---|---|
-| 1 | equilibrium-CHC **(best)** | 0.0483 |
-| 2 | predictive-MOPO | 3.2322 |
-| 3 | naive-causal | 3.4844 |
+| 1 | equilibrium-CHC **(best)** | 0.0869 |
+| 2 | predictive-MOPO | 3.2349 |
+| 3 | naive-causal | 3.4870 |
+
+This track alone is measured on chc 0.20, which plans through the equilibrium `fit_equilibrium` fits to the logs; before, the planner read the simulator's own, and equilibrium-CHC's regret read 0.0483 (predictive-MOPO 3.2322, naive-causal 3.4844).
 
 ## I-sensitivity  (metric: worst-case closed-loop cost, lower is better)
 

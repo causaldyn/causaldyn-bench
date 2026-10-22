@@ -6,6 +6,8 @@ pre-registration is that module's docstring, committed before this run.
 - test case `bestest_hydronic_heat_pump`, steps of 30 min; each of 6 replicates logs 960 steps of the reset policy, then runs 336-step windows
 - target offsets -0.5, -0.25, +0, +0.25, +0.5, +1, +1.5 K; horizon 16 steps, tolerance 0.5 K, lever unit cost 0.0
 - precision: **float64** (`JAX_ENABLE_X64`); chc 0.5.1
+- not re-measured on chc 0.20: the module now passes `nuisance_knots=None`, the polynomial nuisances
+  this run read, which 0.20 no longer defaults to
 
 ## The gate
 

@@ -28,7 +28,10 @@ def test_marketplace_report_shows_confounding_and_interference() -> None:
     oracle = rep["oracle_lift"]
     assert rep["predictive_confounding_corr"] > 0.25  # logging chased demand -> confounded response
     assert abs(rep["naive_deconfounded_corr"]) < 0.2  # backdoor removes it
-    assert rep["chc_realised_lift"] > 0.9 * oracle  # CHC delivers most of the oracle lift...
+    # Planned through fit_equilibrium's equilibrium, CHC's share over seeds 0-29 read mean 0.904,
+    # SD 0.069, min 0.741 in float32 and mean 0.917, SD 0.063, min 0.770 under x64. The bound is
+    # the lower mean - 3 SD, 0.697, rounded down: a reading of the distribution, not of this seed.
+    assert rep["chc_realised_lift"] > 0.69 * oracle  # CHC delivers most of the oracle lift...
     assert rep["naive_realised_lift"] < 0.25 * oracle  # ...while the SUTVA planners barely help
     assert rep["predictive_realised_lift"] < 0.25 * oracle  # (or hurt)
     assert rep["naive_interference_overcount"] > 1.0  # SUTVA predicts a lift it never realises

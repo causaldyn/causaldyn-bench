@@ -14,6 +14,10 @@ from causaldyn_bench.boptest_causal import run_case, summarise
 print(summarise(run_case(seeds=(0,1,2,3,4))))"
 ```
 
+The numbers below were measured on chc releases before 0.20 and are not re-measured on it. The
+harness now passes `nuisance_knots=None` to `fit_causal_residual`, the polynomial nuisances they
+read, which 0.20 no longer defaults to.
+
 ## The question the previous harness could not ask
 
 `causaldyn_bench.boptest_chc` identifies its thermal model from a **randomised** slow-PRBS episode.
