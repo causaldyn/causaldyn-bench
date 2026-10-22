@@ -2,6 +2,16 @@
 
 200 replicates a world (`causaldyn_bench.graph_errors`, x64 True): on each, one panel of 400 units x 12 periods to plan on and a later one to evaluate on. Tolerance 0.05; a plan loses when its true regret passes its bound by 0.1 of the stakes. Rate intervals are Clopper-Pearson's.
 
+**Measured on causal-hybrid-control 0.8.0 (source as v0.9.0), and not reproduced from 0.17.0 on.**
+From 0.17.0 the plan's error tube carries the plant's own one-step noise (the library's ADR 0080).
+On these worlds that noise alone puts the tube at 0.30 or more at the first step, above the 0.05
+tolerance, so no plan is trusted for a single step: on 0.19.0 and 0.20.0 none of the arms acts,
+and the plan leg below (the "left" and "lost" claims) is not armed. The old tube was a scale for a
+noise-free plant, and its claim did not hold: a realised path stays within 0.05 at the first step
+in 23–26 % of draws, for the true graph too. The rows below are a result of that older tube. Rerun
+on 0.20.0, the evaluation leg alone reads no world where the stop beats a random one, and the
+flag's value on plans is untested there, not refuted.
+
 ## The gate
 
 A flag that does not lower the silent-failure rate is not shipped. Any stop lowers it, so the flag must do better than a stop at the same rate that ignored the failures: remove failures more often than it refuses sound claims (one-sided Fisher exact p). The analyst holds the true graph or the wrong one, so both count, and the wrong one alone where the two are the same. The wrong graph's silent-failure rate, read as it is and with the stop, then what the stop did over both graphs:
