@@ -12,6 +12,8 @@ in 23–26 % of draws, for the true graph too. The rows below are a result of th
 on 0.20.0, the evaluation leg alone reads no world where the stop beats a random one, and the
 flag's value on plans is untested there, not refuted.
 
+Version 2 rebuilds the plan leg on the claim the tube makes now, at a tolerance set from the generator: see `results/track_q_v2.md`, pre-registered in `results/track_q_v2_preregistration.md`.
+
 ## The gate
 
 A flag that does not lower the silent-failure rate is not shipped. Any stop lowers it, so the flag must do better than a stop at the same rate that ignored the failures: remove failures more often than it refuses sound claims (one-sided Fisher exact p). The analyst holds the true graph or the wrong one, so both count, and the wrong one alone where the two are the same. The wrong graph's silent-failure rate, read as it is and with the stop, then what the stop did over both graphs:
