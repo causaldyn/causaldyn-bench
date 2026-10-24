@@ -30,7 +30,9 @@ Four consequences, each falsifiable:
    three-channel LQ full-orthogonality slope reads `nan` outright -- `delta^4` regret has
    underflowed to exactly zero and `log 0` is what the fit sees. Table 1 carries the
    double-precision cancellation floor beside every cell, and it is the column that says which
-   reading to believe.
+   reading to believe. The LQ arms' `nan` was the library's arithmetic, a gap read as a
+   difference of two closed-loop costs: from causal-hybrid-control 0.20.1 the gap is a Lyapunov
+   form, and those cells read `4.000` at `[1e-4, 2e-3]` and at `[1e-5, 2e-4]`.
 3. **The `1/G` rate is a window measurement too, and its shipped window is too small.** The
    appendix's `-1.08` and its "flat" `-0.09` plateau are finite-`G` artefacts of a grid that starts
    at `G = 10`: move the grid up and the end-to-end slope walks `-1.139, -1.121, -1.054, -1.024`

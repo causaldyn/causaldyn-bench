@@ -93,16 +93,17 @@ def test_one_plug_in_channel_caps_the_exponent_whether_there_are_two_or_three() 
         assert not row["underflowed"]
 
 
-def test_the_tight_window_underflows_and_the_table_reports_it_rather_than_the_slope() -> None:
-    """The lower end of the usable window is double precision and it fails catastrophically:
-    `delta^4` regret reaches exactly zero, the fit takes `log 0`, and the slope is `nan`. A table
-    that printed the `nan` without the flag beside it would be reporting a measurement."""
-    with pytest.warns(RuntimeWarning, match="divide by zero encountered in log"):
-        (row,) = table_two((_TIGHT,), 10)
-    assert row["underflowed"]
-    assert np.isnan(row["two_channel_full"])
-    assert np.isnan(row["three_channel_full"])
-    assert row["two_channel_bottleneck"] == pytest.approx(2.0, abs=0.02)  # delta^2 still survives
+@pytest.mark.filterwarnings("error::RuntimeWarning")
+def test_the_tight_window_reads_the_slope_now_the_gap_does_not_cancel() -> None:
+    """Up to causal-hybrid-control 0.20.0 the certainty-equivalence gap was a difference of two
+    closed-loop costs of about 6.7, so the `delta^4` regret below `eps` times that read exactly
+    zero or negative and the fit took `log 0`. From 0.20.1 the gap is a Lyapunov form, a sum of
+    non-negative terms, and the tight window reads both exponents."""
+    (row,) = table_two((_TIGHT,), 10)
+    assert not row["underflowed"]
+    assert row["two_channel_full"] == pytest.approx(4.0, abs=0.02)
+    assert row["three_channel_full"] == pytest.approx(4.0, abs=0.02)
+    assert row["two_channel_bottleneck"] == pytest.approx(2.0, abs=0.02)
 
 
 def test_the_sampling_scale_is_pooled_over_nested_prefixes_not_read_off_one_draw() -> None:

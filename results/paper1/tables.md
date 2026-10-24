@@ -30,6 +30,14 @@ Scalar transfer plant `b = 1`, `rr = 0.5`, `xt = 1`; its window expansion `lambd
 | [0.0001, 0.002] | 1.9998 | nan | 1.9994 | nan | yes |
 | [1e-05, 0.0002] | 2.0000 | nan | 1.9999 | nan | yes |
 
+**Note (causal-hybrid-control 0.20.1).** The two `nan` rows were the library's arithmetic, not a
+floor of the regret: the certainty-equivalence gap was a difference of two closed-loop costs of
+about 6.7, which read 0 or below once the gap fell under `eps` times the cost. From 0.20.1 the gap
+is a Lyapunov form; the fully debiased columns read `3.999998, 3.999998` at `[1e-4, 2e-3]` and
+`4.000001, 4.000001` at `[1e-5, 2e-4]`, with nothing underflowed, and the bottleneck columns
+`1.999816, 1.999346` and `1.999981, 1.999934`. The table above is the snapshot taken on the
+earlier library.
+
 One plug-in channel caps the exponent at `2` whether there are two channels or three, and debiasing the others does not move it -- which is the content of the claim that the rate is a minimum over channels, and the two bottleneck columns stay within `8.7e-03` of `2` on every window. The full-orthogonality columns are the ones the float floor reaches first, because `delta^4` underflows two windows before `delta^2` does; the last column marks where a regret in the sweep hit exactly zero, and a `nan` slope beside it is the fit taking `log 0`.
 
 ## Table 3 -- end to end: the `delta` regime is exact, the `G` regime is a window
