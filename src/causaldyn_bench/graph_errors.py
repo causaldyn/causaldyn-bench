@@ -70,7 +70,7 @@ import multiprocessing
 import os
 import time
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from concurrent.futures import Executor, ProcessPoolExecutor
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -412,7 +412,9 @@ def episode_starts(world: World, later: Draw) -> NDArray[np.float64]:
 # ------------------------------------------------------------------------------------ the arms
 
 
-def prescribe(panel: chc.Panel, adjustment: chc.CausalGraph | Sequence[str]) -> chc.Prescription:
+def prescribe(
+    panel: chc.Panel, adjustment: chc.CausalGraph | Sequence[str], tolerance: float = TOLERANCE
+) -> chc.Prescription:
     return chc.prescribe(
         panel,
         levers=[chc.Lever(LEVER, lo=-2.0, hi=2.0, unit_cost=UNIT_COST)],
@@ -421,7 +423,7 @@ def prescribe(panel: chc.Panel, adjustment: chc.CausalGraph | Sequence[str]) -> 
         adjustment=adjustment,
         horizon=HORIZON,
         dt=DT,
-        tolerance=TOLERANCE,
+        tolerance=tolerance,
         # the track's published numbers were read under the relative radius and polynomial nuisances
         radius="relative",
         nuisance_knots=None,
@@ -469,6 +471,9 @@ class ArmRun:
     evaluation: str  # "evaluated", "out of scope", "refused" or "no plan"
     covers: bool | None
     later_flag: bool | None
+    tube: tuple[float, ...] | None = None  # the plan's error tube, per step; None where not read
+    # per step, the true mean path of the state less the planned trajectory, one entry per state
+    offset: tuple[tuple[float, ...], ...] | None = None
 
 
 def _flag(check: chc.evaluation.LoggerCheck | None) -> bool | None:
@@ -496,9 +501,10 @@ def run_arm(
     adjustment: chc.CausalGraph | Sequence[str],
     fitted: Draw,
     later: Draw,
+    tolerance: float = TOLERANCE,
 ) -> ArmRun:
     panel = chc.Panel.from_frame(fitted.columns, unit="unit", time="time", seed=0)
-    prescription = prescribe(panel, adjustment)
+    prescription = prescribe(panel, adjustment, tolerance)
     certificate = prescription.certificate
     covariates = tuple(certificate.adjustment.covariates)
     fit_flag = _flag(prescription.logger_check)
@@ -515,6 +521,7 @@ def run_arm(
         start = np.append(start, fitted.confounder_last)
     true_path = mean_path(system, start, actions)[:, : len(STATES)]
     lost, stakes = regret(system, start, actions)
+    tube = plan.uncertainty_tube
     run = {
         "identified": True,
         "covariates": covariates,
@@ -525,6 +532,8 @@ def run_arm(
         "regret": lost,
         "stakes": stakes,
         "regret_bound": certificate.regret_bound,
+        "tube": None if tube is None else tuple(float(r) for r in np.asarray(tube, dtype=float)),
+        "offset": tuple(tuple(float(d) for d in step) for step in true_path - planned),
     }
     later_panel = chc.Panel.from_frame(later.columns, unit="unit", time="time", seed=0)
     try:
@@ -543,22 +552,24 @@ def run_arm(
     )
 
 
-def replicate(job: tuple[str, int]) -> dict[str, dict[str, Any]]:
-    """Every arm on replicate ``index`` of ``world``: the panel it plans on draws from ``(SEED,
-    world, index, 0)``, the later panel it is evaluated on from ``(SEED, world, index, 1)``."""
+def replicate(
+    job: tuple[str, int], seed: int = SEED, tolerance: float = TOLERANCE
+) -> dict[str, dict[str, Any]]:
+    """Every arm on replicate ``index`` of ``world``: the panel it plans on draws from ``(seed,
+    world, index, 0)``, the later panel it is evaluated on from ``(seed, world, index, 1)``."""
     logging.getLogger("chc").setLevel(logging.ERROR)  # a warning per flagged panel is the data here
     name, index = job
     world = WORLDS[name]
     number = list(WORLDS).index(name)
-    fitted = draw(world, (SEED, number, index, 0))
-    later = draw(world, (SEED, number, index, 1))
+    fitted = draw(world, (seed, number, index, 0))
+    later = draw(world, (seed, number, index, 1))
     adjustments: dict[str, chc.CausalGraph | Sequence[str]] = {
         "oracle": chc.CausalGraph.from_edges(world.true_edges, latent=world.true_latent),
         "wrong": chc.CausalGraph.from_edges(world.wrong_edges),
         "by fit": by_fit(fitted.columns),
     }
     return {
-        arm: asdict(run_arm(world, adjustment, fitted, later))
+        arm: asdict(run_arm(world, adjustment, fitted, later, tolerance))
         for arm, adjustment in adjustments.items()
     }
 
@@ -629,9 +640,14 @@ class ArmScore:
     channel_mean: float | None
 
 
-def score(runs: Sequence[dict[str, Any]], arm: str, mode: str) -> ArmScore:
+def score(
+    runs: Sequence[dict[str, Any]],
+    arm: str,
+    mode: str,
+    reading: Callable[[dict[str, Any], str], Claims] = claims,
+) -> ArmScore:
     n = len(runs)
-    read = [claims(run, mode) for run in runs]
+    read = [reading(run, mode) for run in runs]
     checked = [run["fit_flag"] for run in runs if run["fit_flag"] is not None]
     later = [run["later_flag"] for run in runs if run["later_flag"] is not None]
     headrooms = np.array(
@@ -672,10 +688,13 @@ class Stop:
     p_value: float | None  # None where no claim failed or none held
 
 
-def stop_effect(runs: Sequence[dict[str, Any]]) -> Stop:
+def stop_effect(
+    runs: Sequence[dict[str, Any]],
+    reading: Callable[[dict[str, Any], str], Claims] = claims,
+) -> Stop:
     failed = removed = sound = refused_sound = 0
     for run in runs:
-        before, after = claims(run, "as is"), claims(run, "stop")
+        before, after = reading(run, "as is"), reading(run, "stop")
         withdrawn = (before.acted and not after.acted) or (before.evaluated and not after.evaluated)
         failed += before.failed
         removed += before.failed and not after.failed
@@ -702,13 +721,20 @@ class WorldRun:
     runs: dict[str, list[dict[str, Any]]] = field(repr=False)
 
 
-def run_world(name: str, replicates: int, pool: Executor) -> WorldRun:
+def run_world(
+    name: str,
+    replicates: int,
+    pool: Executor,
+    job: Callable[[tuple[str, int]], dict[str, dict[str, Any]]] = replicate,
+    reading: Callable[[dict[str, Any], str], Claims] = claims,
+) -> WorldRun:
     """The analyst holds the true graph or the wrong one, so the flag earns its stop by telling
     them apart: within the wrong graph alone, a flag that fires on every panel removes each failure
-    and refuses each sound claim, and is no better than chance."""
+    and refuses each sound claim, and is no better than chance. ``job`` runs one replicate and
+    ``reading`` reads its claims."""
     started = time.perf_counter()
     world = WORLDS[name]
-    results = list(pool.map(replicate, [(name, i) for i in range(replicates)], chunksize=4))
+    results = list(pool.map(job, [(name, i) for i in range(replicates)], chunksize=4))
     runs = {arm: [result[arm] for result in results] for arm in ARMS}
     distinct = world.oracle and world.true_edges != world.wrong_edges
     return WorldRun(
@@ -716,8 +742,8 @@ def run_world(name: str, replicates: int, pool: Executor) -> WorldRun:
         error=world.error,
         oracle=world.oracle,
         replicates=replicates,
-        scores=[score(runs[arm], arm, mode) for arm in ARMS for mode in MODES],
-        stop=stop_effect(runs["oracle"] + runs["wrong"] if distinct else runs["wrong"]),
+        scores=[score(runs[arm], arm, mode, reading) for arm in ARMS for mode in MODES],
+        stop=stop_effect(runs["oracle"] + runs["wrong"] if distinct else runs["wrong"], reading),
         seconds=time.perf_counter() - started,
         runs=runs,
     )

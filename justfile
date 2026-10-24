@@ -180,6 +180,13 @@ track-p:
 track-q:
     JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.graph_errors --out results
 
+# Track Q, version 2 -> results/track_q_v2.{md,json}, pre-registered in
+# results/track_q_v2_preregistration.md: version 1's worlds, arms and gate at a tolerance set from
+# the generator, and a plan scored on its tube's claim. Pass `--preregistration <commit>` and
+# `--chc-commit <commit>` to record them.
+track-q-v2 *args:
+    JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.graph_errors_v2 --out results {{args}}
+
 # Track M v2, lift tests -> results/track_m2_lift.{md,json}. 500 histories of Heusch's world for each
 # of six settings, one chc.lift fit on each, dealt to `--workers` processes. At 64-bit, so the fit
 # reads the readouts at the precision the NumPy world draws them in.
