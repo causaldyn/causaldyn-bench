@@ -26,13 +26,14 @@ Four consequences, each falsifiable:
    :func:`transfer_constants`) and reports what is left. Two terms reduce the `2.83e-2` miss at
    `p = 1` to `7.6e-3`, and the `1.04e-3` miss at `p = 2` to `5.6e-5`.
 2. **The same window has a lower end, and it fails catastrophically rather than gracefully.** Push
-   the sweep down to `delta in [1e-5, 2e-4]` and the order-3 slope reads `6.035`, then the
-   three-channel LQ full-orthogonality slope reads `nan` outright -- `delta^4` regret has
-   underflowed to exactly zero and `log 0` is what the fit sees. Table 1 carries the
+   the sweep down to `delta in [1e-5, 2e-4]` and the order-3 slope reads `6.035`: the regret is
+   read off `u*(b + e) - u*(b)`, a difference of two nearly equal numbers. Table 1 carries that
    double-precision cancellation floor beside every cell, and it is the column that says which
-   reading to believe. The LQ arms' `nan` was the library's arithmetic, a gap read as a
-   difference of two closed-loop costs: from causal-hybrid-control 0.20.1 the gap is a Lyapunov
-   form, and those cells read `4.000` at `[1e-4, 2e-3]` and at `[1e-5, 2e-4]`.
+   reading to believe. Up to causal-hybrid-control 0.20.0 the LQ full-orthogonality slopes of
+   Table 2 read `nan` on the two lowest windows. That was the library's arithmetic, not a floor
+   of the regret: it read the certainty-equivalence gap as a difference of two closed-loop costs
+   of about 6.7, which reads zero or below once the gap falls under `eps` times the cost. From
+   0.20.1 the gap is a Lyapunov form, and those slopes read `4.000`.
 3. **The `1/G` rate is a window measurement too, and its shipped window is too small.** The
    appendix's `-1.08` and its "flat" `-0.09` plateau are finite-`G` artefacts of a grid that starts
    at `G = 10`: move the grid up and the end-to-end slope walks `-1.139, -1.121, -1.054, -1.024`
@@ -406,6 +407,27 @@ def _walk_verdict(rows: list[dict[str, Any]], field: str) -> str:
     )
 
 
+def _underflow_reading(two: list[dict[str, Any]]) -> str:
+    """What Table 2's last column says on this run: where a regret of the sweep read zero or
+    below, the slope beside it is the fit taking ``log 0``; where none did, how close the
+    full-orthogonality columns come to ``4``."""
+    hit = [_window_label(row["delta_lo"], row["delta_hi"]) for row in two if row["underflowed"]]
+    if hit:
+        return (
+            f"The last column marks where a regret in the sweep read zero or below, on "
+            f"{', '.join(hit)}, and a `nan` slope beside it is the fit taking `log 0`, not an "
+            f"exponent."
+        )
+    full_miss = max(
+        max(abs(row["two_channel_full"] - 4.0), abs(row["three_channel_full"] - 4.0))
+        for row in two
+    )
+    return (
+        f"No regret in the sweep read zero or below (the last column), and the "
+        f"full-orthogonality columns stay within `{full_miss:.1e}` of `4` on every window."
+    )
+
+
 def _markdown(
     one: list[dict[str, Any]],
     two: list[dict[str, Any]],
@@ -474,10 +496,7 @@ def _markdown(
         f"One plug-in channel caps the exponent at `2` whether there are two channels or three, "
         f"and debiasing the others does not move it -- which is the content of the claim that the "
         f"rate is a minimum over channels, and the two bottleneck columns stay within "
-        f"`{bottleneck_miss:.1e}` of `2` on every window. The full-orthogonality columns are the "
-        f"ones the float floor reaches first, because `delta^4` underflows two windows before "
-        f"`delta^2` does; the last column marks where a regret in the sweep hit exactly zero, and "
-        f"a `nan` slope beside it is the fit taking `log 0`.",
+        f"`{bottleneck_miss:.1e}` of `2` on every window. {_underflow_reading(two)}",
         "",
         "## Table 3 -- end to end: the `delta` regime is exact, the `G` regime is a window",
         "",

@@ -106,6 +106,25 @@ def test_the_tight_window_reads_the_slope_now_the_gap_does_not_cancel() -> None:
     assert row["two_channel_bottleneck"] == pytest.approx(2.0, abs=0.02)
 
 
+def test_table_two_s_prose_reads_the_underflow_column_it_sits_under() -> None:
+    """The prose under Table 2 said that `delta^4` underflows two windows before `delta^2` and that
+    the `nan` beside it is `log 0`, on a run where no regret read zero. It now says what the column
+    says: the windows where a regret read zero or below, or that none did and how close the
+    full-orthogonality columns come to `4`."""
+    row = {
+        "delta_lo": 1e-5,
+        "delta_hi": 2e-4,
+        "two_channel_full": 4.000002,
+        "three_channel_full": 3.999998,
+    }
+    clean = paper_one._underflow_reading([{**row, "underflowed": False}])
+    assert clean.startswith("No regret in the sweep read zero or below")
+    assert "`2.0e-06` of `4`" in clean
+    hit = paper_one._underflow_reading([{**row, "underflowed": True}])
+    assert "[1e-05, 0.0002]" in hit
+    assert "`log 0`" in hit
+
+
 def test_the_sampling_scale_is_pooled_over_nested_prefixes_not_read_off_one_draw() -> None:
     """Neither `G` certificate takes a seed offset, so the error bar has to come from the nested
     prefixes. Each rung estimates a KNOWN multiple of the wanted variance -- rung `j` is `2^(j-1)`
