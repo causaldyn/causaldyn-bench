@@ -14,6 +14,8 @@ from causaldyn_bench.delay_identification import track_delay_identification
 from causaldyn_bench.dynamic_effect import track_dynamic_effect
 from causaldyn_bench.fold_design import track_fold_design
 from causaldyn_bench.interference import track_interference
+from causaldyn_bench.marketplace import TRACK as MARKETPLACE_TRACK
+from causaldyn_bench.marketplace import leaderboard_note as marketplace_note
 from causaldyn_bench.marketplace import track_marketplace
 from causaldyn_bench.sensitivity import track_sensitivity
 from causaldyn_bench.shooting import track_planner
@@ -114,8 +116,10 @@ def format_leaderboard(results: list[TrackResult]) -> str:
     return "\n".join(lines)
 
 
-def to_markdown(results: list[TrackResult]) -> str:
-    """Render the leaderboard as grouped markdown tables (a committable results snapshot)."""
+def to_markdown(results: list[TrackResult], notes: dict[str, str] | None = None) -> str:
+    """Render the leaderboard as grouped markdown tables (a committable results snapshot), each
+    followed by its track's paragraph in ``notes``, if it has one."""
+    notes = notes or {}
     lines = ["# causaldyn-bench leaderboard", ""]
     for track, rows in _by_track(results):
         direction = "lower" if rows[0].lower_is_better else "higher"
@@ -125,13 +129,22 @@ def to_markdown(results: list[TrackResult]) -> str:
             best = " **(best)**" if i == 0 else ""
             lines.append(f"| {i + 1} | {r.method}{best} | {r.value:.4f} |")
         lines.append("")
+        if track in notes:
+            lines += [notes[track], ""]
     return "\n".join(lines) + "\n"
+
+
+def track_notes(out_dir: str = "results") -> dict[str, str]:
+    """The paragraphs the snapshot prints under a track's table, read off the track's own
+    committed runs: Track H's places its one market among the runs' markets."""
+    note = marketplace_note(Path(out_dir))
+    return {} if note is None else {MARKETPLACE_TRACK: note}
 
 
 def save_results(results: list[TrackResult], out_dir: str = "results") -> Path:
     """Write leaderboard.md and leaderboard.json to ``out_dir`` (the committable snapshot)."""
     out = Path(out_dir)
     out.mkdir(exist_ok=True)
-    (out / "leaderboard.md").write_text(to_markdown(results))
+    (out / "leaderboard.md").write_text(to_markdown(results, track_notes(out_dir)))
     (out / "leaderboard.json").write_text(json.dumps(_rows(results), indent=2) + "\n")
     return out

@@ -87,14 +87,21 @@
     "track": "D-control",
     "method": "pricing/causal-CHC",
     "metric": "regret",
-    "value": -0.0025281906127929688,
+    "value": -0.002532958984375,
     "lower_is_better": true
   },
   {
     "track": "D-control",
-    "method": "pricing/predictive",
+    "method": "pricing/predictive-omitted",
     "metric": "regret",
     "value": 13735.492685317993,
+    "lower_is_better": true
+  },
+  {
+    "track": "D-control",
+    "method": "pricing/predictive-all",
+    "metric": "regret",
+    "value": -0.002536773681640625,
     "lower_is_better": true
   },
   {
@@ -113,9 +120,16 @@
   },
   {
     "track": "D-control",
-    "method": "inventory/predictive",
+    "method": "inventory/predictive-omitted",
     "metric": "regret",
     "value": 1.0976861715316772,
+    "lower_is_better": true
+  },
+  {
+    "track": "D-control",
+    "method": "inventory/predictive-all",
+    "metric": "regret",
+    "value": 5.4836273193359375e-06,
     "lower_is_better": true
   },
   {
@@ -129,14 +143,14 @@
     "track": "D-control",
     "method": "support-shift/pessimistic",
     "metric": "regret",
-    "value": 2.4169483184814453,
+    "value": 2.4284229278564453,
     "lower_is_better": true
   },
   {
     "track": "D-control",
     "method": "support-shift/greedy",
     "metric": "regret",
-    "value": 6.799188613891602,
+    "value": 7.420591354370117,
     "lower_is_better": true
   },
   {

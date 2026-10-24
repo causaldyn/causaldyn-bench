@@ -28,7 +28,9 @@ from chc.marketplace import SharedStateMarket
 from causaldyn_bench.marketplace import (
     NAMES,
     PLANNERS,
+    TRACK,
     chase,
+    leaderboard_note,
     marketplace_report,
     readings,
     record,
@@ -41,6 +43,7 @@ LOWER = {
     "chc_share": 0.69,
     "predictive_confounding_bias": 0.14,
     "naive_cross_zone_confounding": 0.04,
+    "chc_confounding_bias": 0.08,
     "randomised_demand_corr": 0.28,
     "naive_interference_overcount": 0.39,
 }
@@ -69,17 +72,20 @@ def test_chc_has_the_least_regret_and_most_of_the_oracle_s_lift(reports, seed: i
     assert r["chc_regret"] < r["naive_regret"]  # SUTVA planners leave large regret on the table
     assert r["chc_regret"] < r["predictive_regret"]
     assert r["chc_regret"] < UPPER["chc_regret"]
-    assert r["chc_share"] > LOWER["chc_share"]  # de-confounded + equilibrium-aware
+    assert r["chc_share"] > LOWER["chc_share"]  # equilibrium-aware
 
 
 @pytest.mark.parametrize("seed", SEEDS)
 def test_the_report_shows_confounding_and_interference(reports, seed: int) -> None:
     """The logging policy chased demand, so the predictive response reads above the randomised
     twin's; adjusting each zone for its own demand removes part of that, and the part that runs
-    through the other zones' demand stays. The twin's response follows demand, which is why a
-    correlation with demand is no test of de-confounding. The naive planner over-counts the lift it
-    predicts by the drivers its zones take from each other."""
+    through the other zones' demand stays. Equilibrium-CHC's response, which holds the block's total
+    incentive as well, keeps more of it than the naive-causal one. The twin's response follows
+    demand, which is why a correlation with demand is no test of de-confounding. The naive planner
+    over-counts the lift it predicts by the drivers its zones take from each other."""
     r = readings(reports[seed])
+    assert r["chc_confounding_bias"] > r["naive_confounding_bias"]
+    assert r["chc_confounding_bias"] > LOWER["chc_confounding_bias"]
     assert r["predictive_confounding_bias"] > LOWER["predictive_confounding_bias"]
     assert r["naive_kept_share"] < UPPER["naive_kept_share"]
     assert r["naive_cross_zone_confounding"] > LOWER["naive_cross_zone_confounding"]
@@ -111,6 +117,7 @@ def test_the_committed_runs_hold_the_claims_on_every_market(x64: bool) -> None:
     assert counts["predictive_confounding_bias_positive"] == n
     assert counts["naive_bias_below_predictive"] == n
     assert counts["naive_cross_zone_confounding_positive"] == n
+    assert counts["chc_bias_above_naive"] == n
     assert counts["naive_interference_overcount_positive"] == n
 
 
@@ -144,3 +151,13 @@ def test_the_committed_run_is_what_the_code_computes(reports) -> None:
         board = {r["method"]: r["value"] for r in rows if r["track"] == "H-marketplace"}
         regrets = {name: reports[0][f"{key}_regret"] for name, key in PLANNERS.items()}
         assert board == pytest.approx(regrets, rel=0.0, abs=TO_THE_QUOTED_DIGIT)
+
+
+def test_the_leaderboard_prints_the_note_its_runs_read() -> None:
+    """``--save`` writes the leaderboard's paragraph under Track H from the committed runs, so the
+    committed leaderboard carries the note they read, under the track's table."""
+    note = leaderboard_note(ROOT / "results")
+    assert note is not None
+    board = (ROOT / "results" / "leaderboard.md").read_text()
+    section = board.split(f"## {TRACK}", 1)[1].split("\n## ", 1)[0]
+    assert note in section
