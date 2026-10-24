@@ -51,8 +51,11 @@ block's total incentive as well, reads 0.20–0.59 above its own regression on t
 the naive-causal one on every market: at a fixed total and own demand a zone's incentive moves only
 with the other zones' demand. The planner reads that response only through its pessimism tilt; its
 lead comes from the equilibrium it fits to the logs. A correlation of the response with demand
-tests none of this, since the response follows demand once the confounding is gone.
-See `results/track_h_markets.md` and `results/track_h_markets_x64.md`.
+tests none of this, since the response follows demand once the confounding is gone. The runs
+were recorded on x86 without AVX-512. The oracle's lift and the CHC plan's each end a nonconvex
+ascent, and on a CPU with AVX-512, where the same programs round otherwise, a rerun can end
+either at another local optimum: market 1's float64 oracle read 2.961 there, against the
+committed 3.093. See `results/track_h_markets.md` and `results/track_h_markets_x64.md`.
 
 **Track L** (`causaldyn_bench.dcbo_track`) tests the "no analogues" claim in both directions
 against DCBO (Aglietti et al., NeurIPS 2021), the nearest academic statement of *which lever, how

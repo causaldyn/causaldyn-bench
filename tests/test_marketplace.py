@@ -12,7 +12,9 @@ or a sign is asserted as it stands. A bound is the 30 markets' mean less three s
 or plus three, at the precision that reads it wider, rounded outward to two decimals: a reading of
 the distribution, not of the markets tested here. The bounds are checked against the committed
 runs, so a rerun that moves the distribution fails until they are read again; the committed runs
-are checked to be their own markets, and to be what the code computes for seeds 0-2.
+are checked to be their own markets, and to be what the code computes for seeds 0-2: on any
+machine in every reading no ascent ends, and in the ascents' ends only on the machine class that
+recorded them.
 """
 
 import json
@@ -51,6 +53,14 @@ UPPER = {"chc_regret": 0.73, "naive_kept_share": 0.88}
 # The committed readings carry three decimals in results/track_h_markets*.md, so a run reproduces
 # them to half of the last.
 TO_THE_QUOTED_DIGIT = 5e-4
+# The readings that end a nonconvex ascent: the oracle's on the market's equilibrium, and
+# equilibrium-CHC's on the one it fits. On a CPU with AVX-512, where numpy and XLA run other
+# vector kernels, the same programs round otherwise and an ascent can end at another local
+# optimum: there market 1's float64 oracle read 2.961 of lift against the committed 3.093, and
+# market 0's float32 CHC plan 2.328 against 2.340.
+ASCENT_ENDS = frozenset(
+    {"oracle_lift", "chc_realised_lift"} | {f"{key}_regret" for key in PLANNERS.values()}
+)
 
 
 def _x64() -> bool:
@@ -140,8 +150,25 @@ def test_the_bounds_are_read_off_the_committed_runs() -> None:
 
 
 def test_the_committed_run_is_what_the_code_computes(reports) -> None:
-    """At this precision, the committed run's markets 0-2 read what is computed here, and the
-    leaderboard's Track H rows, measured in float32, are market 0's regrets."""
+    """At this precision, the committed run's markets 0-2 read what is computed here in every
+    reading no ascent ends: the responses' confounding, the SUTVA planners' lifts and the naive
+    planner's over-count."""
+    markets = {m["seed"]: m["report"] for m in _committed(_x64())["markets"]}
+    for seed in SEEDS:
+        committed = {k: v for k, v in markets[seed].items() if k not in ASCENT_ENDS}
+        computed = {k: reports[seed][k] for k in committed}
+        assert computed == pytest.approx(committed, rel=0.0, abs=TO_THE_QUOTED_DIGIT)
+
+
+def test_the_ascents_end_where_the_committed_run_s_machine_class_ends_them(
+    reports, other_kernels
+) -> None:
+    """On x86 without AVX-512, where the runs were recorded, the oracle's lift, equilibrium-CHC's
+    and the regrets read as committed too, and the leaderboard's Track H rows, measured in
+    float32, are market 0's regrets. Elsewhere the regrets' order and bounds hold (above), not
+    their digits."""
+    if other_kernels is not None:
+        pytest.skip(other_kernels)
     x64 = _x64()
     markets = {m["seed"]: m["report"] for m in _committed(x64)["markets"]}
     for seed in SEEDS:

@@ -19,7 +19,8 @@ def other_kernels() -> str | None:
     """Why numpy's float64 exp, log and tanh here are not the kernels the committed worlds and
     records were made with, or None when they are. They were made on x86 without AVX-512, where
     the baseline and AVX2 kernels return the same bits; the AVX-512 kernels are other code, so
-    a test that reads a drawn world's exact bits holds only where this is None."""
+    a test that reads a drawn world's exact bits holds only where this is None, and so does one
+    that reads where a nonconvex ascent ends, since rounding can end it at another optimum."""
     try:
         from numpy.lib.introspect import opt_func_info
     except ImportError:  # numpy < 2 does not name the kernel it runs
