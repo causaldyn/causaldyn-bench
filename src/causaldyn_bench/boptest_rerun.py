@@ -251,7 +251,9 @@ def prescription(
         dt=design.dt,
         tolerance=design.tolerance,
         x0=jnp.asarray([temp]),
-        # the track's published numbers were read under the relative radius and polynomial nuisances
+        # the track's published numbers were read under rk4, the relative radius and polynomial
+        # nuisances
+        integrator="rk4",
         radius="relative",
         nuisance_knots=None,
     )
