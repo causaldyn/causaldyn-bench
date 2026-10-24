@@ -419,8 +419,7 @@ def _underflow_reading(two: list[dict[str, Any]]) -> str:
             f"exponent."
         )
     full_miss = max(
-        max(abs(row["two_channel_full"] - 4.0), abs(row["three_channel_full"] - 4.0))
-        for row in two
+        max(abs(row["two_channel_full"] - 4.0), abs(row["three_channel_full"] - 4.0)) for row in two
     )
     return (
         f"No regret in the sweep read zero or below (the last column), and the "
