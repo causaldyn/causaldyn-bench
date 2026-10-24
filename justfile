@@ -155,6 +155,14 @@ paper-4-smoke:
 
 # ── Tracks with their own report ──────────────────────────────────────────────
 
+# Track H over 30 markets -> results/track_h_markets.{md,json} in float32, the leaderboard's
+# precision, then results/track_h_markets_x64.{md,json}: a seed draws another market at 64-bit, so
+# the two runs are 60 markets, not 30 read twice. Each market runs the oracle's ascent, the three
+# planners and 13 reruns of its logged blocks.
+track-h:
+    uv run python -u -m causaldyn_bench.marketplace --out results
+    JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.marketplace --out results
+
 # Track L against DCBO -> results/track_l.{md,json}. Minutes: sixty prescribe fits and the scoring.
 # At 64-bit, because the fit is load-bearing. The DCBO arms are read from results/track_l_dcbo.json,
 # which scripts/dcbo_reference.py writes in an isolated environment (its docstring has the setup),

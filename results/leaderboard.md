@@ -75,7 +75,7 @@
 | 2 | predictive-MOPO | 3.2349 |
 | 3 | naive-causal | 3.4870 |
 
-This track alone is measured on chc 0.20, which plans through the equilibrium `fit_equilibrium` fits to the logs; before, the planner read the simulator's own, and equilibrium-CHC's regret read 0.0483 (predictive-MOPO 3.2322, naive-causal 3.4844).
+The market is `SharedStateMarket(seed=0)`, one of the 30 that `results/track_h_markets.md` scores in float32 (`just track-h`), and the one of them on which both SUTVA planners leave their largest regret. Over the 30, equilibrium-CHC has the least regret on every one, from 0.001 to 0.727 (median 0.148), naive-causal from 0.303 to 3.487 (median 1.256) and predictive-MOPO from 1.093 to 3.235 (median 2.126). On 30 markets drawn under `JAX_ENABLE_X64=1` (`results/track_h_markets_x64.md`) the order is the same on every one. This track alone is measured on chc 0.20, which plans through the equilibrium `fit_equilibrium` fits to the logs; before, the planner read the simulator's own, and equilibrium-CHC's regret read 0.0483 (predictive-MOPO 3.2322, naive-causal 3.4844).
 
 ## I-sensitivity  (metric: worst-case closed-loop cost, lower is better)
 
