@@ -17,6 +17,7 @@ machine in every reading no ascent ends, and in the ascents' ends only on the ma
 recorded them.
 """
 
+import importlib.metadata
 import json
 import math
 from pathlib import Path
@@ -61,10 +62,23 @@ TO_THE_QUOTED_DIGIT = 5e-4
 ASCENT_ENDS = frozenset(
     {"oracle_lift", "chc_realised_lift"} | {f"{key}_regret" for key in PLANNERS.values()}
 )
+# The versions the runs were recorded under, on x86 without AVX-512. Others compile and solve the
+# ascents otherwise too: the Python 3.11 leg, on jax 0.10.2, numpy 2.4.6 and scipy 1.17.1, ended
+# market 0's float32 oracle at 2.4241 of lift against the committed 2.4268. A rerun under other
+# versions reads them again.
+RECORDED_UNDER = {"jax": "0.11.2", "jaxlib": "0.11.2", "numpy": "2.5.4", "scipy": "1.18.1"}
 
 
 def _x64() -> bool:
     return bool(jnp.zeros(()).dtype == jnp.float64)
+
+
+def _other_versions() -> str | None:
+    """Why the versions here are not the ones the committed runs were recorded under, or None."""
+    running = {name: importlib.metadata.version(name) for name in RECORDED_UNDER}
+    if running == RECORDED_UNDER:
+        return None
+    return f"{running} are not the versions the committed runs were recorded under"
 
 
 def _committed(x64: bool) -> dict:
@@ -163,12 +177,13 @@ def test_the_committed_run_is_what_the_code_computes(reports) -> None:
 def test_the_ascents_end_where_the_committed_run_s_machine_class_ends_them(
     reports, other_kernels
 ) -> None:
-    """On x86 without AVX-512, where the runs were recorded, the oracle's lift, equilibrium-CHC's
-    and the regrets read as committed too, and the leaderboard's Track H rows, measured in
-    float32, are market 0's regrets. Elsewhere the regrets' order and bounds hold (above), not
-    their digits."""
-    if other_kernels is not None:
-        pytest.skip(other_kernels)
+    """On x86 without AVX-512 under the versions the runs were recorded under, the oracle's lift,
+    equilibrium-CHC's and the regrets read as committed too, and the leaderboard's Track H rows,
+    measured in float32, are market 0's regrets. Elsewhere the regrets' order and bounds hold
+    (above), not their digits."""
+    for reason in (other_kernels, _other_versions()):
+        if reason is not None:
+            pytest.skip(reason)
     x64 = _x64()
     markets = {m["seed"]: m["report"] for m in _committed(x64)["markets"]}
     for seed in SEEDS:
