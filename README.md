@@ -106,7 +106,24 @@ the oracle. Picking the adjustment set by fit ties the oracle in seven worlds an
 where the wrong graph does. And the oracle fails too, on 9% of the persistent-promotion
 replicates: an adjustment covariate stays out of the fitted drift, where `chc.dynamics_id`'s scope
 note says a persistent driver belongs (by construction, the worlds are CHC's). See
-`results/track_q.md`.
+`results/track_q.md`. That table was measured on causal-hybrid-control 0.8.0: from 0.17.0 the
+plan's tube carries the plant's own noise, above the 0.05 tolerance on these worlds, so no plan is
+trusted for a step and the plan leg is not armed.
+
+**Track Q, version 2** (`causaldyn_bench.graph_errors_v2`, `just track-q-v2`) scores the claim the
+tube makes now, under a design pre-registered before its run
+(`results/track_q_v2_preregistration.md`). The tolerance, 0.8012, is 1.1 times the largest 0.95
+radius of the true plants' three-step noise, derived from the generator's parameters
+(`scripts/track_q_v2_tolerance.mac`), so every arm acts. A plan leaves its claim when, at a step the
+certificate trusts, the true plant leaves its tube with probability above 0.05 plus a margin of
+0.0048, the estimation slack of a correct tube read off one log. Over 200 replicates a world on a
+fresh seed the flag beats a same-rate random stop in no world (least one-sided Fisher p 0.64), at
+a size of 0.058 [0.047, 0.070]. The omitted promotion drawn afresh leaves its tube on 0.830 of the
+wrong graph's replicates and the true graph's on none; the mediator turned parent and the
+latent-driven collider lose on regret on every replicate; the flag fires only at its size on all
+three. The tube itself reads as stated, a mean exceedance of 0.050 at each step on the true graph,
+though the largest of three trusted steps passes the margin on 0.069 of plans. See
+`results/track_q_v2.md`.
 
 **Track N** (`causaldyn_bench.fold_design`) is the only track that varies nothing but the
 cross-fitting split, and its result is an ordering whose useful half is negative. On `C_12` with two

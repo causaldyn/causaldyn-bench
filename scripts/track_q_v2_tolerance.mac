@@ -1,0 +1,79 @@
+/* Track Q v2: the a priori tolerance and the margin m, from the generator's parameters.
+   Sigma_k = sum_{j<k} A^j Q A^j' over the plant's state from a known start; the (supply, wait)
+   block's 0.95 radius of the Euclidean norm; tolerance = 1.1 x the largest over the worlds at
+   step 3. m = 2 (1 - Phi(z975 sqrt(chi2inv(0.05, nu) / nu))) - 0.05 at nu = 400 x 11. */
+load(distrib)$
+fpprec : 30$
+ratprint : false$
+
+stp : matrix([94/100, 3/100], [0, 1025/1000])$
+shock2 : (1/100)^2$
+demand2 : (15/100)^2$
+
+/* base noise of (supply, wait), plus the world's extra supply variance */
+base(extra) := matrix([shock2 + demand2 + extra, 0], [0, shock2])$
+
+sigma_k(a, q, k) := block([s : zeromatrix(length(a), length(a))],
+  for i : 1 thru k do s : a . s . transpose(a) + q, s)$
+
+/* worlds without a state of their own */
+mediator_extra : (6/100 + 1/10)^2 + (6/100 * 1)^2$
+latent_extra : (1/10)^2$
+
+/* confounder worlds: state (supply, wait, z), z AR(rho) unit variance, push 0.2 */
+conf_a(rho) := matrix([94/100, 3/100, 2/10], [0, 1025/1000, 0], [0, 0, rho])$
+conf_q(rho) := matrix([shock2 + demand2, 0, 0], [0, shock2, 0], [0, 0, 1 - rho^2])$
+
+block2(s) := matrix([s[1,1], s[1,2]], [s[2,1], s[2,2]])$
+
+/* survival of ||e||^2 for e ~ N(0, diag(lb, ls)), ls the smaller: integrate over the small
+   coordinate, clipped at 12 of its sd */
+survival(lb, ls, r) := block([th : min(12, r / sqrt(ls))],
+  2 * (1 - cdf_normal(th, 0, 1))
+  + first(quad_qags(exp(-t^2/2) / sqrt(2 * %pi)
+                    * erfc(sqrt(max(0, r^2 - ls * t^2) / lb) / sqrt(2)), t, -th, th,
+                    'epsrel = 1d-12, 'epsabs = 1d-14)))$
+
+gap(rr) := survival(LB, LS, rr) - 0.05$
+
+radius(s2) := block([ev : sort(float(map(rhs, solve(determinant(s2 - lam * ident(2)), lam))))],
+  LS : first(ev), LB : second(ev),
+  find_root(gap, sqrt(quantile_chi2(0.95, 1) * LB), sqrt(quantile_chi2(0.95, 2) * LB)))$
+
+worlds : [
+  ["none", stp, base(0)],
+  ["mediator", stp, base(mediator_extra)],
+  ["collider latent", stp, base(latent_extra)],
+  ["confounder", conf_a(0), conf_q(0)],
+  ["confounder AR", conf_a(8/10), conf_q(8/10)]]$
+
+best : 0$
+for w in worlds do block([s3 : block2(sigma_k(second(w), third(w), 3)), r3],
+  r3 : radius(s3),
+  print(first(w), "Sigma_3 =", s3, " =", float(s3), " r3 =", r3),
+  if r3 > best then best : r3)$
+print("max r3 =", best, " tolerance =", 1.1 * best)$
+
+nu : 400 * 11$
+u : sqrt(quantile_chi2(0.05, nu) / nu)$
+z : quantile_normal(0.975, 0, 1)$
+print("nu =", nu, " u =", float(u), " exceedance at u =", float(2 * (1 - cdf_normal(z * u, 0, 1))),
+      " m =", float(2 * (1 - cdf_normal(z * u, 0, 1)) - 0.05))$
+
+/* The slope's share of the slack: the base worlds' panel, supply's variance given wait over the
+   11 transitions' periods, Sigma_{t+1} = A Sigma_t A' + 2.25 d d' + Q from 0.04 I */
+d : matrix([8/100], [-4/100])$
+q0 : base(0)$
+S : 4/100 * ident(2)$
+parts : []$
+for t : 0 thru 10 do (parts : endcons(S[1,1] - S[1,2]^2 / S[2,2], parts),
+                      S : stp . S . transpose(stp) + 9/4 * d . transpose(d) + q0)$
+vbar : apply("+", parts) / 11$
+sa : sqrt(q0[1,1] / (nu * vbar))$
+print("vbar =", float(vbar), " se(a) =", float(sa))$
+a : 94/100$
+gk : [0, a / (1 + a^2), (a + 2 * a^3) / (1 + a^2 + a^4)]$
+z95 : quantile_normal(0.95, 0, 1)$
+for k : 1 thru 3 do block([rho : sqrt(1 / (2 * nu) + (gk[k] * sa)^2)],
+  print("step", k, " rho =", float(rho), " m_k =",
+        float(2 * (1 - cdf_normal(z * (1 - z95 * rho), 0, 1)) - 0.05)))$
