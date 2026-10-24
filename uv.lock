@@ -235,7 +235,7 @@ wheels = [
 
 [[package]]
 name = "causal-hybrid-control"
-version = "0.18.0"
+version = "0.19.0"
 source = { editable = "../causal-hybrid-control" }
 dependencies = [
     { name = "diffrax" },
