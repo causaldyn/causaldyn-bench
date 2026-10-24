@@ -22,7 +22,7 @@ closed-loop decision. Built on
 | **E** systems | control-solve latency | ms (min of 7, after 2 warm-ups) | the known-only model — fewer terms to differentiate, same compiled solver |
 | **F** structure | which lagged parents drive the target, under confounding + autocorrelation | F1 / control payoff | discovery-informed residual |
 | **G** dynamic effect | the impulse response `∂x_{t+h}/∂u_t`, not just `h = 1` | IRF error / control payoff | structured (Levinson) IRF |
-| **H** marketplace | offline incentive allocation when SUTVA fails through a shared equilibrium | regret vs equilibrium-aware oracle | de-confounded + equilibrium-aware |
+| **H** marketplace | offline incentive allocation when SUTVA fails through a shared equilibrium | regret vs equilibrium-aware oracle | de-confounded + equilibrium-aware, the least regret on each of 60 markets |
 | **I** sensitivity | control when **no adjustment set exists** — the assumed `Γ` is the only lever | worst-case closed-loop cost | a *calibrated* `Γ`, not the largest one |
 | **D-causal** identification | the control channel of a *real* emulator, logged by a weather-compensated controller | \|8h step response − randomised reference\| | orthogonal (de-confounded) fit |
 | **J** identification, non-building | the control channel of a *third-party* plant whose answer is known exactly (`Pendulum-v1`) | \|fitted gain − 3.0\| | orthogonal (de-confounded) fit |
@@ -32,6 +32,23 @@ closed-loop decision. Built on
 | **L** sequential intervention | which variables to set, and to what, at each step of DCBO's three synthetic dynamic SCMs | regret vs the per-step oracle, each step against the arm's own history | *the reference methods, on their own ground* — the track says where CHC cannot follow, and where DCBO cannot |
 | **O** off-policy evaluation | does `evaluate_plan`'s 95% interval cover a feedback plan's online cost, estimated from another policy's logs, on two Gymnasium plants CHC did not write | interval coverage over 500 replicates, against ±2 points of nominal | *the interval, not a method* — the track is the 0.8.0 evidence gate |
 | **Q** graph errors | the graph handed to `prescribe` is wrong: does the logger check flag it before a plan or its evaluation fails silently | silent-failure rate, with the flag read as a stop, over 200 replicates of nine worlds | *the check, not a method* — it earns its stop on one error of eight |
+
+**Track H** (`causaldyn_bench.marketplace`, `just track-h`) learns where to spend an incentive
+budget from logs whose operator chased demand, in a market whose drivers move between zones. The
+leaderboard scores one market; the track scores 30, and 30 more under `JAX_ENABLE_X64=1`, where each
+seed draws another market. On every one the de-confounded, equilibrium-aware CHC planner has the
+least regret, and it wins 0.74–1.01 of the oracle's lift over doing nothing (medians 0.93 and 0.92).
+The SUTVA planners win a median of 0.30 and 0.36 of it at the two precisions (naive causal, at most
+0.84) and 0.04 and 0.00 (predictive, at most 0.36), and less than doing nothing on 8 and 7 markets
+and on 13 and 15. The leaderboard's market is the one of the 30 on which both leave their largest
+regret. Against a rerun of the logs whose incentives no longer follow demand, the predictive
+response reads 0.24–0.64 too high on average over the zones, and adjusting each zone for its own
+demand leaves a median of 0.35 and 0.37 of that. Part of what stays runs through the other zones:
+the logging policy splits one budget across the zones, so a zone's incentive also follows the
+others' demand, which draws its drivers too, and on every market the naive-causal response reads
+0.13–0.38 above the response with that path closed. A correlation of the response with demand tests
+none of this, since the response follows demand once the confounding is gone.
+See `results/track_h_markets.md` and `results/track_h_markets_x64.md`.
 
 **Track L** (`causaldyn_bench.dcbo_track`) tests the "no analogues" claim in both directions
 against DCBO (Aglietti et al., NeurIPS 2021), the nearest academic statement of *which lever, how
@@ -316,6 +333,7 @@ uv run python -m causaldyn_bench         # print the leaderboard
 uv run python -m causaldyn_bench --save  # also write results/leaderboard.{md,json}
 uv run pytest                            # smoke tests
 just check                               # the ladder ci.yml runs: format, lint, tests
+just track-h                             # Track H over 30 markets -> results/track_h_markets{,_x64}.{md,json}
 just track-l                             # Track L against DCBO -> results/track_l.{md,json}
 just track-o                             # Track O, OPE coverage -> results/track_o.{md,json}
 just track-p                             # Track P, drift false alarms -> results/track_p.{md,json}
