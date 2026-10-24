@@ -347,7 +347,7 @@
         "span": 0.0,
         "seed_invariant": true
       },
-      "floor": {
+      "local_floor": {
         "lo": 0.013190664286603915,
         "hi": 0.013190664286603915,
         "span": 0.0,

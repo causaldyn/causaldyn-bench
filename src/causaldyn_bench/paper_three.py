@@ -354,7 +354,7 @@ def table_five(seeds: tuple[int, ...]) -> TableFive:
         "information_loss",
         "live_channel_weight",
         "knife_edge_weight",
-        "floor",
+        "local_floor",
         "plugin_ratio",
         "hodges_pointwise_ratio",
         "hodges_bayes_ratio",

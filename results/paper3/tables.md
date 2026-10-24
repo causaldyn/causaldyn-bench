@@ -86,7 +86,7 @@ Range over 5 seeds. A column marked exact did not move at all; with a single see
 | information_loss | 4 | 0.0e+00 | yes |
 | live_channel_weight | 0.07407 | 0.0e+00 | yes |
 | knife_edge_weight | 1.233e-32 | 0.0e+00 | yes |
-| floor | 0.01319 | 0.0e+00 | yes |
+| local_floor | 0.01319 | 0.0e+00 | yes |
 | plugin_ratio | 1.67 .. 1.686 | 9.1e-03 | -- |
 | hodges_pointwise_ratio | 0 | 0.0e+00 | yes |
 | hodges_bayes_ratio | 31.35 .. 32.06 | 2.2e-02 | -- |
