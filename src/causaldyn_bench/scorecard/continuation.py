@@ -21,7 +21,8 @@ there, its error exactly unless that reading was clipped.
 A geo world's quarter (:func:`geo_shadow`, a world :mod:`chc.geo_world` drew) runs on the same way
 geo by geo: its base on the season every geo shares, every channel's lift at the status quo, each
 national channel's allotted to the geos by population, its carryover from the history and its
-spillover included, and fresh noise of the world's size a geo. Its variates come from the family's
+spillover included, and fresh noise of the world's size and law a geo
+(:func:`~causaldyn_bench.scorecard.geo_noise.kpi_noise`). Its variates come from the family's
 own stream, ``(100 + f, 3, seed)``.
 """
 
@@ -47,6 +48,7 @@ from causaldyn_bench.endogenous_mmm import (
 )
 from causaldyn_bench.mmm_decision import PLANNED, Quarter
 from causaldyn_bench.scorecard import truth
+from causaldyn_bench.scorecard.geo_noise import kpi_noise
 from causaldyn_bench.scorecard.seeds import Role, rng
 
 
@@ -175,6 +177,6 @@ def geo_shadow(world: GeoMediaWorld, family: int, seed: int) -> GeoShadow:
     base = world.base[:, :1] * (1.0 + world.mix.season * season)
     quarter = truth.geo_quarter(world)
     media = lifted(world, truth.allotted(world, quarter.status_quo), PLANNED)
-    noise = world.mix.noise * np.sqrt(world.population)[:, None]
-    noise = noise * draw.standard_normal((world.mix.geos, PLANNED))
-    return GeoShadow(week, base.T, media.T, noise.T, (base + media + noise).T)
+    level = base + media
+    noise = kpi_noise(world, level, draw.standard_normal((world.mix.geos, PLANNED)))
+    return GeoShadow(week, base.T, media.T, noise.T, (level + noise).T)

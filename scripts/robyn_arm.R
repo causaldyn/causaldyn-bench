@@ -16,8 +16,9 @@
 #   pla a search channel (search_clicks_P's: alphas 0.5-3, gammas 0.3-1, thetas 0-0.3), meta a
 #   social one (facebook_I's, the same) and tv tv_S's (alphas 0.5-1, gammas 0.3-1, thetas 0.3-0.8),
 #   the thetas its rule of thumb for digital and TV decay; a geo world's search and social stand
-#   for search_clicks_P and facebook_I as pla and meta do. A record names the ranges of its world's
-#   own channels. `union`: every channel over the union of the demo's ranges, thetas 0-0.8 (the
+#   for search_clicks_P and facebook_I as pla and meta do, and so do a siMMMulator world's Search
+#   and Facebook, its TV for tv_S. A record names the ranges of its world's own channels. `union`:
+#   every channel over the union of the demo's ranges, thetas 0-0.8 (the
 #   rule of thumb joined over digital, OOH, print, radio and TV), alphas 0.5-3 and gammas 0.3-1.
 #   CHOICE: the drawn worlds give every channel, whatever its genre, a retention drawn uniformly
 #   from 0.2 to 0.7, four fifths of which the digital rule of thumb rules out for pla and meta and
@@ -117,7 +118,10 @@ RANGES <- list(
     meta = list(alphas = c(0.5, 3), gammas = c(0.3, 1), thetas = c(0, 0.3)), # facebook_I
     tv = list(alphas = c(0.5, 1), gammas = c(0.3, 1), thetas = c(0.3, 0.8)), # tv_S
     search = list(alphas = c(0.5, 3), gammas = c(0.3, 1), thetas = c(0, 0.3)), # search_clicks_P
-    social = list(alphas = c(0.5, 3), gammas = c(0.3, 1), thetas = c(0, 0.3)) # facebook_I
+    social = list(alphas = c(0.5, 3), gammas = c(0.3, 1), thetas = c(0, 0.3)), # facebook_I
+    Facebook = list(alphas = c(0.5, 3), gammas = c(0.3, 1), thetas = c(0, 0.3)), # facebook_I
+    TV = list(alphas = c(0.5, 1), gammas = c(0.3, 1), thetas = c(0.3, 0.8)), # tv_S
+    Search = list(alphas = c(0.5, 3), gammas = c(0.3, 1), thetas = c(0, 0.3)) # search_clicks_P
   ),
   union = list(alphas = c(0.5, 3), gammas = c(0.3, 1), thetas = c(0, 0.8)) # every channel's
 )

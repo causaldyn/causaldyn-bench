@@ -16,7 +16,7 @@ import math
 import jax
 import numpy as np
 import pytest
-from chc.geo_world import GeoMediaWorld
+from chc.geo_world import GeoMediaMix, GeoMediaWorld
 from scipy.optimize import minimize
 
 from causaldyn_bench.budget_regret import TIE
@@ -26,7 +26,8 @@ from causaldyn_bench.scorecard import truth
 from causaldyn_bench.scorecard.continuation import lifted
 from causaldyn_bench.scorecard.family import number
 from causaldyn_bench.scorecard.few_geos import FAMILY, FEW_GEOS, NOISY, SIZES, SMALL
-from causaldyn_bench.scorecard.geo import GEO, NOISE, POPULATION, mix
+from causaldyn_bench.scorecard.geo import GEO, NOISE, POLICIES, POPULATION, mix
+from causaldyn_bench.scorecard.geo_noise import LogNormalNoise, kpi_noise
 from causaldyn_bench.scorecard.ladder import GEO_STARTS, dark_geos, geo_rung
 from causaldyn_bench.scorecard.observe import VERSION, export, read
 from causaldyn_bench.scorecard.scoring import WorldRecord, score_world
@@ -89,7 +90,12 @@ def test_an_environment_is_family_8s_mix_at_its_geos_population_and_noise(name):
     seed = FEW_GEOS.pilots[name][3]
     world = FEW_GEOS.world(name, seed).history
     geos = SIZES[name]
-    assert (world.mix.geos, world.mix.population, world.mix.noise) == geos
+    assert (
+        world.mix.geos,
+        world.mix.population,
+        world.mix.noise,
+        isinstance(world.mix, LogNormalNoise),
+    ) == geos
     expected = rng(10, Role.PARAMETERS, seed).uniform(0.2, 0.6, 3)
     np.testing.assert_array_equal([c.spread for c in world.mix.channels], expected)
     assert not np.array_equal(expected, rng(8, Role.PARAMETERS, seed).uniform(0.2, 0.6, 3))
@@ -328,6 +334,34 @@ def test_on_three_geos_a_test_takes_two_geos_dark_or_one_and_every_test_is_expor
         assert rows.delta_y[held[0]] == pytest.approx(reading, rel=1e-12, abs=0.0)
 
 
+def test_on_fifty_geos_a_tests_universe_draws_its_noise_log_normal_about_its_level():
+    """Each channel's universe on fifty geos: the world's base and the channel dark in the tested
+    geos and weeks, its KPI log-normal about that level at chc's noise size, from the family's
+    tests' stream; a test reads its dark geos against the others."""
+    seed = FEW_GEOS.pilots["geos-50"][6]
+    world = FEW_GEOS.world("geos-50", seed).history
+    rows = FEW_GEOS.observe(FEW_GEOS.world("geos-50", seed), 4).lift
+    names = [c.name for c in world.mix.channels]
+    c = 0
+    normals = rng(10, Role.TESTS, seed, c + 1).standard_normal((50, 104))
+    dark = world.spend.copy()
+    for j, start in enumerate(GEO_STARTS):
+        dark[list(dark_geos(50, j)), start - 1 : start - 1 + TEST, c] = 0.0
+    with jax.enable_x64(True):
+        level = world.base + np.asarray(world.lift(dark))
+    kpi = _lognormal(level, (NOISY * np.sqrt(world.population))[:, None], normals)
+    for j, start in enumerate(GEO_STARTS):
+        treated = list(dark_geos(50, j))
+        control = [g for g in range(50) if g not in treated]
+        reading = sloped_reading(kpi[treated].sum(axis=0), kpi[control].sum(axis=0), start - 1)
+        (held,) = (
+            i
+            for i, (n, s) in enumerate(zip(rows.channel, rows.start, strict=True))
+            if (n, s) == (names[c], start)
+        )
+        assert rows.delta_y[held] == pytest.approx(reading, rel=1e-9, abs=0.0)
+
+
 @pytest.mark.parametrize("name", list(SIZES))
 def test_on_the_familys_worlds_a_geo_tests_error_over_its_standard_error_has_a_spread_of_1(name):
     """On each environment's first 30 pilot worlds: a reading less the true change, over its
@@ -346,14 +380,97 @@ def test_on_the_familys_worlds_a_geo_tests_error_over_its_standard_error_has_a_s
     assert abs(float(np.std(z, ddof=1)) - 1.0) <= 4.0 / math.sqrt(2 * (z.size - 1))
 
 
-def test_the_quarter_at_the_status_quo_runs_on_from_the_familys_stream_at_the_worlds_noise():
-    name = "geos-50"
+def _lognormal(level: np.ndarray, size: np.ndarray, normals: np.ndarray) -> np.ndarray:
+    """A KPI log-normal about ``level`` at standard deviation ``size``, from ``normals``."""
+    spread = np.sqrt(np.log(1.0 + (size / level) ** 2))
+    return level * np.exp(spread * normals - spread**2 / 2.0)
+
+
+@pytest.mark.parametrize("name", ["geos-3", "geos-50"])
+def test_the_quarter_at_the_status_quo_runs_on_from_the_familys_stream_at_the_worlds_noise(name):
+    """Normal on three geos, log-normal about the quarter's level on fifty, from one stream."""
     seed = FEW_GEOS.pilots[name][8]
     world = FEW_GEOS.world(name, seed)
-    normals = rng(10, Role.CONTINUATION, seed).standard_normal((50, PLANNED))
-    size = NOISY * np.sqrt(world.history.population)
-    np.testing.assert_allclose(world.shadow.noise, (size[:, None] * normals).T, rtol=1e-15)
-    np.testing.assert_array_equal(FEW_GEOS.truth(world).target, world.shadow.sales.sum(axis=1))
+    geos = SIZES[name]
+    normals = rng(10, Role.CONTINUATION, seed).standard_normal((geos.count, PLANNED))
+    size = (geos.noise * np.sqrt(world.history.population))[:, None]
+    shadow = world.shadow
+    if geos.lognormal:
+        level = (shadow.base + shadow.media).T
+        np.testing.assert_allclose(shadow.sales.T, _lognormal(level, size, normals), rtol=1e-12)
+    else:
+        np.testing.assert_allclose(shadow.noise, (size * normals).T, rtol=1e-15)
+    np.testing.assert_array_equal(FEW_GEOS.truth(world).target, shadow.sales.sum(axis=1))
+
+
+def _normal(world: GeoMediaWorld, seed: int) -> GeoMediaWorld:
+    """chc's own world of ``world``'s parameters from ``seed``: its noise normal."""
+    fields = {f.name: getattr(world.mix, f.name) for f in dataclasses.fields(GeoMediaMix)}
+    with jax.enable_x64(True):
+        return GeoMediaMix(**fields).draw(seed)
+
+
+def test_fifty_geos_kpi_is_log_normal_about_its_level_from_chcs_own_normals():
+    """The history's KPI is its level, every channel's lift on the base, times the log-normal
+    factor of chc's normal noise at its standard deviation, the same normals chc's own world of
+    those parameters draws."""
+    seed = FEW_GEOS.pilots["geos-50"][2]
+    world = FEW_GEOS.world("geos-50", seed).history
+    normal = _normal(world, seed)
+    size = (NOISY * np.sqrt(world.population))[:, None]
+    np.testing.assert_array_equal(normal.base, world.base)
+    np.testing.assert_array_equal(normal.media, world.media)
+    level = world.base + world.media.sum(axis=2) + world.spilled
+    expected = _lognormal(level, size, normal.noise / size)
+    np.testing.assert_allclose(world.kpi, expected, rtol=1e-12)
+
+
+def test_fifty_geos_kpi_stays_above_0_where_normal_noise_took_it_below():
+    """On the first 30 pilot worlds, which chc's normal noise of the same size takes below 0 in 24,
+    every geo-week of the history and of the quarter is above 0."""
+    below = 0
+    for seed in FEW_GEOS.pilots["geos-50"][:30]:
+        world = FEW_GEOS.world("geos-50", seed)
+        assert world.history.kpi.min() > 0.0 and world.shadow.sales.min() > 0.0
+        below += bool((_normal(world.history, seed).kpi < 0.0).any())
+    assert below == 24
+
+
+def test_log_normal_noise_has_the_normal_noises_mean_and_standard_deviation():
+    """Monte Carlo at noise of a tenth, a half and 0.85 of the level: the mean is 0 and the standard
+    deviation the normal noise's within 4 standard errors, and the KPI is above 0 at every normal
+    in [-8, 8]."""
+    world = FEW_GEOS.world("geos-50", FEW_GEOS.pilots["geos-50"][0]).history
+    size = NOISY * np.sqrt(world.population)[:, None]
+    draws = 200_000
+    normals = np.random.default_rng(5).standard_normal((50, draws))
+    for ratio in (0.1, 0.5, 0.85):
+        level = np.broadcast_to(size / ratio, normals.shape)
+        noise = kpi_noise(world, level, normals)
+        mean, sd = noise.mean(axis=1), noise.std(axis=1)
+        assert np.all(np.abs(mean) <= 4.0 * size[:, 0] / math.sqrt(draws))
+        variance = noise.var(axis=1)
+        fourth = ((noise - mean[:, None]) ** 4).mean(axis=1)
+        error = np.sqrt((fourth - variance**2) / draws)
+        assert np.all(np.abs(variance - size[:, 0] ** 2) <= 4.0 * error), sd / size[:, 0]
+    edge = np.broadcast_to(np.linspace(-8.0, 8.0, 1601), (50, 1601))
+    level = np.broadcast_to(size / 0.85, edge.shape)
+    assert np.all(level + kpi_noise(world, level, edge) > 0.0)
+
+
+@pytest.mark.parametrize(
+    ("family", "name"),
+    [(FEW_GEOS, "geos-3"), (FEW_GEOS, "geos-8"), *((GEO, policy) for policy in POLICIES)],
+)
+def test_every_other_geo_world_keeps_chcs_normal_noise_bit_for_bit(family, name):
+    """Three and eight geos and family 8 draw chc's own mix, whose noise is ``noise sqrt(P)``
+    times the normals, the same bits as before the log-normal law."""
+    seed = family.pilots[name][0]
+    world = family.world(name, seed).history
+    assert type(world.mix) is GeoMediaMix
+    shocks = np.random.default_rng(3).standard_normal(world.noise.shape)
+    size = world.mix.noise * np.sqrt(world.population)[:, None]
+    np.testing.assert_array_equal(kpi_noise(world, world.kpi, shocks), size * shocks)
 
 
 def test_every_world_exports_reads_back_and_scores_the_oracles_plan_at_nought(tmp_path):
