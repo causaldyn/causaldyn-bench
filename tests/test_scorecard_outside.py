@@ -3,7 +3,8 @@ so the history is the drawn world's bit for bit, and the bench's own outside it,
 ends, with the cliff's exponent uniform on [2, 4] within its Monte Carlo error; the bend bounds the
 replaced curve's concavity between its kinks; the tests read the cliff in their dark weeks; the box
 is widened for the arm and the oracle alike; no plan in it beats the oracle; and a plan made on the
-drawn world's curve loses to it."""
+drawn world's curve loses to it. Its label says what each environment tests: cliff and both the
+truth outside the range, saturation the widened box."""
 
 import dataclasses
 import math
@@ -215,3 +216,11 @@ def test_a_plan_made_on_the_drawn_worlds_curve_loses_to_the_oracle():
     assert min(min(v) for v in lost.values()) >= -TIE
     assert np.mean(lost["cliff"]) > 0.05 and np.mean(lost["both"]) > 0.05
     assert np.mean(lost["saturation"]) > 0.005
+
+
+def test_the_label_says_saturation_tests_the_widened_box_and_the_others_the_range():
+    first = OUTSIDE.labels[0]
+    assert "In cliff and both that favours plans that stay in the data" in first
+    assert "so that environment tests the widened box, not a truth outside the range" in first
+    assert all(name in first for name in SIDES)
+    assert all(label.endswith(".") for label in OUTSIDE.labels)

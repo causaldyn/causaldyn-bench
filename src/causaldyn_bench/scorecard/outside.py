@@ -137,7 +137,10 @@ class Outside:
     stream = stream(FAMILY)
     labels = (
         "Outside the range of each channel's adstock its history shows, the curve is the bench's "
-        "own, which favours plans that stay in the data.",
+        "own. In cliff and both that favours plans that stay in the data; in saturation the "
+        "replaced top seldom binds inside the widened box and the best plan leaves the range from "
+        "below, where the curve is the world's own, so that environment tests the widened box, "
+        "not a truth outside the range.",
         "Beneath its curves each world is a Track M v2 drawn world, whose media are "
         "PyMC-Marketing's default class; its history is that world's, bit for bit.",
         *TRACK_M2.labels[1:],
