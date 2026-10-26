@@ -8,21 +8,25 @@ arXiv:2504.08836, pessimism-as-DR-MDP); this track scores it.
 
 The leaderboard scores one market, ``SharedStateMarket(seed=0)``. ``python -m
 causaldyn_bench.marketplace`` (``just track-h``) scores it with seeds 1-29 into
-``results/track_h_markets.{md,json}``, and again under ``JAX_ENABLE_X64=1``, where each seed draws
-another market, into ``results/track_h_markets_x64.{md,json}``. On every one of those 60 markets
-the equilibrium-aware, pessimistic CHC allocation has the least regret, and it wins
-0.74-1.01 of the oracle's lift over doing nothing, a median of 0.93 and 0.92 at the two precisions
-(the oracle's ascent is local, so a plan can pass it). The predictive (MOPO) and naive-causal
-planners assume SUTVA and leave large regret: the naive one wins a median of 0.30 and 0.36 of the
-lift at the two precisions, at most 0.84, and the predictive one 0.04 and 0.00, at most 0.36; the
+``results/track_h_markets_v2.{md,json}``, and again under ``JAX_ENABLE_X64=1``, where each seed
+draws another market, into ``results/track_h_markets_v2_x64.{md,json}``, against the exact oracle.
+On 59 of those 60 markets the equilibrium-aware, pessimistic CHC allocation has the least regret,
+and it wins 0.69-1.00 of the oracle's lift over doing nothing, a median of 0.92 at both
+precisions. On the 60th, float32 market 18, its planner's ascent stops short on the fitted
+equilibrium and the naive-causal plan leaves less regret. The predictive (MOPO) and naive-causal
+planners assume SUTVA and leave large regret: the naive one wins a median of 0.28 and 0.35 of the
+lift at the two precisions, at most 0.80, and the predictive one 0.04 and 0.00, at most 0.35; the
 naive one realises less than doing nothing on 8 and 7 of the 30 markets, the predictive one on 13
 and 15. :func:`marketplace_report` reads what the logs' confounding does to the responses the two
-plan on.
+plan on. Version 1, ``results/track_h_markets{,_x64}.{md,json}``, scored the same markets on
+causal-hybrid-control 0.21.0 against a 2500-step ascent of the oracle's, which fell short of the
+exact optimum on 30 of the 60.
 """
 
 from __future__ import annotations
 
 import argparse
+import importlib.metadata
 import json
 from collections.abc import Sequence
 from pathlib import Path
@@ -47,8 +51,11 @@ from causaldyn_bench.tracks import TrackResult
 TRACK = "H-marketplace"
 SEEDS = tuple(range(30))
 BLOCKS = 400
-ORACLE_STEPS = 2500
-NAMES = {False: "track_h_markets", True: "track_h_markets_x64"}  # a run's file name, by x64
+VERSION = 2
+# a run's file name, by x64: version 2's, scored against the exact oracle
+NAMES = {False: "track_h_markets_v2", True: "track_h_markets_v2_x64"}
+# version 1's, scored on causal-hybrid-control 0.21.0 against a 2500-step ascent of the oracle's
+V1_NAMES = {False: "track_h_markets", True: "track_h_markets_x64"}
 # each planner's name on the leaderboard, and the prefix of its keys in a report
 PLANNERS = {"predictive-MOPO": "predictive", "naive-causal": "naive", "equilibrium-CHC": "chc"}
 
@@ -129,7 +136,7 @@ def marketplace_report(seed: int = 0, n_blocks: int = BLOCKS) -> dict[str, float
     demand, _ = market._base()
     logs = market.generate_logs(n_blocks, jax.random.key(seed + 1))
     base = market.value(jnp.zeros(market.n_zones))
-    oracle = market.value(market.oracle_allocation(steps=ORACLE_STEPS))
+    oracle = market.value(market.oracle_allocation())
     allocations = _allocations(market, logs)
     values = {name: market.value(u) for name, u in allocations.items()}
     predictive, naive = calibrate_predictive(logs), calibrate_naive_causal(logs)
@@ -252,14 +259,17 @@ def counts(markets: Sequence[dict[str, Any]]) -> dict[str, int]:
     }
 
 
-def record(markets: Sequence[dict[str, Any]], n_blocks: int, x64: bool) -> dict[str, Any]:
-    """A run: its markets' reports, and the summary and counts they read."""
+def record(markets: Sequence[dict[str, Any]], n_blocks: int, x64: bool, chc: str) -> dict[str, Any]:
+    """A run: its markets' reports, and the summary and counts they read, under version ``chc``
+    of causal-hybrid-control."""
     read = [readings(m["report"]) for m in markets]
     return {
         "track": TRACK,
+        "version": VERSION,
+        "chc": chc,
         "x64": x64,
         "blocks": n_blocks,
-        "oracle_steps": ORACLE_STEPS,
+        "oracle": "exact",
         "twin": "numpy default_rng(seed).permutation(blocks)",
         "summary": {key: summary([r[key] for r in read]) for key in LABELS},
         "counts": counts(markets),
@@ -284,19 +294,27 @@ def _markdown(result: dict[str, Any]) -> str:
     else:
         leaderboard = ""
     lines = [
-        f"# Track H over {n} markets",
+        f"# Track H over {n} markets, version {result['version']}",
         "",
         f"`SharedStateMarket(seed=s)` for {n} seeds, each scored on {result['blocks']} logged "
-        f"blocks drawn from `jax.random.key(s + 1)`, in {precision} "
-        "(`causaldyn_bench.marketplace`, `just track-h`). The other precision is "
+        f"blocks drawn from `jax.random.key(s + 1)`, in {precision}, on causal-hybrid-control "
+        f"{result['chc']} (`causaldyn_bench.marketplace`, `just track-h`). The other precision is "
         f"`{other}.md`: a seed draws another market there, so the two runs are {2 * n} markets."
         + leaderboard,
         "",
-        "A planner's share is its lift over doing nothing as a share of the oracle's "
-        f"(`oracle_allocation(steps={result['oracle_steps']})`), its regret the oracle's "
-        "completions less its own; the oracle's ascent is local, so a plan can pass it. The "
-        "naive-causal planner's interference over-count is the lift its per-zone response predicts "
-        "for its allocation less the lift the market realises.",
+        "A planner's share is its lift over doing nothing as a share of the oracle's, its regret "
+        "the oracle's completions less its own. The oracle is the exact optimum "
+        "(`SharedStateMarket.oracle_allocation()`, `chc.games.exact_congestion_allocation`), so "
+        "no plan passes it by more than the equilibrium solve's tolerance. The naive-causal "
+        "planner's interference over-count is the lift its per-zone response predicts for its "
+        "allocation less the lift the market realises.",
+        "",
+        f"Version 1, `{V1_NAMES[result['x64']]}.md`, scored the same markets on "
+        "causal-hybrid-control 0.21.0 against a 2500-step ascent of the oracle's and through an "
+        "equilibrium fit that stopped short of convergence. The ascent fell short of the exact "
+        "optimum on 13 of the 30 float32 markets, by up to 0.303 rides, and on 17 of the 30 "
+        "float64 ones, by up to 0.215. Version 1 is reproducible from this repository at "
+        "`cd43c6d` beside the library at `v0.21.0`.",
         "",
         "The confounding is read against two reruns of the logged blocks, which no log gives: each "
         "block keeps its demand, the attractiveness that moves with it and its completions noise, "
@@ -340,10 +358,10 @@ def _markdown(result: dict[str, Any]) -> str:
         f"{c['naive_below_doing_nothing']}; the predictive planner on "
         f"{c['predictive_below_doing_nothing']}.",
         "",
-        "`tests/test_marketplace.py` asserts on seeds 0-2 only what every market of the two runs "
-        "supports: the orderings and signs above that hold on all of them, and bounds at the "
-        "markets' mean less or plus three SDs, at whichever precision reads wider, rounded outward "
-        "to two decimals.",
+        "`tests/test_marketplace.py` asserts on seeds 0-2 the orderings and signs above that hold "
+        "on every market of the two runs, and equilibrium-CHC's least regret, which holds on the "
+        "markets counted above, and bounds at the markets' mean less or plus three SDs, at "
+        "whichever precision reads wider, rounded outward to two decimals.",
     ]
     return "\n".join(lines) + "\n"
 
@@ -398,7 +416,7 @@ def main() -> None:
     for seed in args.seeds:
         markets.append({"seed": seed, "report": marketplace_report(seed, args.blocks)})
         print(f"seed {seed}: {json.dumps(markets[-1]['report'])}", flush=True)
-    result = record(markets, args.blocks, x64)
+    result = record(markets, args.blocks, x64, importlib.metadata.version("causal-hybrid-control"))
     name = NAMES[x64]
     args.out.mkdir(parents=True, exist_ok=True)
     (args.out / f"{name}.md").write_text(_markdown(result))

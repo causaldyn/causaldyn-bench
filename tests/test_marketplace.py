@@ -6,15 +6,21 @@ logs themselves cannot give.
 threefry bits per element for a float64 output than for a float32 one, so under
 ``JAX_ENABLE_X64=1`` a seed draws a *different* market rather than a higher-precision copy of the
 same one: at seed 0 the headroom between doing nothing and the oracle reads 2.43 against 1.06. The
-committed runs, ``results/track_h_markets.json`` (float32) and ``results/track_h_markets_x64.json``
-(float64), are 60 markets, and every claim tested here on seeds 0-2 holds on all 60. An ordering
-or a sign is asserted as it stands. A bound is the 30 markets' mean less three standard deviations,
-or plus three, at the precision that reads it wider, rounded outward to two decimals: a reading of
-the distribution, not of the markets tested here. The bounds are checked against the committed
-runs, so a rerun that moves the distribution fails until they are read again; the committed runs
-are checked to be their own markets, and to be what the code computes for seeds 0-2: on any
-machine in every reading no ascent ends, and in the ascents' ends only on the machine class that
-recorded them.
+committed runs of version 2, ``results/track_h_markets_v2.json`` (float32) and
+``results/track_h_markets_v2_x64.json`` (float64), are 60 markets, and every claim tested here on
+seeds 0-2 holds on all 60 but one: equilibrium-CHC's least regret, which float32 market 18 breaks
+(:data:`LEAST_REGRET`). An ordering or a sign is asserted as it stands. A bound is the 30
+markets' mean less three standard deviations, or plus three, at the precision that reads it wider,
+rounded outward to two decimals: a reading of the distribution, not of the markets tested here. The
+bounds are checked against the committed runs, so a rerun that moves the distribution fails until
+they are read again; the committed runs are checked to be their own markets, and to be what the
+code computes for seeds 0-2: on any machine in every reading no ascent ends, and in the ascent's
+ends only on the machine class that recorded them.
+
+Version 1's runs, ``results/track_h_markets.json`` and ``results/track_h_markets_x64.json``, were
+scored on causal-hybrid-control 0.21.0 against an ascent of the oracle's; this library computes
+another oracle and another fit, so they are checked only to be their own markets and to hold the
+claims they make.
 """
 
 import importlib.metadata
@@ -32,6 +38,7 @@ from causaldyn_bench.marketplace import (
     NAMES,
     PLANNERS,
     TRACK,
+    V1_NAMES,
     chase,
     leaderboard_note,
     marketplace_report,
@@ -43,29 +50,33 @@ from causaldyn_bench.marketplace import (
 ROOT = Path(__file__).resolve().parents[1]
 SEEDS = (0, 1, 2)
 LOWER = {
-    "chc_share": 0.69,
+    "chc_share": 0.67,
     "predictive_confounding_bias": 0.14,
     "naive_cross_zone_confounding": 0.04,
     "chc_confounding_bias": 0.08,
     "randomised_demand_corr": 0.28,
     "naive_interference_overcount": 0.39,
 }
-UPPER = {"chc_regret": 0.73, "naive_kept_share": 0.88}
+UPPER = {"chc_regret": 0.88, "naive_kept_share": 0.88}
+# The markets on which equilibrium-CHC has the least regret, by run. Version 2's float32 market 18
+# is the one it does not: its plan's 600-step ascent stops at 9.83 on the fitted surrogate, which
+# the oracle's allocation reads at 10.58 and 2400 steps reach 10.64, and naive-causal's regret
+# there is 0.675 against its 0.916.
+LEAST_REGRET = {("version 2", False): 29, ("version 2", True): 30}
+LEAST_REGRET |= {("version 1", x64): 30 for x64 in (False, True)}
 # The committed readings carry three decimals in results/track_h_markets*.md, so a run reproduces
 # them to half of the last.
 TO_THE_QUOTED_DIGIT = 5e-4
-# The readings that end a nonconvex ascent: the oracle's on the market's equilibrium, and
-# equilibrium-CHC's on the one it fits. On a CPU with AVX-512, where numpy and XLA run other
-# vector kernels, the same programs round otherwise and an ascent can end at another local
-# optimum: there market 1's float64 oracle read 2.961 of lift against the committed 3.093, and
-# market 0's float32 CHC plan 2.328 against 2.340.
-ASCENT_ENDS = frozenset(
-    {"oracle_lift", "chc_realised_lift"} | {f"{key}_regret" for key in PLANNERS.values()}
-)
+# The readings that end a nonconvex ascent: equilibrium-CHC's, on the equilibrium it fits. The
+# oracle is exact, and moves with the machine only through the equilibrium solve. On a CPU with
+# AVX-512, where numpy and XLA run other vector kernels, the same programs round otherwise and an
+# ascent can end at another local optimum: under version 1 there market 0's float32 CHC plan read
+# 2.328 of lift against the committed 2.340.
+ASCENT_ENDS = frozenset({"chc_realised_lift", "chc_regret"})
 # The versions the runs were recorded under, on x86 without AVX-512. Others compile and solve the
-# ascents otherwise too: the Python 3.11 leg, on jax 0.10.2, numpy 2.4.6 and scipy 1.17.1, ended
-# market 0's float32 oracle at 2.4241 of lift against the committed 2.4268. A rerun under other
-# versions reads them again.
+# ascent otherwise too: under version 1 the Python 3.11 leg, on jax 0.10.2, numpy 2.4.6 and scipy
+# 1.17.1, ended market 0's float32 oracle ascent at 2.4241 of lift against the committed 2.4268. A
+# rerun under other versions reads them again.
 RECORDED_UNDER = {"jax": "0.11.2", "jaxlib": "0.11.2", "numpy": "2.5.4", "scipy": "1.18.1"}
 
 
@@ -81,8 +92,8 @@ def _other_versions() -> str | None:
     return f"{running} are not the versions the committed runs were recorded under"
 
 
-def _committed(x64: bool) -> dict:
-    return json.loads((ROOT / "results" / f"{NAMES[x64]}.json").read_text())
+def _committed(x64: bool, names: dict[bool, str] = NAMES) -> dict:
+    return json.loads((ROOT / "results" / f"{names[x64]}.json").read_text())
 
 
 @pytest.fixture(scope="module")
@@ -132,12 +143,13 @@ def test_the_reruns_replay_the_logged_blocks() -> None:
     np.testing.assert_allclose(replayed["y"], logs["y"], rtol=0.0, atol=atol)
 
 
+@pytest.mark.parametrize("version", ["version 2", "version 1"])
 @pytest.mark.parametrize("x64", [False, True], ids=["float32", "float64"])
-def test_the_committed_runs_hold_the_claims_on_every_market(x64: bool) -> None:
-    counts = _committed(x64)["counts"]
+def test_the_committed_runs_hold_the_claims_on_every_market(x64: bool, version: str) -> None:
+    counts = _committed(x64, NAMES if version == "version 2" else V1_NAMES)["counts"]
     n = counts["markets"]
     assert n == 30
-    assert counts["chc_least_regret"] == n
+    assert counts["chc_least_regret"] == LEAST_REGRET[version, x64]
     assert counts["predictive_confounding_bias_positive"] == n
     assert counts["naive_bias_below_predictive"] == n
     assert counts["naive_cross_zone_confounding_positive"] == n
@@ -150,7 +162,17 @@ def test_a_committed_run_is_its_markets(x64: bool) -> None:
     """Its summary and counts are what its markets read, and its precision is its name's."""
     committed = _committed(x64)
     assert committed["x64"] is x64
-    assert record(committed["markets"], committed["blocks"], x64) == committed
+    assert record(committed["markets"], committed["blocks"], x64, committed["chc"]) == committed
+
+
+@pytest.mark.parametrize("x64", [False, True], ids=["float32", "float64"])
+def test_a_version_1_run_is_its_markets(x64: bool) -> None:
+    committed = _committed(x64, V1_NAMES)
+    assert committed["x64"] is x64
+    read = record(committed["markets"], committed["blocks"], x64, "0.21.0")
+    assert {key: read[key] for key in ("summary", "counts")} == {
+        key: committed[key] for key in ("summary", "counts")
+    }
 
 
 def test_the_bounds_are_read_off_the_committed_runs() -> None:
@@ -165,8 +187,8 @@ def test_the_bounds_are_read_off_the_committed_runs() -> None:
 
 def test_the_committed_run_is_what_the_code_computes(reports) -> None:
     """At this precision, the committed run's markets 0-2 read what is computed here in every
-    reading no ascent ends: the responses' confounding, the SUTVA planners' lifts and the naive
-    planner's over-count."""
+    reading no ascent ends: the oracle's lift, the responses' confounding, the SUTVA planners' lifts
+    and regrets and the naive planner's over-count."""
     markets = {m["seed"]: m["report"] for m in _committed(_x64())["markets"]}
     for seed in SEEDS:
         committed = {k: v for k, v in markets[seed].items() if k not in ASCENT_ENDS}
@@ -177,10 +199,10 @@ def test_the_committed_run_is_what_the_code_computes(reports) -> None:
 def test_the_ascents_end_where_the_committed_run_s_machine_class_ends_them(
     reports, other_kernels
 ) -> None:
-    """On x86 without AVX-512 under the versions the runs were recorded under, the oracle's lift,
-    equilibrium-CHC's and the regrets read as committed too, and the leaderboard's Track H rows,
-    measured in float32, are market 0's regrets. Elsewhere the regrets' order and bounds hold
-    (above), not their digits."""
+    """On x86 without AVX-512 under the versions the runs were recorded under, equilibrium-CHC's
+    lift and regret read as committed too, and the leaderboard's Track H rows, measured in float32,
+    are market 0's regrets. Elsewhere the regrets' order and bounds hold (above), not their
+    digits."""
     for reason in (other_kernels, _other_versions()):
         if reason is not None:
             pytest.skip(reason)

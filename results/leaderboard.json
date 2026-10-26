@@ -241,21 +241,21 @@
     "track": "H-marketplace",
     "method": "predictive-MOPO",
     "metric": "regret",
-    "value": 3.2349071502685547,
+    "value": 3.2436256408691406,
     "lower_is_better": true
   },
   {
     "track": "H-marketplace",
     "method": "naive-causal",
     "metric": "regret",
-    "value": 3.4869861602783203,
+    "value": 3.4957046508789062,
     "lower_is_better": true
   },
   {
     "track": "H-marketplace",
     "method": "equilibrium-CHC",
     "metric": "regret",
-    "value": 0.08694171905517578,
+    "value": 0.10151195526123047,
     "lower_is_better": true
   },
   {

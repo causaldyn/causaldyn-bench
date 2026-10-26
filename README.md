@@ -22,7 +22,7 @@ closed-loop decision. Built on
 | **E** systems | control-solve latency | ms (min of 7, after 2 warm-ups) | the known-only model — fewer terms to differentiate, same compiled solver |
 | **F** structure | which lagged parents drive the target, under confounding + autocorrelation | F1 / control payoff | discovery-informed residual |
 | **G** dynamic effect | the impulse response `∂x_{t+h}/∂u_t`, not just `h = 1` | IRF error / control payoff | structured (Levinson) IRF |
-| **H** marketplace | offline incentive allocation when SUTVA fails through a shared equilibrium | regret vs equilibrium-aware oracle | equilibrium-aware, the least regret on each of 60 markets |
+| **H** marketplace | offline incentive allocation when SUTVA fails through a shared equilibrium | regret vs the exact equilibrium-aware oracle | equilibrium-aware, the least regret on 59 of 60 markets |
 | **I** sensitivity | control when **no adjustment set exists** — the assumed `Γ` is the only lever | worst-case closed-loop cost | a *calibrated* `Γ`, not the largest one |
 | **D-causal** identification | the control channel of a *real* emulator, logged by a weather-compensated controller | \|8h step response − randomised reference\| | orthogonal (de-confounded) fit |
 | **J** identification, non-building | the control channel of a *third-party* plant whose answer is known exactly (`Pendulum-v1`) | \|fitted gain − 3.0\| | orthogonal (de-confounded) fit |
@@ -36,11 +36,14 @@ closed-loop decision. Built on
 **Track H** (`causaldyn_bench.marketplace`, `just track-h`) learns where to spend an incentive
 budget from logs whose operator chased demand, in a market whose drivers move between zones. The
 leaderboard scores one market; the track scores 30, and 30 more under `JAX_ENABLE_X64=1`, where each
-seed draws another market. On every one the equilibrium-aware CHC planner has the least
-regret, and it wins 0.74–1.01 of the oracle's lift over doing nothing (medians 0.93 and 0.92).
-The SUTVA planners win a median of 0.30 and 0.36 of it at the two precisions (naive causal, at most
-0.84) and 0.04 and 0.00 (predictive, at most 0.36), and less than doing nothing on 8 and 7 markets
-and on 13 and 15. The leaderboard's market is the one of the 30 on which both leave their largest
+seed draws another market. Version 2 of the track, on causal-hybrid-control 0.22.0, scores them
+against the exact oracle. On 59 of the 60 the equilibrium-aware CHC planner has the least regret,
+and it wins 0.69–1.00 of the oracle's lift over doing nothing (median 0.92 at both precisions). On
+the 60th, float32 market 18, the planner's own ascent stops short on the equilibrium it fitted
+(9.83 against the 10.58 its fit reads at the oracle's allocation), and the naive-causal plan
+leaves less regret, 0.675 against 0.916. The SUTVA planners win a median of 0.28 and 0.35 of the
+lift at the two precisions (naive causal, at most 0.80) and 0.04 and 0.00 (predictive, at most
+0.35), and less than doing nothing on 8 and 7 markets and on 13 and 15. The leaderboard's market is the one of the 30 on which both leave their largest
 regret. Against a rerun of the logs whose incentives no longer follow demand, the predictive
 response reads 0.24–0.64 too high on average over the zones, and adjusting each zone for its own
 demand leaves a median of 0.35 and 0.37 of that. Part of what stays runs through the other zones:
@@ -52,11 +55,15 @@ the naive-causal one on every market: at a fixed total and own demand a zone's i
 with the other zones' demand. The planner reads that response only through its pessimism tilt; its
 lead comes from the equilibrium it fits to the logs. A correlation of the response with demand
 tests none of this, since the response follows demand once the confounding is gone. The runs
-were recorded on x86 without AVX-512, under jax 0.11.2. The oracle's lift and the CHC plan's each
-end a nonconvex ascent, and on a CPU with AVX-512 or under another jax, where the same programs
-round otherwise, a rerun can end either at another local optimum: market 1's float64 oracle read
-2.961 on AVX-512, against the committed 3.093. See `results/track_h_markets.md` and
-`results/track_h_markets_x64.md`.
+were recorded on x86 without AVX-512, under jax 0.11.2. The CHC plan ends a nonconvex ascent, and
+on a CPU with AVX-512 or under another jax, where the same programs round otherwise, a rerun can
+end it at another local optimum: under version 1, market 0's float32 plan read 2.328 of lift on
+AVX-512, against the committed 2.340. See `results/track_h_markets_v2.md` and
+`results/track_h_markets_v2_x64.md`. Version 1, `results/track_h_markets.md` and
+`results/track_h_markets_x64.md`, scored the same 60 markets on causal-hybrid-control 0.21.0
+against a 2500-step ascent of the oracle's, which fell short of the exact optimum on 30 of them, by
+up to 0.303 rides: there the CHC planner had the least regret on all 60. It is reproducible from this repository at
+`cd43c6d` with the library at `v0.21.0` beside it.
 
 **Track L** (`causaldyn_bench.dcbo_track`) tests the "no analogues" claim in both directions
 against DCBO (Aglietti et al., NeurIPS 2021), the nearest academic statement of *which lever, how
@@ -341,7 +348,7 @@ uv run python -m causaldyn_bench         # print the leaderboard
 uv run python -m causaldyn_bench --save  # also write results/leaderboard.{md,json}
 uv run pytest                            # smoke tests
 just check                               # the ladder ci.yml runs: format, lint, tests
-just track-h                             # Track H over 30 markets -> results/track_h_markets{,_x64}.{md,json}
+just track-h                             # Track H over 30 markets -> results/track_h_markets_v2{,_x64}.{md,json}
 just track-l                             # Track L against DCBO -> results/track_l.{md,json}
 just track-o                             # Track O, OPE coverage -> results/track_o.{md,json}
 just track-p                             # Track P, drift false alarms -> results/track_p.{md,json}
@@ -425,8 +432,8 @@ state-space), **tree-surrogate** (LightGBM), and **hybrid-CHC** (physics + learn
 A committed snapshot lives in [`results/leaderboard.md`](results/leaderboard.md): hybrid wins B-rollout
 ~18× over the tree and ~14× over the DLM, causal wins C ~800× over naive, causal-CHC is near-oracle on
 D while predictive blows up, and CHC-MPC matches the oracle on the adaptive-CV task (myopic loses).
-Its rows were recorded between 2026-08-31 and 2026-09-14, except Track D's and Track H's, which
-read causal-hybrid-control 0.21; Track L, which `run_all` runs too, is in
+Its rows were recorded between 2026-08-31 and 2026-09-14, except Track D's, which read
+causal-hybrid-control 0.21, and Track H's, which read 0.22.0; Track L, which `run_all` runs too, is in
 [`results/track_l.md`](results/track_l.md).
 
 For the visual version — leaderboard bar charts + the "prediction ≠ decision" figure — see the executed
