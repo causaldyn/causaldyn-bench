@@ -195,6 +195,14 @@ track-q:
 track-q-v2 *args:
     JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.graph_errors_v2 --out results {{args}}
 
+# Track Q, version 3 -> results/track_q_v3.{md,json}, pre-registered in
+# results/track_q_v3_preregistration.md: version 2's worlds, arms, claims and gate, the panels log
+# the logger's draw, and the stop is prescribe(dither=)'s contrast, rejected and priced as material.
+# Needs a causal-hybrid-control whose prescribe takes dither=. Pass `--preregistration <commit>` and
+# `--chc-commit <commit>` to record them.
+track-q-v3 *args:
+    JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.graph_errors_v3 --out results {{args}}
+
 # Track M v2, lift tests -> results/track_m2_lift.{md,json}. 500 histories of Heusch's world for each
 # of six settings, one chc.lift fit on each, dealt to `--workers` processes. At 64-bit, so the fit
 # reads the readouts at the precision the NumPy world draws them in.

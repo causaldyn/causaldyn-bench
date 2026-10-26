@@ -157,6 +157,13 @@ three. The tube itself reads as stated, a mean exceedance of 0.050 at each step 
 though the largest of three trusted steps passes the margin on 0.069 of plans. See
 `results/track_q_v2.md`.
 
+**Track Q, version 3** (`causaldyn_bench.graph_errors_v3`, `just track-q-v3`) keeps version 2's
+worlds, claims and gate and changes the stop. The panels log the logger's own draw, and the stop is
+`prescribe(dither=)`'s check: the plan's channel against the one the draw instruments, a
+Durbin-Wu-Hausman contrast priced in the plan's regret. It refuses where the contrast rejects at
+0.05 and its priced cost passes 0.1 of the gain the plan claims on its own model. The design is
+pre-registered in `results/track_q_v3_preregistration.md`; the track has not been run.
+
 **Track N** (`causaldyn_bench.fold_design`) is the only track that varies nothing but the
 cross-fitting split, and its result is an ordering whose useful half is negative. On `C_12` with two
 clusters, over 120 draws: the variance-optimal design **ties** the graph-blind split that keeps units
@@ -353,6 +360,7 @@ just track-l                             # Track L against DCBO -> results/track
 just track-o                             # Track O, OPE coverage -> results/track_o.{md,json}
 just track-p                             # Track P, drift false alarms -> results/track_p.{md,json}
 just track-q                             # Track Q, graph errors -> results/track_q.{md,json}
+just track-q-v3                          # Track Q v3, the dither stop -> results/track_q_v3.{md,json}
 just track-m2-lift                       # Track M v2, lift intervals -> results/track_m2_lift.{md,json}
 just track-m2-budgets-pilot              # Track M v2, budgets, the pilot -> results/track_m2_budgets_pilot.{md,json}
 just track-m2-budgets                    # Track M v2, budgets, pre-registered -> results/track_m2_budgets.{md,json}

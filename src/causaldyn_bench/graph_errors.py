@@ -80,6 +80,7 @@ import chc
 import jax
 import jax.numpy as jnp
 import numpy as np
+from chc.cost import total_cost
 from chc.dynamics import LinearDynamics
 from chc.integrate import rollout
 from numpy.typing import NDArray
@@ -246,9 +247,10 @@ class Draw:
     confounder_last: float | None  # the confounder's mean over units at the last period
 
 
-def draw(world: World, seed: Sequence[int], units: int = UNITS) -> Draw:
+def draw(world: World, seed: Sequence[int], units: int = UNITS, dither: str | None = None) -> Draw:
     """``units`` units of ``PERIODS`` periods, period-major: every column the panel holds, and none
-    of the latents."""
+    of the latents. With ``dither``, the logger's own draw, ``fresh``, is logged as well, under
+    that name; the draws are the same either way."""
     rng = np.random.default_rng(list(seed))
     direct = DIRECT.copy()
     if world.mediator is not None:
@@ -260,6 +262,8 @@ def draw(world: World, seed: Sequence[int], units: int = UNITS) -> Draw:
     for extra in (world.confounder, world.mediator, world.collider):
         if extra is not None:
             names.append(extra.column)
+    if dither is not None:
+        names.append(dither)
     rows: dict[str, list[NDArray[np.float64]]] = {name: [] for name in names}
     for period in range(PERIODS):
         demand = rng.normal(size=units)
@@ -270,7 +274,7 @@ def draw(world: World, seed: Sequence[int], units: int = UNITS) -> Draw:
             + math.sqrt(1.0 - world.sticky**2) * fresh
             + world.chase * demand
         )
-        now: dict[str, NDArray[np.float64]] = {}
+        now: dict[str, NDArray[np.float64]] = {} if dither is None else {dither: fresh}
         if (confounder := world.confounder) is not None:
             shock = rng.normal(size=units)
             z = confounder.persistence * z + math.sqrt(1.0 - confounder.persistence**2) * shock
@@ -413,8 +417,13 @@ def episode_starts(world: World, later: Draw) -> NDArray[np.float64]:
 
 
 def prescribe(
-    panel: chc.Panel, adjustment: chc.CausalGraph | Sequence[str], tolerance: float = TOLERANCE
+    panel: chc.Panel,
+    adjustment: chc.CausalGraph | Sequence[str],
+    tolerance: float = TOLERANCE,
+    dither: str | None = None,
 ) -> chc.Prescription:
+    # passed only where given, so version 1 and 2 still run on a library without the argument
+    extra: dict[str, Any] = {} if dither is None else {"dither": dither}
     return chc.prescribe(
         panel,
         levers=[chc.Lever(LEVER, lo=-2.0, hi=2.0, unit_cost=UNIT_COST)],
@@ -429,6 +438,7 @@ def prescribe(
         integrator="rk4",
         radius="relative",
         nuisance_knots=None,
+        **extra,
     )
 
 
@@ -476,10 +486,44 @@ class ArmRun:
     tube: tuple[float, ...] | None = None  # the plan's error tube, per step; None where not read
     # per step, the true mean path of the state less the planned trajectory, one entry per state
     offset: tuple[tuple[float, ...], ...] | None = None
+    # the plan's channel against the one the logged draw instruments (version 3): its status, p,
+    # cost, cost_error, noise, share and relevance, and the gain the plan claims on its own model;
+    # None where no draw was given
+    dither: dict[str, Any] | None = None
 
 
 def _flag(check: chc.evaluation.LoggerCheck | None) -> bool | None:
     return None if check is None else bool(check.test.p_value <= ALPHA)
+
+
+def claimed_gain(prescription: chc.Prescription) -> float:
+    """What the plan claims to buy on its own model: doing nothing's planning cost there, from the
+    plan's start, less the plan's."""
+    plan = prescription.plan
+    assert plan is not None and plan._problem is not None
+    problem = plan._problem
+    # eagerly, for the reason _one_period_push gives
+    with jax.disable_jit():
+        idle = total_cost(
+            problem.model, problem.x0, jnp.zeros_like(plan.actions), problem.dt, problem.cost
+        )
+    return float(idle) - float(plan.task_cost)
+
+
+def _dither(prescription: chc.Prescription) -> dict[str, Any]:
+    check = prescription.dither_check
+    assert check is not None
+    contrast = check.contrast
+    return {
+        "status": check.status,
+        "p_value": None if contrast is None else contrast.p_value,
+        "cost": None if contrast is None else contrast.cost,
+        "cost_error": None if contrast is None else contrast.cost_error,
+        "noise": None if contrast is None else contrast.noise,
+        "share": check.share,
+        "relevance": list(check.relevance),
+        "claimed_gain": claimed_gain(prescription),
+    }
 
 
 def _one_period_push(prescription: chc.Prescription) -> float:
@@ -504,9 +548,10 @@ def run_arm(
     fitted: Draw,
     later: Draw,
     tolerance: float = TOLERANCE,
+    dither: str | None = None,
 ) -> ArmRun:
     panel = chc.Panel.from_frame(fitted.columns, unit="unit", time="time", seed=0)
-    prescription = prescribe(panel, adjustment, tolerance)
+    prescription = prescribe(panel, adjustment, tolerance, dither)
     certificate = prescription.certificate
     covariates = tuple(certificate.adjustment.covariates)
     fit_flag = _flag(prescription.logger_check)
@@ -536,6 +581,7 @@ def run_arm(
         "regret_bound": certificate.regret_bound,
         "tube": None if tube is None else tuple(float(r) for r in np.asarray(tube, dtype=float)),
         "offset": tuple(tuple(float(d) for d in step) for step in true_path - planned),
+        "dither": None if dither is None else _dither(prescription),
     }
     later_panel = chc.Panel.from_frame(later.columns, unit="unit", time="time", seed=0)
     try:
@@ -555,23 +601,33 @@ def run_arm(
 
 
 def replicate(
-    job: tuple[str, int], seed: int = SEED, tolerance: float = TOLERANCE
+    job: tuple[str, int],
+    seed: int = SEED,
+    tolerance: float = TOLERANCE,
+    dither: str | None = None,
 ) -> dict[str, dict[str, Any]]:
     """Every arm on replicate ``index`` of ``world``: the panel it plans on draws from ``(seed,
-    world, index, 0)``, the later panel it is evaluated on from ``(seed, world, index, 1)``."""
+    world, index, 0)``, the later panel it is evaluated on from ``(seed, world, index, 1)``. With
+    ``dither``, both panels log the logger's draw under that name, and the true and the wrong graph
+    read their channel against the one it instruments; the arm chosen by fit does not."""
     logging.getLogger("chc").setLevel(logging.ERROR)  # a warning per flagged panel is the data here
     name, index = job
     world = WORLDS[name]
     number = list(WORLDS).index(name)
-    fitted = draw(world, (seed, number, index, 0))
-    later = draw(world, (seed, number, index, 1))
+    fitted = draw(world, (seed, number, index, 0), dither=dither)
+    later = draw(world, (seed, number, index, 1), dither=dither)
     adjustments: dict[str, chc.CausalGraph | Sequence[str]] = {
         "oracle": chc.CausalGraph.from_edges(world.true_edges, latent=world.true_latent),
         "wrong": chc.CausalGraph.from_edges(world.wrong_edges),
-        "by fit": by_fit(fitted.columns),
+        # the draw is the logger's own, not a column an analyst would adjust for
+        "by fit": by_fit({k: v for k, v in fitted.columns.items() if k != dither}),
     }
     return {
-        arm: asdict(run_arm(world, adjustment, fitted, later, tolerance))
+        arm: asdict(
+            run_arm(
+                world, adjustment, fitted, later, tolerance, None if arm == "by fit" else dither
+            )
+        )
         for arm, adjustment in adjustments.items()
     }
 
