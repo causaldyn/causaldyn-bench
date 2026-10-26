@@ -22,7 +22,9 @@ CHOICE: ``(d, s)`` on a 9-point grid, a retention of 0.2, 0.5 or 0.8 times a sca
 of the channel's mean positive spend, the same for every channel, chosen by the error, in sales, of
 a fit to all but the last 13 weeks on those weeks; the chosen point is fitted again on the whole
 history. The seasonality is one of 52 weeks, the world's year, with 3 harmonics, as the
-PyMC-Marketing arm's. The sampler runs at KTR's defaults but for the draws it keeps, 400.
+PyMC-Marketing arm's, where the hold-out fit's weeks hold a whole year; on a shorter history (its
+weeks less 13 below 52) every fit of the world goes without one, since KTR refuses a seasonality
+longer than the series it fits. The sampler runs at KTR's defaults but for the draws it keeps, 400.
 
 **Lift tests** enter as KTR reads an experiment, a prior on the channel's coefficient over the
 test's readout (``coef_prior_list``), its dark weeks and their cooldown. CHOICE: its mean is the
@@ -242,7 +244,15 @@ def _frame(world: Any, media: Media, weeks: int) -> pd.DataFrame:
     )
 
 
-def _fit(world: Any, frame: pd.DataFrame, priors: list[dict[str, Any]], smoke: bool) -> Any:
+def seasonal(weeks: int) -> bool:
+    """Whether a world of ``weeks`` weeks is fitted with the yearly seasonality: where the hold-out
+    fit's weeks, all but the last :data:`HOLD`, hold a whole :data:`YEAR`."""
+    return weeks - HOLD >= YEAR
+
+
+def _fit(
+    world: Any, frame: pd.DataFrame, priors: list[dict[str, Any]], smoke: bool, yearly: bool
+) -> Any:
     channels = [str(c) for c in world["channels"]]
     controls = [str(c) for c in world["control_names"]]
     model = KTR(
@@ -250,8 +260,8 @@ def _fit(world: Any, frame: pd.DataFrame, priors: list[dict[str, Any]], smoke: b
         date_col="date",
         regressor_col=channels + controls,
         regressor_sign=["+"] * len(channels) + ["="] * len(controls),
-        seasonality=[YEAR],
-        seasonality_fs_order=[HARMONICS],
+        seasonality=[YEAR] if yearly else None,
+        seasonality_fs_order=[HARMONICS] if yearly else None,
         coef_prior_list=priors or None,
         seed=int(world["seed"]),
         num_sample=DRAWS,
@@ -268,7 +278,13 @@ def _held(world: Any, media: Media, smoke: bool) -> float:
     :data:`HOLD` weeks from a fit to the weeks before them."""
     weeks = np.asarray(world["sales"]).size
     whole = _frame(world, media, weeks)
-    model = _fit(world, whole.iloc[: weeks - HOLD], _priors(world, media, weeks - HOLD), smoke)
+    model = _fit(
+        world,
+        whole.iloc[: weeks - HOLD],
+        _priors(world, media, weeks - HOLD),
+        smoke,
+        seasonal(weeks),
+    )
     predicted = model.predict(whole.iloc[weeks - HOLD :], seed=int(world["seed"]))
     sales = np.asarray(world["sales"], dtype=float)[weeks - HOLD :]
     return float(np.sqrt(np.mean((np.exp(predicted["prediction"].to_numpy()) - sales) ** 2)))
@@ -445,7 +461,7 @@ def plan_second(path: Path, smoke: bool) -> dict[str, Any]:
     chosen = min(grid, key=lambda point: -math.inf if point.rmse is None else point.rmse)
     media = Media(world, chosen.retention, chosen.multiple)
     priors = _priors(world, media, weeks)
-    model = _fit(world, _frame(world, media, weeks), priors, smoke)
+    model = _fit(world, _frame(world, media, weeks), priors, smoke, seasonal(weeks))
 
     worth = Worth(world, media, model)
     status_quo = np.asarray(world["status_quo"], dtype=float)
@@ -491,8 +507,8 @@ def plan_second(path: Path, smoke: bool) -> dict[str, Any]:
             "grid": [dataclasses.asdict(point) for point in grid],
             "holdout_weeks": HOLD,
             "kernel_length": media.length,
-            "seasonality": YEAR,
-            "harmonics": HARMONICS,
+            "seasonality": YEAR if seasonal(weeks) else None,
+            "harmonics": HARMONICS if seasonal(weeks) else None,
             "controls": controls,
             "num_steps": SMOKE["num_steps"] if smoke else "KTR's default",
             "num_sample": DRAWS,

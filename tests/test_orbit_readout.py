@@ -1,7 +1,8 @@
 """The Orbit arm's lift priors read off a geo export's market without Orbit:
 ``scripts/orbit_arm.py`` loaded beside a stand-in for ``orbit.models``, whose KTR no prior touches.
 A geo test's readout is the market's spend less what its geos withheld, so its dark weeks keep the
-untested geos' spend; a national test's readout is the channel dark, as before."""
+untested geos' spend; a national test's readout is the channel dark, as before. The yearly
+seasonality is fitted only where the hold-out fit's weeks hold a whole year."""
 
 import importlib.util
 import sys
@@ -109,3 +110,25 @@ def test_a_row_whose_x_is_not_what_its_test_withheld_is_refused(arm, tmp_path):
     market["lift_x"] = market["lift_x"] * (1.0 + 1e-6)
     with pytest.raises(ValueError, match="its test withheld"):
         arm._priors(market, media, np.asarray(market["sales"]).size)
+
+
+@pytest.mark.parametrize(("weeks", "yearly"), [(52, False), (64, False), (65, True), (156, True)])
+def test_the_yearly_seasonality_is_fitted_only_where_the_hold_out_fit_holds_a_year(
+    arm, monkeypatch, weeks, yearly
+):
+    assert arm.seasonal(weeks) is yearly
+    made = []
+
+    class Recorded:
+        def __init__(self, **kwargs):
+            made.append(kwargs)
+
+        def fit(self, frame):
+            pass
+
+    monkeypatch.setattr(arm, "KTR", Recorded)
+    world = {"channels": np.array(["tv"]), "control_names": np.array(["price"]), "seed": 1}
+    arm._fit(world, None, [], False, arm.seasonal(weeks))
+    (kwargs,) = made
+    assert kwargs["seasonality"] == ([arm.YEAR] if yearly else None)
+    assert kwargs["seasonality_fs_order"] == ([arm.HARMONICS] if yearly else None)
