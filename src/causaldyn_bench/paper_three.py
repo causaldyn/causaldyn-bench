@@ -245,9 +245,11 @@ def _schedules(horizon: int) -> dict[str, np.ndarray]:
 def table_three(horizon: int, k: PlantConstants) -> dict[str, dict[str, float]]:
     """The stopping MASS is the invariant; the stopping ROUND is whatever prefix sum reaches it.
 
-    Five schedules, one horizon. The block lengths differ by ``6.9x`` and every delivered mass sits
-    within a fraction of a cap of the same fixed point -- while the leading closed form, which does
-    not know when the caps open, is far outside on the schedules that open late.
+    Five schedules, one horizon. The block lengths differ by ``6.9x`` and every delivered mass is
+    the same fixed point -- while the leading closed form, which does not know when the caps open,
+    is far outside on the schedules that open late. The exact optimum fills its last round partly,
+    by the same balance the fixed point solves, so the gap reads zero in caps: what the agreement
+    tests is the stopping round, which the convex program and the fixed point find independently.
     """
     leading = leading_mass(horizon, k)
     out: dict[str, dict[str, float]] = {}
@@ -619,9 +621,11 @@ def _markdown(
     agreement = four["agreement"]
     lines += [
         "",
-        "The block lengths span nearly an order of magnitude and every delivered mass lands on the "
-        "same fixed point. The last column is why the leading form was replaced: it does not know "
-        "when the caps open.",
+        "The block lengths span nearly an order of magnitude and every delivered mass is the same "
+        "fixed point. The exact optimum fills its last round partly, by the same balance the fixed "
+        "point solves, so the gap reads zero in caps: what agrees is the stopping round, which the "
+        "convex program and the fixed point find independently. The last column is why the "
+        "leading form was replaced: it does not know when the caps open.",
         "",
         f"## Table 4 -- what the closed form drops is a constant, `K/(2 A c cap) = {ceiling:.6g}`",
         "",

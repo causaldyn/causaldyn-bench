@@ -68,32 +68,32 @@
     "rows": {
       "0.1": {
         "1000": {
-          "cost_over_floor": 1.0414911796059851,
+          "cost_over_floor": 1.0414695433332704,
           "block_rounds": 54.0,
-          "excess": 0.7396461183447194,
-          "predicted_excess": 2.0893827695686715,
-          "taper_over_block": 1.3014550879386972
+          "excess": 0.7392604174492305,
+          "predicted_excess": 2.0893827695686706,
+          "taper_over_block": 1.3014821253469333
         },
         "10000": {
-          "cost_over_floor": 1.0235579368009826,
+          "cost_over_floor": 1.0235569899679304,
           "block_rounds": 191.0,
-          "excess": 1.3904225903265512,
-          "predicted_excess": 2.7858436927582293,
-          "taper_over_block": 1.3486656954780738
+          "excess": 1.390366706907038,
+          "predicted_excess": 2.785843692758228,
+          "taper_over_block": 1.3486669430502847
         },
         "100000": {
-          "cost_over_floor": 1.01095092245957,
+          "cost_over_floor": 1.0109509095859233,
           "block_rounds": 625.0,
-          "excess": 2.072909627443863,
-          "predicted_excess": 3.4823046159477853,
-          "taper_over_block": 1.3834172962031714
+          "excess": 2.072907190580082,
+          "predicted_excess": 3.482304615947785,
+          "taper_over_block": 1.383417313819878
         },
         "1000000": {
-          "cost_over_floor": 1.0045988536970103,
-          "block_rounds": 1998.0,
-          "excess": 2.76501054780249,
+          "cost_over_floor": 1.0045988535106953,
+          "block_rounds": 1999.0,
+          "excess": 2.7650104357825285,
           "predicted_excess": 4.178765539137341,
-          "taper_over_block": 1.4012209158554154
+          "taper_over_block": 1.401220916115289
         }
       },
       "0.03": {
@@ -105,25 +105,25 @@
           "taper_over_block": 1.2289747454703241
         },
         "10000": {
-          "cost_over_floor": 1.0767121886704032,
-          "block_rounds": 621.0,
-          "excess": 4.5276613559924215,
-          "predicted_excess": 9.286145642527424,
-          "taper_over_block": 1.303045441845055
+          "cost_over_floor": 1.0767121876383827,
+          "block_rounds": 622.0,
+          "excess": 4.527661295081124,
+          "predicted_excess": 9.286145642527428,
+          "taper_over_block": 1.3030454430940142
         },
         "100000": {
-          "cost_over_floor": 1.0360018361072931,
+          "cost_over_floor": 1.0360018195730507,
           "block_rounds": 2068.0,
-          "excess": 6.814818838137768,
-          "predicted_excess": 11.60768205315928,
-          "taper_over_block": 1.3605542181263204
+          "excess": 6.814815708356662,
+          "predicted_excess": 11.607682053159285,
+          "taper_over_block": 1.3605542398403103
         },
         "1000000": {
-          "cost_over_floor": 1.0151786583742253,
+          "cost_over_floor": 1.0151786560522453,
           "block_rounds": 6645.0,
-          "excess": 9.126002537003274,
-          "predicted_excess": 13.929218463791134,
-          "taper_over_block": 1.3912517845359949
+          "excess": 9.126001140938115,
+          "predicted_excess": 13.92921846379114,
+          "taper_over_block": 1.3912517877181527
         }
       },
       "0.01": {
@@ -131,29 +131,29 @@
           "cost_over_floor": 1.3631010505439078,
           "block_rounds": 407.0,
           "excess": 6.472852426758923,
-          "predicted_excess": 20.89382769568671,
+          "predicted_excess": 20.893827695686706,
           "taper_over_block": 1.1211775009409661
         },
         "10000": {
-          "cost_over_floor": 1.2258013534210308,
-          "block_rounds": 1753.0,
-          "excess": 13.327113718626421,
-          "predicted_excess": 27.85843692758229,
-          "taper_over_block": 1.2130522747364716
+          "cost_over_floor": 1.2257862561579893,
+          "block_rounds": 1744.0,
+          "excess": 13.326222656910687,
+          "predicted_excess": 27.858436927582282,
+          "taper_over_block": 1.2130672151628166
         },
         "100000": {
-          "cost_over_floor": 1.1078749073150969,
-          "block_rounds": 6287.0,
-          "excess": 20.41973493636246,
-          "predicted_excess": 34.82304615947786,
-          "taper_over_block": 1.307159398307093
+          "cost_over_floor": 1.1072865842311388,
+          "block_rounds": 6073.0,
+          "excess": 20.308370748616028,
+          "predicted_excess": 34.82304615947785,
+          "taper_over_block": 1.3078539177380955
         },
         "1000000": {
-          "cost_over_floor": 1.0454380903201292,
-          "block_rounds": 20018.0,
-          "excess": 27.319155442764554,
+          "cost_over_floor": 1.0453788606255985,
+          "block_rounds": 19801.0,
+          "excess": 27.283544235948625,
           "predicted_excess": 41.78765539137341,
-          "taper_over_block": 1.366309415641444
+          "taper_over_block": 1.3663868288094072
         }
       }
     }
@@ -161,38 +161,38 @@
   "table3": {
     "constant 0.03": {
       "block_rounds": 376.0,
-      "mass": 11.280000000000003,
+      "mass": 11.272712408362501,
       "predicted_mass": 11.272712408362501,
-      "gap_in_caps": 0.2429197212500493,
-      "leading_over_delivered": 1.053580785361324
+      "gap_in_caps": 0.0,
+      "leading_over_delivered": 1.0542619050637245
     },
     "ramp up 0.01->0.05": {
       "block_rounds": 767.0,
-      "mass": 10.608344586146536,
+      "mass": 10.601930538766132,
       "predicted_mass": 10.601930538766132,
-      "gap_in_caps": 0.3631569513555005,
-      "leading_over_delivered": 1.1202870685776547
+      "gap_in_caps": 0.0,
+      "leading_over_delivered": 1.120964829511028
     },
     "ramp down 0.05->0.01": {
       "block_rounds": 236.0,
-      "mass": 11.522630657664418,
+      "mass": 11.504014197422482,
       "predicted_mass": 11.504014197422482,
-      "gap_in_caps": 0.39069653375757046,
-      "leading_over_delivered": 1.0313956605882086
+      "gap_in_caps": 0.0,
+      "leading_over_delivered": 1.03306472461921
     },
     "dead first third": {
       "block_rounds": 1632.0,
-      "mass": 8.970000000000002,
+      "mass": 8.95572242082705,
       "predicted_mass": 8.95572242082705,
-      "gap_in_caps": 0.4759193057651009,
-      "leading_over_delivered": 1.3249042652035379
+      "gap_in_caps": 0.0,
+      "leading_over_delivered": 1.3270164818013899
     },
     "uniform noise U(0, 0.06)": {
-      "block_rounds": 352.0,
-      "mass": 11.30645465605327,
+      "block_rounds": 353.0,
+      "mass": 11.311014828005511,
       "predicted_mass": 11.311014828005511,
-      "gap_in_caps": 0.4999928596436474,
-      "leading_over_delivered": 1.0511156344233026
+      "gap_in_caps": 0.0,
+      "leading_over_delivered": 1.0506918644868695
     }
   },
   "table4": {
