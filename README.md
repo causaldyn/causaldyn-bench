@@ -104,8 +104,9 @@ trusted, as version 1 did, and `"mis"` 0.952–0.970, where version 1 read 0.930
 library's 0.19.0 the `"mis"` interval is `"dr"`'s on the same weights, stretched to hold its
 estimate (the library's ADR 0108): its estimates are those of version 1 to the last digit, and its
 half-widths grow to `"dr"`'s, 0.024 to 0.046 on the pendulum's moderate plan. There the coverage
-reads 485 of 500, 0.970, two points above nominal exactly, and the gate, which computes
-`|0.970 − 0.95| ≤ 0.02` in floating point, marks it failed by 1.8e-17; every other arm passes. The
+reads 485 of 500, 0.970, two points above nominal exactly. The gate first computed
+`|0.970 − 0.95| ≤ 0.02` in floating point and failed it by 1.8e-17; it now compares counts exactly,
+a fix to its stated rule made after this result was seen, and every arm passes. The
 default `model_error = 1` covers 1.000 everywhere, by design. Three things the gate does not show.
 On the car's aggressive plan the certificate refused 107 of the 500 logs, so that coverage is over
 the 393 it passed. FQE reads 3–5% high on the car (3.4–3.8 standard errors) and still covers. And

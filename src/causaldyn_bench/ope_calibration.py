@@ -62,6 +62,7 @@ from collections import Counter
 from collections.abc import Callable, Sequence
 from contextlib import closing
 from dataclasses import asdict, dataclass
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
@@ -437,7 +438,10 @@ def gate(arm: Arm) -> bool | None:
     if arm.scores is None:
         return False
     if arm.model_error == 0.0:
-        return abs(arm.scores.coverage - NOMINAL) <= TOLERANCE
+        # in counts, exactly: 485 of 500 is two points from 0.95, which a float difference misses
+        covered = round(arm.scores.coverage * arm.scored)
+        gap = abs(Fraction(covered, arm.scored) - Fraction(str(NOMINAL)))
+        return gap <= Fraction(str(TOLERANCE))
     return arm.scores.coverage >= FLOOR
 
 

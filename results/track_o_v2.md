@@ -10,7 +10,7 @@ Nominal design, fitted model. `model_error = 0` must be within two points of 0.9
 
 | environment | plan | method | `model_error` | coverage | 95% interval | pass |
 |---|---|---|---|---|---|---|
-| Pendulum-v1 | moderate | `mis` | 0 | 0.970 | [0.951, 0.983] | **no** |
+| Pendulum-v1 | moderate | `mis` | 0 | 0.970 | [0.951, 0.983] | yes |
 | Pendulum-v1 | moderate | `mis` | 1 | 1.000 | [0.993, 1.000] | yes |
 | Pendulum-v1 | moderate | `dr` | 0 | 0.958 | [0.937, 0.974] | yes |
 | Pendulum-v1 | moderate | `dr` | 1 | 1.000 | [0.993, 1.000] | yes |

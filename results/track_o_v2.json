@@ -100,7 +100,7 @@
       "median_model_share": 0.20214285815890315,
       "median_degrees_of_freedom": 7.887360332042638
      },
-     "gate": false
+     "gate": true
     },
     {
      "design": "nominal",

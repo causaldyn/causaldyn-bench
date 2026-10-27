@@ -132,6 +132,11 @@ def _arm(design_name, model, model_error, coverage):
 def test_the_gate_reads_the_nominal_fitted_arms_and_nothing_else():
     assert gate(_arm("nominal", "fitted", 0.0, 0.93)) is True
     assert gate(_arm("nominal", "fitted", 0.0, 0.975)) is False
+    # the band's ends, in counts of 500: a float difference put 485 outside it
+    assert gate(_arm("nominal", "fitted", 0.0, 485 / 500)) is True
+    assert gate(_arm("nominal", "fitted", 0.0, 465 / 500)) is True
+    assert gate(_arm("nominal", "fitted", 0.0, 486 / 500)) is False
+    assert gate(_arm("nominal", "fitted", 0.0, 464 / 500)) is False
     assert gate(_arm("nominal", "fitted", 1.0, 1.0)) is True
     assert gate(_arm("nominal", "fitted", 1.0, 0.92)) is False
     assert gate(_arm("stress", "fitted", 0.0, 0.5)) is None
