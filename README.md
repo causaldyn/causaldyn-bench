@@ -28,7 +28,7 @@ closed-loop decision. Built on
 | **J** identification, non-building | the control channel of a *third-party* plant whose answer is known exactly (`Pendulum-v1`) | \|fitted gain − 3.0\| | orthogonal (de-confounded) fit |
 | **K** delay identification | *when* the incentive acts, from a log whose confounder acts at a **different** lag | \|τ̂ − τ\| / closed-loop regret | adjusted local projection |
 | **N** fold design | which cross-fitting **split** to use under network interference — the method is held fixed and only the folds vary | MSE vs a graph-blind unit split | *the design law, negatively* — it convicts the two splits a practitioner reaches for |
-| **M** allocation over time | media budget across channels **and** weeks, from a log whose planner chased the season | lift over doing nothing, audited on the true plant | *the identification axis* — and the horizon axis only when the two channel orderings conflict |
+| **M** allocation over time | media budget across channels **and** weeks, from a log whose planner chased the season | lift over doing nothing, audited on the true plant | *the identification axis* — the horizon axis pays little unless the two channel orderings conflict |
 | **L** sequential intervention | which variables to set, and to what, at each step of DCBO's three synthetic dynamic SCMs | regret vs the per-step oracle, each step against the arm's own history | *the reference methods, on their own ground* — the track says where CHC cannot follow, and where DCBO cannot |
 | **O** off-policy evaluation | does `evaluate_plan`'s 95% interval cover a feedback plan's online cost, estimated from another policy's logs, on two Gymnasium plants CHC did not write | interval coverage over 500 replicates, against ±2 points of nominal | *the interval, not a method* — the track is the 0.8.0 evidence gate |
 | **Q** graph errors | the graph handed to `prescribe` is wrong: does the logger check flag it before a plan or its evaluation fails silently | silent-failure rate, with the flag read as a stop, over 200 replicates of nine worlds | *the check, not a method* — on 0.8.0 it earned its stop on one error of eight; on 0.20, scored on the tube's claim, on none |
@@ -204,20 +204,25 @@ was meant to replace.
 **Track M** (`causaldyn_bench.allocation`) scores the MMM case study as a 2×2 in *identified?* ×
 *forward-looking?*: the CHC schedule, the **same identified fit spent on this week alone**, an equal
 split, and a whole-horizon plan fitted observationally — all at matched budget, all audited on the
-true plant. The result is not the one the track was built to show. Over eight seeds, mean lift over
-doing nothing: `CHC-adjusted 46.43`, `myopic-greedy 46.11`, `equal-split 44.09`, `naive-MMM 36.49`.
-Adjusting for the season is worth **+9.9 and wins 8 of 8**; looking past this week is worth **+0.3
-with its sign flipping 3/5**, inside `7%` of the mean lift at every seed but one (`+7.3` at seed 4).
-The CHC schedule beats the equal split at 8 of 8, the myopic rule at 7 of 8.
+true plant. The result is not the one the track was built to show. Over eight seeds
+(`allocation_report()`, float32, causal-hybrid-control 0.23.0), mean lift over doing nothing:
+`CHC-adjusted 49.26`, `myopic-greedy 48.31`, `equal-split 45.98`, `naive-MMM 35.46`. Adjusting for
+the season is worth **+13.8 and wins 8 of 8**; looking past this week is worth **+0.95**, positive
+at every seed but small, `+0.25…+1.54`, under 3.3% of the CHC schedule's lift at each. The CHC
+schedule and the myopic rule each beat the equal split at 8 of 8. These numbers replace a run
+recorded before causal-hybrid-control 0.15 (`46.43`, `46.11`, `44.09`, `36.49`), where the
+horizon's `+0.3` changed sign across the seeds; the library's fit and planner have changed since,
+and the difference was not traced to one change.
 
-And the design that flips it is one line, which is what makes the null a measurement rather than an
-absence. A myopic rule loses when the carryover ordering **contradicts** the immediate one — not
+And the design that makes the horizon pay is one line, which is what makes the small gain above a
+measurement rather than an absence. A myopic rule loses when the carryover ordering **contradicts** the immediate one — not
 merely because carryover exists. On the shipped plant `β_c/θ_c` ranks the channels `(1.29, 1.50,
 1.60)` against `γ_c`'s `(0.50, 0.20, 0.35)`: the two disagree about the top channel but *agree about
 which to drop*, and dropping it is most of the available gain. Re-parameterise so the best immediate
 channel is the worst carryover channel — `β/θ` of `(0.10, 8.00, 1.60)` at unchanged `γ`, so the
-myopic ordering is untouched by construction — and the CHC schedule wins **8 of 8** by `1.20…3.79`
-(`+9.5%`). The equal split then catches the optimiser, because concentration has become the error.
+myopic ordering is untouched by construction — and the CHC schedule wins **8 of 8** by `2.29…2.86`
+(`+8.1%`; `1.20…3.79` and `+9.5%` before 0.15). The equal split then catches the optimiser, at
+`+0.22…+0.85`, because concentration has become the error: the myopic rule loses to it at 8 of 8.
 
 **Track M v2** (`causaldyn_bench.endogenous_mmm`) is the media-mix world CHC did not write:
 Heusch's (2026b) generator, written clean-room from his paper (CC-BY-4.0; his code carries no

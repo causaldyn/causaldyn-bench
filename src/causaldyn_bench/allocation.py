@@ -12,22 +12,25 @@ not about how much was spent:
 That is a 2x2 in (identified?) x (forward-looking?), which is what separates the two claims the
 case study makes into two measurements. What it measured is not what the track was built to show.
 
-**On the shipped plant the identification axis pays and the horizon axis does not.** Over eight
-seeds, mean lift over doing nothing: ``CHC-adjusted 46.43``, ``myopic-greedy 46.11``,
-``equal-split 44.09``, ``naive-MMM 36.49``. Adjusting for the season is worth ``+9.9`` and wins at
-**8 of 8** seeds; looking past this week is worth ``+0.3`` and its sign flips **3/5**, inside
-``7%`` of the mean lift at every seed but one (``+7.3`` at seed 4). ``CHC-adjusted`` beats the
-equal split at **8 of 8**, ``myopic-greedy`` at **7 of 8**.
+**On the shipped plant the identification axis pays and the horizon axis pays little.** Over eight
+seeds (:func:`allocation_report`, float32, causal-hybrid-control 0.23.0), mean lift over doing
+nothing: ``CHC-adjusted 49.26``, ``myopic-greedy 48.31``, ``equal-split 45.98``,
+``naive-MMM 35.46``. Adjusting for the season is worth ``+13.8`` and wins at **8 of 8** seeds;
+looking past this week is worth ``+0.95``, positive at every seed but ``+0.25..+1.54``, under 3.3%
+of ``CHC-adjusted``'s lift at each. ``CHC-adjusted`` and ``myopic-greedy`` each beat the equal
+split at **8 of 8**.
 
-**And the design that flips it is one line, which is what makes the null meaningful.** A myopic rule
+**And the design that makes the horizon pay is one line, which is what makes the small gain above
+a measurement.** A myopic rule
 loses when the carryover ordering CONTRADICTS the immediate one -- not merely because carryover
 exists. On the shipped plant ``beta_c/theta_c`` ranks the channels ``(1.29, 1.50, 1.60)`` against
 ``gamma_c``'s ``(0.50, 0.20, 0.35)``: the two orderings disagree about the top channel but AGREE
 about which to drop, and dropping ``social`` is most of the available gain. Re-parameterise so the
 best immediate channel is the worst carryover channel -- ``beta/theta`` of ``(0.10, 8.00, 1.60)`` at
 unchanged ``gamma``, so the myopic rule's ordering is untouched by construction -- and
-``CHC-adjusted`` beats ``myopic-greedy`` at **8 of 8** seeds by ``1.20..3.79`` (``+9.5%`` on the
-mean). The equal split then catches the optimiser, because concentration is now the error.
+``CHC-adjusted`` beats ``myopic-greedy`` at **8 of 8** seeds by ``2.29..2.86`` (``+8.1%`` on the
+mean). The equal split then catches the optimiser, at ``+0.22..+0.85``, because concentration is now
+the error: ``myopic-greedy`` loses to it at 8 of 8.
 
 So the transferable reading is: looking ahead buys nothing on its own; it buys the difference
 between two orderings, and only when there is one.
