@@ -42,12 +42,19 @@ reported beside it and is required not to undercover.
 Precision: run with ``JAX_ENABLE_X64=1`` (``just track-o``). The cost matrices pass through JAX,
 and the truth is scored with the matrices JAX holds, so both sides score the same cost.
 
+Version 2 (``results/track_o_v2.{md,json}``) records the library's and Gymnasium's versions with
+the run. Version 1 (``results/track_o.{md,json}``) was recorded on 2026-09-28, at ``2cb2388``,
+against the library's development tree of that day and Gymnasium 1.3.0. Since the library's 0.19.0
+the ``"mis"`` interval is ``"dr"``'s on the same weights, stretched to hold its estimate, and
+``"dr"`` weighs toward the plan's law under the plant fitted to the logs; the estimates do not move.
+
 Requires the ``gym`` extra (``pip install causaldyn-bench[gym]``).
 """
 
 from __future__ import annotations
 
 import argparse
+import importlib.metadata
 import json
 import math
 import time
@@ -74,6 +81,8 @@ from scipy.stats import beta
 
 TRACK = "O-offline-evaluation"
 METRIC = "interval_coverage"
+VERSION = 2
+NAME = "track_o_v2"  # the run's file name; version 1's is track_o
 NOMINAL = 0.95
 TOLERANCE = 0.02  # the gate: within two points of nominal
 FLOOR = NOMINAL - TOLERANCE  # the default may over-cover, never under
@@ -506,12 +515,20 @@ def run_environment(
 
 def _markdown(runs: Sequence[EnvironmentRun], replicates: int, x64: bool) -> str:
     lines = [
-        "# Track O — off-policy interval coverage on plants CHC did not write",
+        f"# Track O, version {VERSION} — off-policy interval coverage on plants CHC did not write",
         "",
         f"{replicates} replicates of {TRANSITIONS} logged transitions after a {BURN_IN}-step "
         f"burn-in, nominal {NOMINAL}, each environment stepped through its own `step` "
-        f"(`causaldyn_bench.ope_calibration`, x64 {x64}). The truth is each plan's online average "
-        f"cost over {TRUTH_STEPS} steps. Coverage intervals are Clopper-Pearson's.",
+        f"(`causaldyn_bench.ope_calibration`, x64 {x64}), on causal-hybrid-control "
+        f"{importlib.metadata.version('causal-hybrid-control')} and Gymnasium {gym.__version__}. "
+        f"The truth is each plan's online average cost over {TRUTH_STEPS} steps. Coverage "
+        "intervals are Clopper-Pearson's.",
+        "",
+        "Version 1, `track_o.md`, was recorded on 2026-09-28 at `2cb2388`, against the library's "
+        "development tree of that day and Gymnasium 1.3.0. Since the library's 0.19.0 the `mis` "
+        "interval is `dr`'s on the same weights, stretched to hold its estimate, and `dr` weighs "
+        "toward the plan's law under the plant fitted to the logs (the library's ADR 0108): the "
+        "estimates do not move, the `mis` intervals widen.",
         "",
         "## The gate",
         "",
@@ -586,7 +603,7 @@ def _markdown(runs: Sequence[EnvironmentRun], replicates: int, x64: bool) -> str
             )
     lines += [
         "",
-        "Wall-clock per environment is recorded in `track_o.json` and quoted nowhere: it was not "
+        f"Wall-clock per environment is recorded in `{NAME}.json` and quoted nowhere: it was not "
         "measured on a clean machine.",
     ]
     return "\n".join(lines) + "\n"
@@ -595,6 +612,8 @@ def _markdown(runs: Sequence[EnvironmentRun], replicates: int, x64: bool) -> str
 def _record(runs: Sequence[EnvironmentRun], replicates: int, x64: bool) -> dict[str, Any]:
     return {
         "track": TRACK,
+        "version": VERSION,
+        "chc": importlib.metadata.version("causal-hybrid-control"),
         "metric": METRIC,
         "replicates": replicates,
         "transitions": TRANSITIONS,
@@ -636,12 +655,12 @@ def main() -> None:
     ]
     text = _markdown(runs, args.replicates, x64)
     args.out.mkdir(parents=True, exist_ok=True)
-    (args.out / "track_o.md").write_text(text)
-    (args.out / "track_o.json").write_text(
+    (args.out / f"{NAME}.md").write_text(text)
+    (args.out / f"{NAME}.json").write_text(
         json.dumps(_record(runs, args.replicates, x64), indent=1) + "\n"
     )
     print(text)
-    print(f"written to {args.out}/track_o.md and {args.out}/track_o.json")
+    print(f"written to {args.out}/{NAME}.md and {args.out}/{NAME}.json")
 
 
 if __name__ == "__main__":

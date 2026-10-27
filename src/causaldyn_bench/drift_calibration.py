@@ -39,6 +39,10 @@ run's first alarm, so that another horizon can be read without a rerun.
 Precision: run with ``JAX_ENABLE_X64=1`` (``just track-p``). The plans' gains come from Track O's
 design, whose costs pass through JAX.
 
+Version 2 (``results/track_p_v2.{md,json}``) records the library's and Gymnasium's versions with
+the run. Version 1 (``results/track_p.{md,json}``) was recorded on 2026-09-29, at ``4dde71b``,
+against the library's development tree of that day and Gymnasium 1.3.0.
+
 Requires the ``gym`` extra (``pip install causaldyn-bench[gym]``).
 """
 
@@ -46,6 +50,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import importlib.metadata
 import json
 import logging
 import math
@@ -72,6 +77,8 @@ from causaldyn_bench.ope_calibration import (
 
 TRACK = "P-drift-calibration"
 METRIC = "false_alarm_share"
+VERSION = 2
+NAME = "track_p_v2"  # the run's file name; version 1's is track_p
 SEED = 20260929
 PATHS = 300
 ARL = 1_000.0
@@ -309,12 +316,16 @@ def run_environment(
 
 def _markdown(runs: Sequence[EnvironmentRun], paths: int, cap: int, x64: bool) -> str:
     lines = [
-        "# Track P — the channel-drift monitor on plants CHC did not write",
+        f"# Track P, version {VERSION} — the channel-drift monitor on plants CHC did not write",
         "",
         f"{paths} runs per arm, each environment stepped through its own `step` "
-        f"(`causaldyn_bench.drift_calibration`, x64 {x64}), with `A = {ARL:g}`. A null run is "
-        f"censored at {cap} decisions, a moved channel's at {MOVE_STEPS}. Alarm-rate intervals "
-        "are Clopper-Pearson's.",
+        f"(`causaldyn_bench.drift_calibration`, x64 {x64}), on causal-hybrid-control "
+        f"{importlib.metadata.version('causal-hybrid-control')} and Gymnasium {gym.__version__}, "
+        f"with `A = {ARL:g}`. A null run is censored at {cap} decisions, a moved channel's at "
+        f"{MOVE_STEPS}. Alarm-rate intervals are Clopper-Pearson's.",
+        "",
+        "Version 1, `track_p.md`, was recorded on 2026-09-29 at `4dde71b`, against the library's "
+        "development tree of that day and Gymnasium 1.3.0.",
         "",
         "## The gate",
         "",
@@ -366,7 +377,7 @@ def _markdown(runs: Sequence[EnvironmentRun], paths: int, cap: int, x64: bool) -
             lines.append(f"{head} | | {arm.move.caught:.3f} | {delay} |")
     lines += [
         "",
-        "Wall-clock per environment is recorded in `track_p.json` and quoted nowhere: it was not "
+        f"Wall-clock per environment is recorded in `{NAME}.json` and quoted nowhere: it was not "
         "measured on a clean machine.",
     ]
     return "\n".join(lines) + "\n"
@@ -375,6 +386,8 @@ def _markdown(runs: Sequence[EnvironmentRun], paths: int, cap: int, x64: bool) -
 def _record(runs: Sequence[EnvironmentRun], paths: int, cap: int, x64: bool) -> dict[str, Any]:
     return {
         "track": TRACK,
+        "version": VERSION,
+        "chc": importlib.metadata.version("causal-hybrid-control"),
         "metric": METRIC,
         "paths": paths,
         "arl": ARL,
@@ -417,12 +430,12 @@ def main() -> None:
     ]
     text = _markdown(runs, args.paths, CAP, x64)
     args.out.mkdir(parents=True, exist_ok=True)
-    (args.out / "track_p.md").write_text(text)
-    (args.out / "track_p.json").write_text(
+    (args.out / f"{NAME}.md").write_text(text)
+    (args.out / f"{NAME}.json").write_text(
         json.dumps(_record(runs, args.paths, CAP, x64), indent=1) + "\n"
     )
     print(text)
-    print(f"written to {args.out}/track_p.md and {args.out}/track_p.json")
+    print(f"written to {args.out}/{NAME}.md and {args.out}/{NAME}.json")
 
 
 if __name__ == "__main__":

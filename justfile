@@ -170,15 +170,16 @@ track-h:
 track-l:
     JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.dcbo_track --out results
 
-# Track O -> results/track_o.{md,json}. Minutes: 500 logs per design through each environment's own
-# step, every evaluate_plan arm on each, and a 400 000-step online truth per plan. Needs the `gym`
-# extra. At 64-bit, so the estimate and the truth score the same cost matrices.
+# Track O, version 2 -> results/track_o_v2.{md,json}; version 1, results/track_o.{md,json}, stays.
+# Minutes: 500 logs per design through each environment's own step, every evaluate_plan arm on
+# each, and a 400 000-step online truth per plan. Needs the `gym` extra. At 64-bit, so the estimate
+# and the truth score the same cost matrices.
 track-o:
     JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.ope_calibration --out results
 
-# Track P -> results/track_p.{md,json}. Minutes: 300 runs per arm through each environment's own
-# step, a null's up to 10 000 decisions. Needs the `gym` extra. At 64-bit, so the plans' gains are
-# Track O's.
+# Track P, version 2 -> results/track_p_v2.{md,json}; version 1, results/track_p.{md,json}, stays.
+# Minutes: 300 runs per arm through each environment's own step, a null's up to 10 000 decisions.
+# Needs the `gym` extra. At 64-bit, so the plans' gains are Track O's.
 track-p:
     JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.drift_calibration --out results
 

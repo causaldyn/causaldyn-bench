@@ -5,6 +5,7 @@ check is the one every other number rests on: that the linearisation the plans a
 use is the Jacobian of the environment's own ``step``.
 """
 
+import importlib.metadata
 import inspect
 import json
 import math
@@ -149,5 +150,10 @@ def test_a_small_run_scores_every_arm_and_writes_its_report(key):
     assert "## The gate" in text
     assert run.name in text
     record = json.loads(json.dumps(_record([run], replicates=3, x64=True)))
+    assert (record["version"], record["chc"], record["gymnasium"]) == (
+        2,
+        importlib.metadata.version("causal-hybrid-control"),
+        importlib.metadata.version("gymnasium"),
+    )
     assert len(record["environments"][0]["arms"]) == 30
     assert math.isfinite(record["environments"][0]["truths"]["moderate"]["value"])

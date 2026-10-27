@@ -5,6 +5,7 @@ at the action the environment applied. If it held the command instead, a clipped
 residual would move with its draw, and the monitor would be reading the harness, not the plant.
 """
 
+import importlib.metadata
 import json
 import math
 
@@ -171,4 +172,9 @@ def test_a_small_run_scores_every_arm_and_writes_its_report(key):
     assert "## The gate" in text
     assert run.name in text
     record = json.loads(json.dumps(_record([run], paths=3, cap=600, x64=True)))
+    assert (record["version"], record["chc"], record["gymnasium"]) == (
+        2,
+        importlib.metadata.version("causal-hybrid-control"),
+        importlib.metadata.version("gymnasium"),
+    )
     assert len(record["environments"][0]["arms"]) == 9

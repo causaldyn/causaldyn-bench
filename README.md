@@ -97,15 +97,22 @@ takes the true SEM as the oracle its experiments query, and a log has none to gi
 `MountainCarContinuous-v0` at its valley floor, both stepped through their own `step`, with a
 Gaussian disturbance on every command. Each replicate logs 4000 transitions of a lightly damped
 legacy operator, fits a linear plant to them by least squares, and evaluates two LQR plans; the
-truth is each plan's online average cost over 400 000 steps. Over 500 replicates (`just track-o`),
-with the fitted model and the smoothing correction trusted, every arm is within two points of
-0.95: `"dr"` 0.944–0.962, `"fqe"` 0.944–0.954, and `"mis"` 0.930–0.964, at the edge on two of the
-four plans. The default `model_error = 1` covers 1.000 everywhere, by design. Three things the
-gate does not show. On the car's aggressive plan the certificate refused 107 of the 500 logs, so
-that coverage is over the 393 it passed. FQE reads 3–5% high on the car (3.4–3.8 standard errors)
-and still covers. And with the logger clipping 2% of steps (the stress row), FQE on the pendulum
-covers 0.900, a bias of 0.018 its certificate cannot see, while `"mis"` and `"dr"` hold. See
-`results/track_o.md`.
+truth is each plan's online average cost over 400 000 steps. Version 2 of the track, recorded on
+causal-hybrid-control 0.23.0 and Gymnasium 1.4.0 over 500 replicates (`just track-o`), reads
+`"dr"` 0.944–0.962 and `"fqe"` 0.944–0.954 with the fitted model and the smoothing correction
+trusted, as version 1 did, and `"mis"` 0.952–0.970, where version 1 read 0.930–0.964. Since the
+library's 0.19.0 the `"mis"` interval is `"dr"`'s on the same weights, stretched to hold its
+estimate (the library's ADR 0108): its estimates are those of version 1 to the last digit, and its
+half-widths grow to `"dr"`'s, 0.024 to 0.046 on the pendulum's moderate plan. There the coverage
+reads 485 of 500, 0.970, two points above nominal exactly, and the gate, which computes
+`|0.970 − 0.95| ≤ 0.02` in floating point, marks it failed by 1.8e-17; every other arm passes. The
+default `model_error = 1` covers 1.000 everywhere, by design. Three things the gate does not show.
+On the car's aggressive plan the certificate refused 107 of the 500 logs, so that coverage is over
+the 393 it passed. FQE reads 3–5% high on the car (3.4–3.8 standard errors) and still covers. And
+with the logger clipping 2% of steps (the stress row), FQE on the pendulum covers 0.900, a bias of
+0.018 its certificate cannot see, while `"mis"` (0.974) and `"dr"` hold. See
+`results/track_o_v2.md`. Version 1, `results/track_o.md`, was recorded on 2026-09-28 at `2cb2388`
+against the library's development tree of that day and Gymnasium 1.3.0.
 
 **Track P** (`causaldyn_bench.drift_calibration`, needs the `gym` extra) asks whether `chc.gate`'s
 channel-drift monitor keeps its false-alarm bound on the same two environments. Track O's moderate
@@ -119,8 +126,10 @@ radius — at most 0.013 of the runs alarmed within 100 decisions, where `α = H
 and every run alarmed within `10 A`, after 1.77–2.57 `A` on average. A channel moved to 1.25 times
 the model's was caught on every run, after 96–101 decisions on average with the plan inside the
 bound and 204–223 with it on the bound. Setting the clipped decisions' e-values to 0 instead, which
-is also valid, caught it on 0.7% and 2.0% of the runs within 4000 decisions. See
-`results/track_p.md`.
+is also valid, caught it on 0.7% and 2.0% of the runs within 4000 decisions. Version 2,
+`results/track_p_v2.md`, recorded on causal-hybrid-control 0.23.0 and Gymnasium 1.4.0, reads every
+run's first alarm exactly as version 1, `results/track_p.md` (2026-09-29, `4dde71b`, the library's
+development tree of that day and Gymnasium 1.3.0), did.
 
 **Track Q** (`causaldyn_bench.graph_errors`) hands `prescribe` a wrong graph and asks whether the
 logger check (ADR 0028, experimental) turns the error into a flag before a claim fails silently. On
@@ -365,8 +374,8 @@ uv run pytest                            # smoke tests
 just check                               # the ladder ci.yml runs: format, lint, tests
 just track-h                             # Track H over 30 markets -> results/track_h_markets_v3{,_x64}.{md,json}
 just track-l                             # Track L against DCBO -> results/track_l.{md,json}
-just track-o                             # Track O, OPE coverage -> results/track_o.{md,json}
-just track-p                             # Track P, drift false alarms -> results/track_p.{md,json}
+just track-o                             # Track O, OPE coverage -> results/track_o_v2.{md,json}
+just track-p                             # Track P, drift false alarms -> results/track_p_v2.{md,json}
 just track-q                             # Track Q, graph errors -> results/track_q.{md,json}
 just track-q-v3                          # Track Q v3, the dither stop -> results/track_q_v3.{md,json}
 just track-m2-lift                       # Track M v2, lift intervals -> results/track_m2_lift.{md,json}
