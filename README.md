@@ -31,7 +31,7 @@ closed-loop decision. Built on
 | **M** allocation over time | media budget across channels **and** weeks, from a log whose planner chased the season | lift over doing nothing, audited on the true plant | *the identification axis* — the horizon axis pays little unless the two channel orderings conflict |
 | **L** sequential intervention | which variables to set, and to what, at each step of DCBO's three synthetic dynamic SCMs | regret vs the per-step oracle, each step against the arm's own history | *the reference methods, on their own ground* — the track says where CHC cannot follow, and where DCBO cannot |
 | **O** off-policy evaluation | does `evaluate_plan`'s 95% interval cover a feedback plan's online cost, estimated from another policy's logs, on two Gymnasium plants CHC did not write | interval coverage over 500 replicates, against ±2 points of nominal | *the interval, not a method* — the track is the 0.8.0 evidence gate |
-| **Q** graph errors | the graph handed to `prescribe` is wrong: does the logger check flag it before a plan or its evaluation fails silently | silent-failure rate, with the flag read as a stop, over 200 replicates of nine worlds | *the check, not a method* — on 0.8.0 it earned its stop on one error of eight; on 0.20, scored on the tube's claim, on none |
+| **Q** graph errors | the graph handed to `prescribe` is wrong: does the logger check flag it before a plan or its evaluation fails silently | silent-failure rate, with the flag read as a stop, over 200 replicates of nine worlds | *the check, not a method* — on 0.8.0 it earned its stop on one error of eight; on 0.20, scored on the tube's claim, on none; on 0.23.0 the logged draw's contrast earns it on three |
 
 **Track H** (`causaldyn_bench.marketplace`, `just track-h`) learns where to spend an incentive
 budget from logs whose operator chased demand, in a market whose drivers move between zones. The
@@ -179,7 +179,19 @@ worlds, claims and gate and changes the stop. The panels log the logger's own dr
 `prescribe(dither=)`'s check: the plan's channel against the one the draw instruments, a
 Durbin-Wu-Hausman contrast priced in the plan's regret. It refuses where the contrast rejects at
 0.05 and its priced cost passes 0.1 of the gain the plan claims on its own model. The design is
-pre-registered in `results/track_q_v3_preregistration.md`; the track has not been run.
+pre-registered in `results/track_q_v3_preregistration.md` (`ebbc69d`) and was run once as written,
+on causal-hybrid-control `a7bb967` (0.23.0), 200 replicates a world on a fresh seed. **It passes
+both criteria.** The gate: the stop removes failures beyond a same-rate random stop in three worlds,
+each also at 0.05/9: the mediator turned parent and the latent-driven collider (200 of 222 and 200
+of 216 failures removed, no sound claim refused, p 1e-89 and 6e-96), and the persistent confounder
+(4 of 5, p 5e-9, on a stop rate of 0.010). The size: the contrast rejects 0.019 [0.013, 0.027] of
+the true graph's 1600 panels at 0.05, none void. The omitted promotion drawn afresh is not stopped,
+as the design expected: its contrast rejects on 0.995 of the wrong graph's panels, but prices a cost
+of 0.0014 against a margin of 0.0084, and its failures (0.795) are the tube's. Read as the stop
+alone at any cost, the contrast passes there too (158 of 159 removed, 41 of 241 sound refused). Not
+a criterion, and not in the pooled size: under the persistent confounder the true graph's contrast
+rejects 0.155 [0.108, 0.213] of its panels at 0.05. The logger check's flag, read on the same
+panels, passes in no world. See `results/track_q_v3.md`.
 
 **Track N** (`causaldyn_bench.fold_design`) is the only track that varies nothing but the
 cross-fitting split, and its result is an ordering whose useful half is negative. On `C_12` with two
