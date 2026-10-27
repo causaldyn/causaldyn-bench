@@ -360,11 +360,12 @@ planning needs no adjoint, no Jacobian and no differentiable model — only roll
 so crossing it with the gradient planner over three models (true plant / learned hybrid /
 physics-only) separates what the library's adjoint machinery is worth from what *learning the
 residual* is worth. It is not close, and not in the flattering direction for the adjoint: regret
-on the true plant is `plant/gradient` 0, `hybrid/gradient` 0.0016, `plant/cem` 0.0019,
-`hybrid/cem` 0.0030, against `known_only/*` at **1.72**. The model axis is ~1000× the planner
-axis, and the sampling planner with full knowledge of the plant is *worse* than the gradient
-planner on a learned model. The defensible claim is therefore about identification and the
-learned residual, not about the solver.
+on the true plant is `plant/gradient` 0, `plant/cem` 0.0021, `hybrid/gradient` 0.0029,
+`hybrid/cem` 0.0038, against `known_only/*` at **1.72**. The model axis is ~800× the planner
+axis, and the sampling planner with full knowledge of the plant is within 0.001 of the gradient
+planner on a learned model (on the snapshot before 2026-10-27 it was the worse of the two, 0.0019
+against 0.0016). The defensible claim is therefore about identification and the learned residual,
+not about the solver.
 
 Design rule: to be honest about the win, **never** claim "best model" — claim the decision under a stated
 budget. Track A is expected to go to the trees; the value is Tracks B–D.
@@ -460,11 +461,12 @@ On Tracks A/B the dynamics competitors are **known-only** (true physics), **dlm*
 state-space), **tree-surrogate** (LightGBM), and **hybrid-CHC** (physics + learned residual).
 
 A committed snapshot lives in [`results/leaderboard.md`](results/leaderboard.md): hybrid wins B-rollout
-~18× over the tree and ~14× over the DLM, causal wins C ~800× over naive, causal-CHC is near-oracle on
+~15× over the tree and ~11× over the DLM, causal wins C ~800× over naive, causal-CHC is near-oracle on
 D while predictive blows up, and CHC-MPC matches the oracle on the adaptive-CV task (myopic loses).
-Its rows were recorded between 2026-08-31 and 2026-09-14, except Track D's, which read
-causal-hybrid-control 0.21, and Track H's, which read 0.22.0; Track L, which `run_all` runs too, is in
-[`results/track_l.md`](results/track_l.md).
+Its rows were regenerated on 2026-10-27 with the `trees` extra, on causal-hybrid-control 0.23.0,
+except Track E's latency rows, which keep their 2026-08-31 to 2026-09-14 recording: the machine was
+under load and not fit to time on. Track L's rows, which `run_all` runs too, are in it now; its own
+report is [`results/track_l.md`](results/track_l.md).
 
 For the visual version — leaderboard bar charts + the "prediction ≠ decision" figure — see the executed
 notebook [`notebooks/leaderboard.ipynb`](notebooks/leaderboard.ipynb) (renders on GitHub), or run it:

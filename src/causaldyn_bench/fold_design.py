@@ -219,9 +219,9 @@ def track_fold_design(clusters: int = 2, seeds: int = 120) -> list[TrackResult]:
     ``g = 20`` would report near-ties and call the question settled.
 
     120 draws is what the two large gaps need to be stable; it does NOT resolve designed against
-    random units, which differ by -9.4% (direct) and -0.5% (spillover). The leaderboard prints a
-    rank because every track does, and those two rows should be read as the tie the module
-    docstring reports, not as an ordering.
+    random units, which differ by -11.7% (direct) and +0.3% (spillover) on the 2026-10-27
+    snapshot. The leaderboard prints a rank because every track does, and those two rows should be
+    read as the tie the module docstring reports, not as an ordering.
     """
     graph, adjacency = _topologies()["cycle"]
     shells = graph_shells(adjacency.astype(float), 2)

@@ -4,7 +4,7 @@
 
 | rank | method | value |
 |---|---|---|
-| 1 | hybrid-CHC **(best)** | 0.0017 |
+| 1 | hybrid-CHC **(best)** | 0.0021 |
 | 2 | tree-surrogate | 0.0335 |
 | 3 | dlm | 0.0447 |
 | 4 | known-only | 0.0701 |
@@ -13,7 +13,7 @@
 
 | rank | method | value |
 |---|---|---|
-| 1 | hybrid-CHC **(best)** | 0.0260 |
+| 1 | hybrid-CHC **(best)** | 0.0317 |
 | 2 | dlm | 0.3563 |
 | 3 | tree-surrogate | 0.4652 |
 | 4 | known-only | 0.4676 |
@@ -22,8 +22,8 @@
 
 | rank | method | value |
 |---|---|---|
-| 1 | double-ml-CHC **(best)** | 0.0015 |
-| 2 | backdoor-CHC | 0.0015 |
+| 1 | backdoor-CHC **(best)** | 0.0015 |
+| 2 | double-ml-CHC | 0.0015 |
 | 3 | naive | 1.1998 |
 
 ## D-control  (metric: regret, lower is better)
@@ -47,11 +47,11 @@
 | rank | method | value |
 |---|---|---|
 | 1 | plant/gradient **(best)** | 0.0000 |
-| 2 | hybrid/gradient | 0.0016 |
-| 3 | plant/cem | 0.0019 |
-| 4 | hybrid/cem | 0.0030 |
-| 5 | known_only/cem | 1.7177 |
-| 6 | known_only/gradient | 1.7181 |
+| 2 | plant/cem | 0.0021 |
+| 3 | hybrid/gradient | 0.0029 |
+| 4 | hybrid/cem | 0.0038 |
+| 5 | known_only/gradient | 1.7168 |
+| 6 | known_only/cem | 1.7179 |
 
 ## D-adaptive-cv  (metric: regret, lower is better)
 
@@ -84,10 +84,10 @@ The market is `SharedStateMarket(seed=0)`, one of the 30 that `results/track_h_m
 
 | rank | method | value |
 |---|---|---|
-| 1 | robust-CHC (Gamma=2.5) **(best)** | 4.9241 |
-| 2 | robust-CHC (Gamma=6.0, over) | 6.7738 |
-| 3 | robust-CHC (Gamma=1.3, under) | 14.7709 |
-| 4 | certainty-equivalence | 18.9691 |
+| 1 | robust-CHC (Gamma=2.5) **(best)** | 4.8401 |
+| 2 | robust-CHC (Gamma=6.0, over) | 6.6907 |
+| 3 | robust-CHC (Gamma=1.3, under) | 14.6428 |
+| 4 | certainty-equivalence | 18.8399 |
 
 ## F-structure  (metric: edge_f1, higher is better)
 
@@ -142,30 +142,60 @@ The market is `SharedStateMarket(seed=0)`, one of the 30 that `results/track_h_m
 
 | rank | method | value |
 |---|---|---|
-| 1 | random rows **(best)** | 0.8610 |
-| 2 | designed folds (chc) | 0.9059 |
+| 1 | random rows **(best)** | 0.8396 |
+| 2 | designed folds (chc) | 0.8832 |
 | 3 | random units | 1.0000 |
-| 4 | contiguous folds | 1.3702 |
-| 5 | neighbour exclusion | 1.6661 |
+| 4 | contiguous folds | 1.2837 |
+| 5 | neighbour exclusion | 1.6077 |
 
 ## N-fold-spillover  (metric: MSE / random unit folds (2 clusters), lower is better)
 
 | rank | method | value |
 |---|---|---|
-| 1 | random rows **(best)** | 0.9755 |
-| 2 | designed folds (chc) | 0.9949 |
-| 3 | random units | 1.0000 |
-| 4 | contiguous folds | 1.3575 |
-| 5 | neighbour exclusion | 1.6124 |
+| 1 | random rows **(best)** | 0.9232 |
+| 2 | random units | 1.0000 |
+| 3 | designed folds (chc) | 1.0034 |
+| 4 | contiguous folds | 1.3304 |
+| 5 | neighbour exclusion | 1.6310 |
 
 ## M-allocation  (metric: lift, higher is better)
 
 | rank | method | value |
 |---|---|---|
-| 1 | myopic-greedy **(best)** | 44.1599 |
-| 2 | CHC-adjusted | 42.9841 |
-| 3 | equal-split | 41.1925 |
-| 4 | naive-MMM | 37.6745 |
+| 1 | CHC-adjusted **(best)** | 48.4308 |
+| 2 | myopic-greedy | 47.7267 |
+| 3 | equal-split | 45.3731 |
+| 4 | naive-MMM | 37.1418 |
+
+## L-dcbo-stat  (metric: regret, lower is better)
+
+| rank | method | value |
+|---|---|---|
+| 1 | ABO **(best)** | 0.0635 |
+| 2 | BO | 0.2678 |
+| 3 | CBO | 0.3946 |
+| 4 | DCBO | 0.4975 |
+| 5 | CHC-prescribe | 0.5420 |
+
+## L-dcbo-ind  (metric: regret, lower is better)
+
+| rank | method | value |
+|---|---|---|
+| 1 | ABO **(best)** | 1.1738 |
+| 2 | BO | 1.9343 |
+| 3 | CBO | 2.4026 |
+| 4 | DCBO | 2.5448 |
+| 5 | CHC-prescribe | 5.9656 |
+
+## L-dcbo-nonstat  (metric: regret, lower is better)
+
+| rank | method | value |
+|---|---|---|
+| 1 | DCBO **(best)** | 1.3945 |
+| 2 | CBO | 1.5363 |
+| 3 | ABO | 4.1100 |
+| 4 | BO | 4.1599 |
+| 5 | CHC-prescribe | 8.7150 |
 
 ## E-systems  (metric: solve_ms, lower is better)
 
