@@ -2,10 +2,10 @@
 plan or its evaluation fails silently?
 
 :func:`chc.prescribe` derives its adjustment set from the caller's graph, and
-:meth:`chc.Prescription.evaluate` weights a later panel on the premise that the levers read the
-state and their recorded parents alone. Neither can tell a wrong graph from a right one. The logger
-check (ADR 0028, *experimental*) tests the one implication of the graph both rest on that a panel
-can falsify, the levers' local Markov condition, and warns. Its gate: **a flag that
+:meth:`chc.decision.Prescription.evaluate` weights a later panel on the premise that the levers
+read the state and their recorded parents alone. Neither can tell a wrong graph from a right one.
+The logger check (ADR 0028, *experimental*) tests the one implication of the graph both rest on
+that a panel can falsify, the levers' local Markov condition, and warns. Its gate: **a flag that
 does not lower the silent-failure rate is not shipped.**
 
 The worlds are the lifecycle market of the library's ``tests/test_lifecycle_loop.py``: 400 units,
@@ -81,6 +81,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 from chc.cost import total_cost
+from chc.decision import Prescription
 from chc.dynamics import LinearDynamics
 from chc.integrate import rollout
 from numpy.typing import NDArray
@@ -394,8 +395,8 @@ def regret(
 def expected_running_cost(
     system: Plant, starts: NDArray[np.float64], actions: NDArray[np.float64]
 ) -> float:
-    """What :meth:`chc.Prescription.evaluate` estimates: the schedule's running cost, the terminal
-    term left out, from the law of ``starts``, by mean and covariance propagation."""
+    """What :meth:`chc.decision.Prescription.evaluate` estimates: the schedule's running cost, the
+    terminal term left out, from the law of ``starts``, by mean and covariance propagation."""
     mean, covariance, total = starts.mean(axis=0), np.cov(starts, rowvar=False), 0.0
     for action in actions:
         total += 0.5 * (covariance[0, 0] + (mean[0] - TARGET) ** 2 + UNIT_COST * action**2)
@@ -421,7 +422,7 @@ def prescribe(
     adjustment: chc.CausalGraph | Sequence[str],
     tolerance: float = TOLERANCE,
     dither: str | None = None,
-) -> chc.Prescription:
+) -> Prescription:
     # passed only where given, so version 1 and 2 still run on a library without the argument
     extra: dict[str, Any] = {} if dither is None else {"dither": dither}
     return chc.prescribe(
@@ -496,7 +497,7 @@ def _flag(check: chc.evaluation.LoggerCheck | None) -> bool | None:
     return None if check is None else bool(check.test.p_value <= ALPHA)
 
 
-def claimed_gain(prescription: chc.Prescription) -> float:
+def claimed_gain(prescription: Prescription) -> float:
     """What the plan claims to buy on its own model: doing nothing's planning cost there, from the
     plan's start, less the plan's."""
     plan = prescription.plan
@@ -510,7 +511,7 @@ def claimed_gain(prescription: chc.Prescription) -> float:
     return float(idle) - float(plan.task_cost)
 
 
-def _dither(prescription: chc.Prescription) -> dict[str, Any]:
+def _dither(prescription: Prescription) -> dict[str, Any]:
     check = prescription.dither_check
     assert check is not None
     contrast = check.contrast
@@ -526,7 +527,7 @@ def _dither(prescription: chc.Prescription) -> dict[str, Any]:
     }
 
 
-def _one_period_push(prescription: chc.Prescription) -> float:
+def _one_period_push(prescription: Prescription) -> float:
     plan = prescription.plan
     assert plan is not None
     model = chc.HybridDynamics(
