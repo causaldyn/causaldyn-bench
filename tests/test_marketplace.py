@@ -6,10 +6,10 @@ logs themselves cannot give.
 threefry bits per element for a float64 output than for a float32 one, so under
 ``JAX_ENABLE_X64=1`` a seed draws a *different* market rather than a higher-precision copy of the
 same one: at seed 0 the headroom between doing nothing and the oracle reads 2.43 against 1.06. The
-committed runs of version 2, ``results/track_h_markets_v2.json`` (float32) and
-``results/track_h_markets_v2_x64.json`` (float64), are 60 markets, and every claim tested here on
-seeds 0-2 holds on all 60 but one: equilibrium-CHC's least regret, which float32 market 18 breaks
-(:data:`LEAST_REGRET`). An ordering or a sign is asserted as it stands. A bound is the 30
+committed runs of version 3, ``results/track_h_markets_v3.json`` (float32) and
+``results/track_h_markets_v3_x64.json`` (float64), are 60 markets, and every claim tested here on
+seeds 0-2 holds on all 60, but for the counts :data:`LEAST_REGRET` and :data:`EXPECTED_LEAST_REGRET`
+state. An ordering or a sign is asserted as it stands. A bound is the 30
 markets' mean less three standard deviations, or plus three, at the precision that reads it wider,
 rounded outward to two decimals: a reading of the distribution, not of the markets tested here. The
 bounds are checked against the committed runs, so a rerun that moves the distribution fails until
@@ -17,10 +17,10 @@ they are read again; the committed runs are checked to be their own markets, and
 code computes for seeds 0-2: on any machine in every reading no ascent ends, and in the ascent's
 ends only on the machine class that recorded them.
 
-Version 1's runs, ``results/track_h_markets.json`` and ``results/track_h_markets_x64.json``, were
-scored on causal-hybrid-control 0.21.0 against an ascent of the oracle's; this library computes
-another oracle and another fit, so they are checked only to be their own markets and to hold the
-claims they make.
+Version 2's runs, ``results/track_h_markets_v2{,_x64}.json``, were scored on
+causal-hybrid-control 0.22.0 without the expected-completions planner, and version 1's,
+``results/track_h_markets{,_x64}.json``, on 0.21.0 against an ascent of the oracle's. They are
+checked only to be their own markets and to hold the claims they make.
 """
 
 import importlib.metadata
@@ -39,6 +39,7 @@ from causaldyn_bench.marketplace import (
     PLANNERS,
     TRACK,
     V1_NAMES,
+    V2_NAMES,
     chase,
     leaderboard_note,
     marketplace_report,
@@ -51,28 +52,40 @@ ROOT = Path(__file__).resolve().parents[1]
 SEEDS = (0, 1, 2)
 LOWER = {
     "chc_share": 0.67,
+    "chc_expected_share": 0.89,
     "predictive_confounding_bias": 0.14,
     "naive_cross_zone_confounding": 0.04,
     "chc_confounding_bias": 0.08,
     "randomised_demand_corr": 0.28,
     "naive_interference_overcount": 0.39,
 }
-UPPER = {"chc_regret": 0.88, "naive_kept_share": 0.88}
-# The markets on which equilibrium-CHC has the least regret, by run. Version 2's float32 market 18
-# is the one it does not: its plan's 600-step ascent stops at 9.83 on the fitted surrogate, which
-# the oracle's allocation reads at 10.58 and 2400 steps reach 10.64, and naive-causal's regret
-# there is 0.675 against its 0.916.
-LEAST_REGRET = {("version 2", False): 29, ("version 2", True): 30}
-LEAST_REGRET |= {("version 1", x64): 30 for x64 in (False, True)}
+UPPER = {"chc_regret": 0.88, "chc_expected_regret": 0.3, "naive_kept_share": 0.88}
+# The markets on which equilibrium-CHC has less regret than both SUTVA planners, by run. Float32
+# market 18 is the one it does not, in versions 2 and 3: its plan's 600-step ascent stops at 9.83
+# on the fitted surrogate, which the oracle's allocation reads at 10.58 and 2400 steps reach 10.64,
+# and naive-causal's regret there is 0.675 against its 0.916.
+LEAST_REGRET = {(version, False): 29 for version in (3, 2)}
+LEAST_REGRET |= {(version, True): 30 for version in (3, 2)}
+LEAST_REGRET |= {(1, x64): 30 for x64 in (False, True)}
+# The same count for equilibrium-CHC expected, which only version 3 runs.
+EXPECTED_LEAST_REGRET = {False: 30, True: 30}
+VERSIONS = {3: NAMES, 2: V2_NAMES, 1: V1_NAMES}
 # The committed readings carry three decimals in results/track_h_markets*.md, so a run reproduces
 # them to half of the last.
 TO_THE_QUOTED_DIGIT = 5e-4
-# The readings that end a nonconvex ascent: equilibrium-CHC's, on the equilibrium it fits. The
+# The readings that end a nonconvex ascent: the equilibrium-CHC planners', on the equilibrium they
+# fit. The
 # oracle is exact, and moves with the machine only through the equilibrium solve. On a CPU with
 # AVX-512, where numpy and XLA run other vector kernels, the same programs round otherwise and an
 # ascent can end at another local optimum: under version 1 there market 0's float32 CHC plan read
 # 2.328 of lift against the committed 2.340.
-ASCENT_ENDS = frozenset({"chc_realised_lift", "chc_regret"})
+ASCENT_ENDS = frozenset(
+    {
+        f"{key}_{reading}"
+        for key in ("chc", "chc_expected")
+        for reading in ("realised_lift", "regret")
+    }
+)
 # The versions the runs were recorded under, on x86 without AVX-512. Others compile and solve the
 # ascent otherwise too: under version 1 the Python 3.11 leg, on jax 0.10.2, numpy 2.4.6 and scipy
 # 1.17.1, ended market 0's float32 oracle ascent at 2.4241 of lift against the committed 2.4268. A
@@ -111,6 +124,15 @@ def test_chc_has_the_least_regret_and_most_of_the_oracle_s_lift(reports, seed: i
 
 
 @pytest.mark.parametrize("seed", SEEDS)
+def test_chc_expected_has_less_regret_than_the_sutva_planners(reports, seed: int) -> None:
+    r = readings(reports[seed])
+    assert r["chc_expected_regret"] < r["naive_regret"]
+    assert r["chc_expected_regret"] < r["predictive_regret"]
+    assert r["chc_expected_regret"] < UPPER["chc_expected_regret"]
+    assert r["chc_expected_share"] > LOWER["chc_expected_share"]
+
+
+@pytest.mark.parametrize("seed", SEEDS)
 def test_the_report_shows_confounding_and_interference(reports, seed: int) -> None:
     """The logging policy chased demand, so the predictive response reads above the randomised
     twin's; adjusting each zone for its own demand removes part of that, and the part that runs
@@ -143,18 +165,28 @@ def test_the_reruns_replay_the_logged_blocks() -> None:
     np.testing.assert_allclose(replayed["y"], logs["y"], rtol=0.0, atol=atol)
 
 
-@pytest.mark.parametrize("version", ["version 2", "version 1"])
+@pytest.mark.parametrize("version", [3, 2, 1])
 @pytest.mark.parametrize("x64", [False, True], ids=["float32", "float64"])
-def test_the_committed_runs_hold_the_claims_on_every_market(x64: bool, version: str) -> None:
-    counts = _committed(x64, NAMES if version == "version 2" else V1_NAMES)["counts"]
+def test_the_committed_runs_hold_the_claims_on_every_market(x64: bool, version: int) -> None:
+    counts = _committed(x64, VERSIONS[version])["counts"]
     n = counts["markets"]
     assert n == 30
     assert counts["chc_least_regret"] == LEAST_REGRET[version, x64]
+    if version == 3:
+        assert counts["chc_expected_least_regret"] == EXPECTED_LEAST_REGRET[x64]
     assert counts["predictive_confounding_bias_positive"] == n
     assert counts["naive_bias_below_predictive"] == n
     assert counts["naive_cross_zone_confounding_positive"] == n
     assert counts["chc_bias_above_naive"] == n
     assert counts["naive_interference_overcount_positive"] == n
+
+
+def test_the_expected_planner_takes_market_18_back_from_the_naive_one() -> None:
+    """On float32 market 18 the tilted ascent stops short and the naive-causal plan leaves less
+    regret; the expected-completions planner, ascended from the fitted game's exact optimum too,
+    leaves less than either: 0.978 of the oracle's lift, against 0.735 and 0.805."""
+    market = next(m["report"] for m in _committed(False)["markets"] if m["seed"] == 18)
+    assert market["chc_expected_regret"] < market["naive_regret"] < market["chc_regret"]
 
 
 @pytest.mark.parametrize("x64", [False, True], ids=["float32", "float64"])
@@ -165,11 +197,12 @@ def test_a_committed_run_is_its_markets(x64: bool) -> None:
     assert record(committed["markets"], committed["blocks"], x64, committed["chc"]) == committed
 
 
+@pytest.mark.parametrize("version", [2, 1])
 @pytest.mark.parametrize("x64", [False, True], ids=["float32", "float64"])
-def test_a_version_1_run_is_its_markets(x64: bool) -> None:
-    committed = _committed(x64, V1_NAMES)
+def test_an_earlier_version_s_run_is_its_markets(x64: bool, version: int) -> None:
+    committed = _committed(x64, VERSIONS[version])
     assert committed["x64"] is x64
-    read = record(committed["markets"], committed["blocks"], x64, "0.21.0")
+    read = record(committed["markets"], committed["blocks"], x64, "")
     assert {key: read[key] for key in ("summary", "counts")} == {
         key: committed[key] for key in ("summary", "counts")
     }

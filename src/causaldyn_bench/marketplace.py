@@ -8,19 +8,24 @@ arXiv:2504.08836, pessimism-as-DR-MDP); this track scores it.
 
 The leaderboard scores one market, ``SharedStateMarket(seed=0)``. ``python -m
 causaldyn_bench.marketplace`` (``just track-h``) scores it with seeds 1-29 into
-``results/track_h_markets_v2.{md,json}``, and again under ``JAX_ENABLE_X64=1``, where each seed
-draws another market, into ``results/track_h_markets_v2_x64.{md,json}``, against the exact oracle.
-On 59 of those 60 markets the equilibrium-aware, pessimistic CHC allocation has the least regret,
-and it wins 0.69-1.00 of the oracle's lift over doing nothing, a median of 0.92 at both
-precisions. On the 60th, float32 market 18, its planner's ascent stops short on the fitted
-equilibrium and the naive-causal plan leaves less regret. The predictive (MOPO) and naive-causal
-planners assume SUTVA and leave large regret: the naive one wins a median of 0.28 and 0.35 of the
-lift at the two precisions, at most 0.80, and the predictive one 0.04 and 0.00, at most 0.35; the
-naive one realises less than doing nothing on 8 and 7 of the 30 markets, the predictive one on 13
-and 15. :func:`marketplace_report` reads what the logs' confounding does to the responses the two
-plan on. Version 1, ``results/track_h_markets{,_x64}.{md,json}``, scored the same markets on
-causal-hybrid-control 0.21.0 against a 2500-step ascent of the oracle's, which fell short of the
-exact optimum on 30 of the 60.
+``results/track_h_markets_v3.{md,json}``, and again under ``JAX_ENABLE_X64=1``, where each seed
+draws another market, into ``results/track_h_markets_v3_x64.{md,json}``, against the exact oracle.
+Version 3 adds a fourth planner, equilibrium-CHC expected: the same planner through the same fitted
+equilibrium with ``objective="expected"``, which maximises the fit's expected completions under its
+own uncertainty. It has the least regret on all 60 markets and wins 0.92-1.00 of the oracle's lift
+over doing nothing, a median of 0.997 and 0.971 at the two precisions. The tilted planner,
+equilibrium-CHC, has less regret than both SUTVA planners on 59 of the 60 and wins 0.69-1.00, a
+median of 0.92 at both; on float32 market 18 its ascent stops short on the fitted equilibrium, at
+0.735 of the lift, below the naive-causal plan's 0.805, where the expected planner wins 0.978. The
+predictive (MOPO) and naive-causal planners assume SUTVA and leave large regret: the naive one wins
+a median of 0.28 and 0.35 of the lift at the two precisions, at most 0.80, and the predictive one
+0.04 and 0.00, at most 0.35; the naive one realises less than doing nothing on 8 and 7 of the 30
+markets, the predictive one on 13 and 15. :func:`marketplace_report` reads what the logs'
+confounding does to the responses the two plan on. Version 2,
+``results/track_h_markets_v2{,_x64}.{md,json}``, scored the three other planners on
+causal-hybrid-control 0.22.0, and every reading the two versions share is identical. Version 1,
+``results/track_h_markets{,_x64}.{md,json}``, scored them on 0.21.0 against a 2500-step ascent of
+the oracle's, which fell short of the exact optimum on 30 of the 60.
 """
 
 from __future__ import annotations
@@ -51,22 +56,39 @@ from causaldyn_bench.tracks import TrackResult
 TRACK = "H-marketplace"
 SEEDS = tuple(range(30))
 BLOCKS = 400
-VERSION = 2
-# a run's file name, by x64: version 2's, scored against the exact oracle
-NAMES = {False: "track_h_markets_v2", True: "track_h_markets_v2_x64"}
+VERSION = 3
+# a run's file name, by x64: version 3's, which adds the expected-completions planner
+NAMES = {False: "track_h_markets_v3", True: "track_h_markets_v3_x64"}
+# version 2's, scored on causal-hybrid-control 0.22.0 against the exact oracle
+V2_NAMES = {False: "track_h_markets_v2", True: "track_h_markets_v2_x64"}
 # version 1's, scored on causal-hybrid-control 0.21.0 against a 2500-step ascent of the oracle's
 V1_NAMES = {False: "track_h_markets", True: "track_h_markets_x64"}
+# Two planners' regrets closer than this are counted as a tie: half the last digit the tables quote,
+# far above either precision's rounding of a market's completions.
+TIE = 5e-4
 # each planner's name on the leaderboard, and the prefix of its keys in a report
-PLANNERS = {"predictive-MOPO": "predictive", "naive-causal": "naive", "equilibrium-CHC": "chc"}
+PLANNERS = {
+    "predictive-MOPO": "predictive",
+    "naive-causal": "naive",
+    "equilibrium-CHC": "chc",
+    "equilibrium-CHC expected": "chc_expected",
+}
 
 
 def _allocations(market: SharedStateMarket, logs: dict, radius: float = 1.0) -> dict:
-    """The three offline planners' allocations from the same confounded logs."""
+    """The four offline planners' allocations from the same confounded logs. The two
+    equilibrium-CHC planners plan through the same fitted equilibrium: one maximises its
+    completions plus the response's pessimism tilt, the other its expected completions under the
+    fit's own uncertainty, ``objective="expected"``."""
+    equilibrium = fit_equilibrium(logs)
     return {
         "predictive-MOPO": sutva_allocation(market, calibrate_predictive(logs), radius),
         "naive-causal": sutva_allocation(market, calibrate_naive_causal(logs), radius),
         "equilibrium-CHC": pessimistic_equilibrium_allocation(
-            market, calibrate_shared_state(logs), radius=radius, equilibrium=fit_equilibrium(logs)
+            market, calibrate_shared_state(logs), radius=radius, equilibrium=equilibrium
+        ),
+        "equilibrium-CHC expected": pessimistic_equilibrium_allocation(
+            market, None, equilibrium=equilibrium, objective="expected"
         ),
     }
 
@@ -174,15 +196,13 @@ def track_marketplace(seed: int = 0, n_blocks: int = BLOCKS) -> list[TrackResult
 
 def readings(report: dict[str, float]) -> dict[str, float]:
     """A report's readings the 30-market tables summarise: the lifts as shares of the oracle's,
-    the naive-causal bias as a share of the predictive one, and the rest as reported."""
+    the naive-causal bias as a share of the predictive one, and the rest as reported. A report of
+    version 1 or 2 carries no expected-completions planner, and reads none."""
     lift = report["oracle_lift"]
+    planners = [key for key in PLANNERS.values() if f"{key}_regret" in report]
     return {
-        "chc_share": report["chc_realised_lift"] / lift,
-        "naive_share": report["naive_realised_lift"] / lift,
-        "predictive_share": report["predictive_realised_lift"] / lift,
-        "chc_regret": report["chc_regret"],
-        "naive_regret": report["naive_regret"],
-        "predictive_regret": report["predictive_regret"],
+        **{f"{key}_share": report[f"{key}_realised_lift"] / lift for key in planners},
+        **{f"{key}_regret": report[f"{key}_regret"] for key in planners},
         "predictive_confounding_bias": report["predictive_confounding_bias"],
         "naive_confounding_bias": report["naive_confounding_bias"],
         "naive_kept_share": report["naive_confounding_bias"]
@@ -197,9 +217,11 @@ def readings(report: dict[str, float]) -> dict[str, float]:
 
 
 LABELS = {
+    "chc_expected_share": "equilibrium-CHC expected's share of the oracle's lift",
     "chc_share": "equilibrium-CHC's share of the oracle's lift",
     "naive_share": "naive-causal's share of the oracle's lift",
     "predictive_share": "predictive-MOPO's share of the oracle's lift",
+    "chc_expected_regret": "equilibrium-CHC expected's regret",
     "chc_regret": "equilibrium-CHC's regret",
     "naive_regret": "naive-causal's regret",
     "predictive_regret": "predictive-MOPO's regret",
@@ -233,11 +255,28 @@ def summary(values: Sequence[float]) -> dict[str, float]:
 def counts(markets: Sequence[dict[str, Any]]) -> dict[str, int]:
     """The orderings and signs the prose quotes, as counts of markets."""
     read = [readings(m["report"]) for m in markets]
+    expected = (
+        {
+            "chc_expected_least_regret": sum(
+                r["chc_expected_regret"] < min(r["naive_regret"], r["predictive_regret"])
+                for r in read
+            ),
+            "chc_expected_below_chc": sum(
+                r["chc_expected_regret"] < r["chc_regret"] - TIE for r in read
+            ),
+            "chc_expected_above_chc": sum(
+                r["chc_expected_regret"] > r["chc_regret"] + TIE for r in read
+            ),
+        }
+        if all("chc_expected_regret" in r for r in read)
+        else {}
+    )
     return {
         "markets": len(read),
         "chc_least_regret": sum(
             r["chc_regret"] < min(r["naive_regret"], r["predictive_regret"]) for r in read
         ),
+        **expected,
         "predictive_confounding_bias_positive": sum(
             r["predictive_confounding_bias"] > 0.0 for r in read
         ),
@@ -271,7 +310,7 @@ def record(markets: Sequence[dict[str, Any]], n_blocks: int, x64: bool, chc: str
         "blocks": n_blocks,
         "oracle": "exact",
         "twin": "numpy default_rng(seed).permutation(blocks)",
-        "summary": {key: summary([r[key] for r in read]) for key in LABELS},
+        "summary": {key: summary([r[key] for r in read]) for key in LABELS if key in read[0]},
         "counts": counts(markets),
         "markets": list(markets),
     }
@@ -287,7 +326,8 @@ def _markdown(result: dict[str, Any]) -> str:
         leaderboard = " The leaderboard, in float32, scores the other run's seed 0."
     elif seed0 is not None:
         leaderboard = (
-            " The leaderboard scores seed 0, one of these: equilibrium-CHC's regret on it reads "
+            " The leaderboard scores seed 0, one of these: equilibrium-CHC expected's regret on it "
+            f"reads {seed0['chc_expected_regret']:.4f}, equilibrium-CHC's "
             f"{seed0['chc_regret']:.4f}, naive-causal's {seed0['naive_regret']:.4f} and "
             f"predictive-MOPO's {seed0['predictive_regret']:.4f}."
         )
@@ -308,6 +348,20 @@ def _markdown(result: dict[str, Any]) -> str:
         "no plan passes it by more than the equilibrium solve's tolerance. The naive-causal "
         "planner's interference over-count is the lift its per-zone response predicts for its "
         "allocation less the lift the market realises.",
+        "",
+        "The two equilibrium-CHC planners plan through the same equilibrium, fitted to the logs. "
+        "Equilibrium-CHC maximises the fit's completions plus the shared-state response's "
+        "pessimism tilt (`pessimistic_equilibrium_allocation`'s default, "
+        '`objective="tilted"`), in a 600-step ascent from the even split. Equilibrium-CHC '
+        'expected (`objective="expected"`) maximises the fit\'s expected completions under its own '
+        "uncertainty, the fit's sandwich covariance and its planning demand's, ascended from the "
+        "even split and from the fitted game's exact optimum; it reads no response.",
+        "",
+        f"Version 2, `{V2_NAMES[result['x64']]}.md`, scored the same markets on "
+        "causal-hybrid-control 0.22.0 against the exact oracle, without the expected planner, "
+        "which that version did not have; every reading it shares with this version is computed "
+        "the same way. Version 2 is reproducible from this repository at `c2dce11` beside the "
+        "library at `v0.22.0`.",
         "",
         f"Version 1, `{V1_NAMES[result['x64']]}.md`, scored the same markets on "
         "causal-hybrid-control 0.21.0 against a 2500-step ascent of the oracle's and through an "
@@ -346,7 +400,11 @@ def _markdown(result: dict[str, Any]) -> str:
         )
     lines += [
         "",
-        f"- equilibrium-CHC has the least regret on {c['chc_least_regret']} of the {n} markets.",
+        "- Against the two SUTVA planners, equilibrium-CHC expected has the least regret on "
+        f"{c['chc_expected_least_regret']} of the {n} markets and equilibrium-CHC on "
+        f"{c['chc_least_regret']}. Equilibrium-CHC expected leaves less regret than "
+        f"equilibrium-CHC on {c['chc_expected_below_chc']}, more on "
+        f"{c['chc_expected_above_chc']} and the same, to within {TIE:g}, on the rest.",
         "- The predictive response exceeds the randomised twin's on "
         f"{c['predictive_confounding_bias_positive']}. The naive-causal response exceeds it on "
         f"{c['naive_confounding_bias_positive']}, by less than the predictive one on "
@@ -359,9 +417,9 @@ def _markdown(result: dict[str, Any]) -> str:
         f"{c['predictive_below_doing_nothing']}.",
         "",
         "`tests/test_marketplace.py` asserts on seeds 0-2 the orderings and signs above that hold "
-        "on every market of the two runs, and equilibrium-CHC's least regret, which holds on the "
-        "markets counted above, and bounds at the markets' mean less or plus three SDs, at "
-        "whichever precision reads wider, rounded outward to two decimals.",
+        "on every market of the two runs, and the equilibrium-CHC planners' least regret, which "
+        "holds on the markets counted above, and bounds at the markets' mean less or plus three "
+        "SDs, at whichever precision reads wider, rounded outward to two decimals.",
     ]
     return "\n".join(lines) + "\n"
 
@@ -385,9 +443,15 @@ def leaderboard_note(results: Path = Path("results")) -> str | None:
         else ""
     )
 
-    def on(counts: dict[str, int]) -> str:
-        least = counts["chc_least_regret"]
+    def on(counts: dict[str, int], key: str = "chc") -> str:
+        least = counts[f"{key}_least_regret"]
         return "every one" if least == counts["markets"] else f"{least} of them"
+
+    def both(counts: dict[str, int]) -> str:
+        return (
+            f"equilibrium-CHC expected has less regret than both SUTVA planners on "
+            f"{on(counts, 'chc_expected')}, and equilibrium-CHC on {on(counts)}"
+        )
 
     spans = ", ".join(
         f"{name} from {min(regrets[key]):.3f} to {max(regrets[key]):.3f} "
@@ -397,10 +461,9 @@ def leaderboard_note(results: Path = Path("results")) -> str | None:
     return (
         f"The market is `SharedStateMarket(seed=0)`, one of the {n} that "
         f"`results/{NAMES[False]}.md` scores in float32 (`just track-h`){where}. Over the {n}, "
-        f"equilibrium-CHC has the least regret on {on(run['counts'])}; the regrets run {spans}. "
-        f"On {run_x64['counts']['markets']} markets drawn under `JAX_ENABLE_X64=1` "
-        f"(`results/{NAMES[True]}.md`) equilibrium-CHC has the least regret on "
-        f"{on(run_x64['counts'])}."
+        f"{both(run['counts'])}; the regrets run {spans}. On {run_x64['counts']['markets']} "
+        f"markets drawn under `JAX_ENABLE_X64=1` (`results/{NAMES[True]}.md`) "
+        f"{both(run_x64['counts'])}."
     )
 
 

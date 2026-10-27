@@ -259,6 +259,13 @@
     "lower_is_better": true
   },
   {
+    "track": "H-marketplace",
+    "method": "equilibrium-CHC expected",
+    "metric": "regret",
+    "value": 0.10310554504394531,
+    "lower_is_better": true
+  },
+  {
     "track": "I-sensitivity",
     "method": "certainty-equivalence",
     "metric": "worst-case closed-loop cost",
