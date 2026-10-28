@@ -43,6 +43,11 @@ layer and the quarter's processes.
 On the first 30 pilot worlds media's share of the history's sales is therefore Track M v2's, 0.11
 to 0.22, median 0.17, and each channel's return per euro over the history, median and range, is
 pla 2.9 (1.7 to 4.7), meta 2.8 (1.7 to 4.8) and tv 3.0 (2.1 to 4.7).
+
+``scripts/pymc_marketing_form.py`` runs PyMC-Marketing's own ``GeometricAdstock`` and
+``logistic_saturation`` in the PyMC-Marketing arm's pinned environment on worlds of this family and
+records what they return in ``results/pymc_marketing_form.json``; a test holds the world's
+transforms to that record within 1e-9.
 """
 
 from __future__ import annotations
