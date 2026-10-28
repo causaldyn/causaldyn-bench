@@ -95,11 +95,13 @@ def mix(
     population: float = POPULATION,
     noise: float = NOISE,
     lognormal: bool = False,
+    spillover: float = 0.0,
 ) -> GeoMediaMix:
     """The mix world ``seed`` is drawn from, its spreads drawn from family ``family``'s stream:
-    this family's, or one that changes its geos' count, median population and noise a head, and
-    draws the noise log-normal about the KPI's level
-    (:class:`~causaldyn_bench.scorecard.geo_noise.LogNormalNoise`) where ``lognormal``."""
+    this family's, or one that changes its geos' count, median population and noise a head, draws
+    the noise log-normal about the KPI's level
+    (:class:`~causaldyn_bench.scorecard.geo_noise.LogNormalNoise`) where ``lognormal``, and lets a
+    geo's own media lift its two ring neighbours together by ``spillover`` of its home lift."""
     spreads = rng(family, Role.PARAMETERS, seed).uniform(*SPREADS, 3)
     with jax.enable_x64(True):
         channels = (
@@ -127,6 +129,7 @@ def mix(
         base=BASE,
         noise=noise,
         policy=policy,
+        spillover=spillover,
         length=8,
     )
 
