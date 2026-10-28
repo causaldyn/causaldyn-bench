@@ -3,6 +3,10 @@ here as the tool writes it; the world is Track M v2's beneath its media; the arm
 the tool's response as this world's media; and the oracle, exact on concave cells, reads the world
 run on over the quarter and the kernel's tail."""
 
+import dataclasses
+import json
+from pathlib import Path
+
 import jax
 import numpy as np
 import pytest
@@ -14,14 +18,18 @@ from causaldyn_bench.scorecard.continuation import shadow
 from causaldyn_bench.scorecard.family import number
 from causaldyn_bench.scorecard.mapping import channels
 from causaldyn_bench.scorecard.pymc_marketing import (
+    ALPHA,
+    LAM,
     PYMC_MARKETING,
     parameters,
 )
 from causaldyn_bench.scorecard.track_m2 import still
 from causaldyn_bench.scorecard.truth import worth
 
+ROOT = Path(__file__).resolve().parents[1]
 WEEKS = 156
 LENGTH = 6  # Track M v2's kernel length
+AGREE = 1e-9  # the record's agreement with PyMC-Marketing's own transforms, relative
 
 
 @pytest.fixture(scope="module")
@@ -77,6 +85,44 @@ def test_each_channel_returns_over_the_history_what_track_m2_beneath_it_returns(
         np.testing.assert_allclose(history.media.sum(axis=0), base.media.sum(axis=0), rtol=1e-13)
         np.testing.assert_allclose(history.roas(), base.roas(), rtol=1e-13)
         assert history.sales.sum() == pytest.approx(base.sales.sum(), rel=1e-13, abs=0.0)
+
+
+def test_the_worlds_transforms_are_pymc_marketings_own():
+    """``scripts/pymc_marketing_form.py`` ran PyMC-Marketing's own adstock and saturation on the
+    first pilot worlds' channels and at the priors' corners; the world's kernel and curve, at the
+    case's parameters on the channel's largest week, return what they returned."""
+    record = json.loads((ROOT / "results" / "pymc_marketing_form.json").read_text())
+    assert record["pymc_marketing"] == "1.2.0" and record["dtype"] == "float64"
+    defaults = record["defaults"]
+    assert defaults["l_max"] == LENGTH and defaults["normalize"] is True
+    assert defaults["alpha"] == ["Beta", {"alpha": ALPHA[0], "beta": ALPHA[1]}]
+    assert defaults["lam"] == ["Gamma", {"alpha": LAM[0], "beta": LAM[1]}]
+    assert defaults["beta"] == ["HalfNormal", {"sigma": 2.0}]
+    histories = {}
+    for case in record["cases"]:
+        seed = case["seed"]
+        history = histories.setdefault(seed, PYMC_MARKETING.world("priors", seed).history)
+        c = history.channels.index(case["channel"])
+        spend = history.spend[:, c]
+        scale = float(spend.max())
+        assert scale == case["scale"]
+        n = len(history.channels)
+        at = dataclasses.replace(
+            history,
+            retention=(case["alpha"],) * n,
+            saturation=(case["lam"] / scale,) * n,
+            effect=(1.0,) * n,
+        )
+        adstock = np.convolve(spend, at.kernel(c))[: spend.size] / scale
+        np.testing.assert_allclose(adstock, case["adstock"], rtol=AGREE, atol=0.0)
+        np.testing.assert_allclose(at._effect_of(c, spend), case["saturated"], rtol=AGREE, atol=0.0)
+        if case["corner"] is None:
+            ours = (history.retention[c], history.saturation[c])
+            assert ours == (case["alpha"], case["lam"] / scale)
+            theirs = history.effect[c] * np.asarray(case["saturated"])
+            np.testing.assert_allclose(history.media[:, c], theirs, rtol=AGREE, atol=0.0)
+    corners = {(case["channel"], case["corner"]) for case in record["cases"]}
+    assert corners >= {(name, end) for name in ("pla", "meta", "tv") for end in ("low", "high")}
 
 
 def test_a_world_is_track_m2s_beneath_its_media(worlds):
