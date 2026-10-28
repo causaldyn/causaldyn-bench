@@ -1,5 +1,5 @@
-"""Family 13: PyMC-Marketing's home ground, worlds whose media are PyMC-Marketing's default class at
-its default priors.
+"""Family 13: PyMC-Marketing's home ground, worlds whose media are PyMC-Marketing's default class,
+its adstock and its curve drawn from its default priors.
 
 PyMC-Marketing 1.2.0's ``MMM`` (``pymc_marketing/mmm/mmm.py``) scales each channel's spend by its
 largest week over the history and the target by its largest week (``DataDerivedScaling(method=
@@ -14,23 +14,24 @@ contribution back by the target's scale. With its default components each channe
 ``GeometricAdstock`` normalised (``components/adstock.py`` lines 215-216: ``normalize=True`` by
 default, though ``transformers.geometric_adstock`` itself defaults to False, line 241), nothing
 spent before the history, and ``LogisticSaturation`` (``components/saturation.py`` line 259), at
-``S_c`` the channel's largest spend and ``T`` the target's scale. The media parameters are drawn
-from the components' default priors:
+``S_c`` the channel's largest spend and ``T`` the target's scale, the largest sales of the
+history. The adstock and the curve are drawn from the components' default priors:
 
 * ``alpha_c ~ Beta(1, 3)`` (``components/adstock.py`` line 448);
-* ``lam_c ~ Gamma(3, 1)``, shape 3 and rate 1 (``components/saturation.py`` line 262);
-* ``beta_c ~ HalfNormal(2)`` (``components/saturation.py`` line 263).
+* ``lam_c ~ Gamma(3, 1)``, shape 3 and rate 1 (``components/saturation.py`` line 262).
 
 Family 0, Track M v2, has this class too, at its own parameters, drawn on the range Heusch's three
-channels span; here they are the tool's own priors. ``L`` is Track M v2's kernel length, 6, which
-every arm is told.
+channels span; here the adstock and the curve are the tool's own priors. ``L`` is Track M v2's
+kernel length, 6, which every arm is told.
 
-* ``T`` (CHOICE) is the largest sales of the Track M v2 world beneath. The tool reads the largest
-  sales of the history it is fitted to, which here include these media; a world at that scale
-  solves ``T = max_t (b_t + T g_t)``, ``g_t`` the media per unit of ``T``, and exists only where
-  ``g_t < 1`` in every week, in 3 of the first 30 pilot worlds. So a world's media are on a scale
-  of its own, and in the arm's scaling its true ``beta_c`` is the drawn one times ``T`` over the
-  world's own largest sales.
+* ``beta_c`` (CHOICE), family 14's (:mod:`~causaldyn_bench.scorecard.robyn`): it gives each channel
+  the media the Track M v2 world beneath it returns over the history, so the sales, the media's
+  share of them and each channel's return per euro over the history are Track M v2's, and only the
+  media's form is PyMC-Marketing's. In the tool's scaling ``beta_c`` is that coefficient over ``T``.
+  The tool's default prior, ``beta_c ~ HalfNormal(2)`` (``components/saturation.py`` line 263), is
+  not drawn: on the first 30 pilot worlds, at the largest sales of the Track M v2 world beneath
+  for ``T``, it put media above 60 % of the history's sales in 24 of them, at a median of 78 %,
+  and a world whose ``T`` is its own largest sales, as the tool reads it, exists in 3 of them.
 
 The world is then Track M v2's class at ``retention`` ``alpha_c``, ``saturation`` ``lam_c / S_c``
 and ``effect`` ``beta_c T``: Track M v2's ``tanh(lam a / 2)`` is the logistic of ``lam a``, and the
@@ -39,16 +40,9 @@ exact. Beneath the media each world is Track M v2's drawn world for its seed: it
 whose budget and bidding rules read the sales before media and so do not move, its measurement
 layer and the quarter's processes.
 
-On the first 30 pilot worlds media's share of the history's sales is 0.21 to 0.92, median 0.78,
-above 0.6 in 24 of them, against 0.11 to 0.22, median 0.17, in the Track M v2 worlds beneath; each
-channel's return per euro over the history, median and range, is pla 52 (1.5 to 104), meta 51 (2.7
-to 290) and tv 27 (1.1 to 408), against Track M v2's 2.9 (1.7 to 4.7), 2.8 (1.7 to 4.8) and 3.0
-(2.1 to 4.7). In the tool's model an intercept, the controls and the noise take the rest of a
-target scaled to its largest week; on these worlds the priors put most of the sales in the media.
-Family
-14's alternative (:mod:`~causaldyn_bench.scorecard.robyn`) keeps the tool's form and gives each
-channel the media the Track M v2 world beneath it returns over the history, so that only the
-media's form is the tool's.
+On the first 30 pilot worlds media's share of the history's sales is therefore Track M v2's, 0.11
+to 0.22, median 0.17, and each channel's return per euro over the history, median and range, is
+pla 2.9 (1.7 to 4.7), meta 2.8 (1.7 to 4.8) and tv 3.0 (2.1 to 4.7).
 """
 
 from __future__ import annotations
@@ -68,38 +62,41 @@ from causaldyn_bench.scorecard.track_m2 import TRACK_M2, World, observation, sti
 
 FAMILY = 13
 # PyMC-Marketing 1.2.0's default priors: GeometricAdstock's alpha, LogisticSaturation's lam (shape
-# and rate) and beta (the half-normal's sigma)
+# and rate)
 ALPHA = (1.0, 3.0)
 LAM = (3.0, 1.0)
-BETA = 2.0
 
 
-def parameters(channels: tuple[str, ...], seed: int) -> tuple[Series, Series, Series]:
-    """Each channel's ``alpha``, ``lam`` and ``beta`` for world ``seed``, from the default
-    priors."""
+def parameters(channels: tuple[str, ...], seed: int) -> tuple[Series, Series]:
+    """Each channel's ``alpha`` and ``lam`` for world ``seed``, from the default priors."""
     draw = rng(FAMILY, Role.PARAMETERS, seed)
     count = len(channels)
     alpha = draw.beta(*ALPHA, count)
     lam = draw.gamma(LAM[0], 1.0 / LAM[1], count)
-    beta = np.abs(draw.normal(0.0, BETA, count))
-    return alpha, lam, beta
+    return alpha, lam
 
 
-def pymc_marketing(
-    history: MediaMixWorld, alpha: Series, lam: Series, beta: Series
-) -> MediaMixWorld:
-    """``history`` with each channel's media PyMC-Marketing's at ``alpha``, ``lam`` and ``beta``,
-    on the channel's largest spend and the history's largest sales, and the sales with them."""
-    world = dataclasses.replace(
+def pymc_marketing(history: MediaMixWorld, alpha: Series, lam: Series) -> MediaMixWorld:
+    """``history`` with each channel's media PyMC-Marketing's at ``alpha`` and ``lam`` on the
+    channel's largest spend, each channel returning over the history what it returned there, and
+    the sales with them."""
+    curved = dataclasses.replace(
         history,
         retention=tuple(alpha.tolist()),
         saturation=tuple((lam / history.spend.max(axis=0)).tolist()),
-        effect=tuple((beta * np.max(history.sales)).tolist()),
+        effect=(1.0,) * len(history.channels),
     )
-    media = np.column_stack(
-        [world._effect_of(c, history.spend[:, c]) for c in range(len(history.channels))]
+    curve = np.column_stack(
+        [curved._effect_of(c, history.spend[:, c]) for c in range(len(history.channels))]
     )
-    return dataclasses.replace(world, media=media, sales=history.premedia + media.sum(axis=1))
+    effect = history.media.sum(axis=0) / curve.sum(axis=0)
+    media = effect * curve
+    return dataclasses.replace(
+        curved,
+        effect=tuple(effect.tolist()),
+        media=media,
+        sales=history.premedia + media.sum(axis=1),
+    )
 
 
 class PyMCMarketing:
@@ -110,10 +107,10 @@ class PyMCMarketing:
     labels = (
         "The world's media are PyMC-Marketing's default class, by the bench's generator: each "
         "channel's spend over its largest week through PyMC-Marketing 1.2.0's normalised geometric "
-        "adstock and its logistic saturation, times the largest sales of the Track M v2 world "
-        "beneath.",
-        "Alpha, lam and beta are drawn from PyMC-Marketing's default priors, Beta(1, 3), Gamma(3, "
-        "1) and HalfNormal(2), not from Track M v2's ranges.",
+        "adstock and its logistic saturation.",
+        "Alpha and lam are drawn from PyMC-Marketing's default priors, Beta(1, 3) and Gamma(3, 1), "
+        "not from Track M v2's ranges; beta is not drawn from its prior but gives each channel the "
+        "return over the history of the Track M v2 world beneath.",
         "Every arm is told the kernel's length, Track M v2's.",
         "Beneath the media each world is a Track M v2 drawn world: its base, its spend, its "
         "measurement layer and its quarter.",

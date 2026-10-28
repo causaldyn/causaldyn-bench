@@ -42,15 +42,41 @@ def _pymc(spend, alpha, lam, beta, scale, target):
     return beta * target * (1 - np.exp(-lam * adstock)) / (1 + np.exp(-lam * adstock))
 
 
+def _beta(world):
+    """Each channel's ``beta`` in the tool's scaling, on the history's largest sales: the
+    coefficient that gives the channel the media the Track M v2 world beneath returns over the
+    history (the module's CHOICE), not a draw from the tool's ``HalfNormal(2)``."""
+    history = world.history
+    base = drawn(world.seed).simulate(world.seed)
+    alpha, lam = parameters(history.channels, world.seed)
+    beta = []
+    for c in range(len(history.channels)):
+        spend = history.spend[:, c]
+        curve = _pymc(spend, alpha[c], lam[c], 1.0, spend.max(), 1.0)
+        beta.append(base.media[:, c].sum() / curve.sum() / np.max(history.sales))
+    return np.array(beta)
+
+
 def test_the_media_are_pymc_marketings_at_the_drawn_parameters(worlds):
     for world in worlds:
         history = world.history
-        base = drawn(world.seed).simulate(world.seed)
-        alpha, lam, beta = parameters(history.channels, world.seed)
+        alpha, lam = parameters(history.channels, world.seed)
+        beta = _beta(world)
         for c in range(len(history.channels)):
             spend = history.spend[:, c]
-            ours = _pymc(spend, alpha[c], lam[c], beta[c], spend.max(), np.max(base.sales))
+            ours = _pymc(spend, alpha[c], lam[c], beta[c], spend.max(), np.max(history.sales))
             np.testing.assert_allclose(history.media[:, c], ours, rtol=1e-12, atol=0.0)
+
+
+def test_each_channel_returns_over_the_history_what_track_m2_beneath_it_returns(worlds):
+    """The CHOICE for ``beta``, family 14's: the sales, media's share of them and each channel's
+    return per euro over the history are those of the Track M v2 world beneath."""
+    for world in worlds:
+        history = world.history
+        base = drawn(world.seed).simulate(world.seed)
+        np.testing.assert_allclose(history.media.sum(axis=0), base.media.sum(axis=0), rtol=1e-13)
+        np.testing.assert_allclose(history.roas(), base.roas(), rtol=1e-13)
+        assert history.sales.sum() == pytest.approx(base.sales.sum(), rel=1e-13, abs=0.0)
 
 
 def test_a_world_is_track_m2s_beneath_its_media(worlds):
@@ -95,14 +121,14 @@ def test_the_family_draws_its_own_block():
 
 
 def test_the_parameters_follow_the_default_priors():
-    """Over 300 scored worlds each channel's draws pass a Kolmogorov-Smirnov test, at 1 %, of the
-    prior PyMC-Marketing 1.2.0's source states, and no two channels' draws are one."""
+    """Over 300 scored worlds each channel's ``alpha`` and ``lam`` pass a Kolmogorov-Smirnov test,
+    at 1 %, of the prior PyMC-Marketing 1.2.0's source states, and no two channels' draws are
+    one; ``beta`` is not drawn."""
     seeds = PYMC_MARKETING.scored["priors"][:300]
     draws = np.stack([np.stack(parameters(("pla", "meta", "tv"), seed)) for seed in seeds])
     priors = (
         stats.beta(1.0, 3.0),
         stats.gamma(3.0, scale=1.0),
-        stats.halfnorm(scale=2.0),
     )
     for p, prior in enumerate(priors):
         for c in range(3):
@@ -117,10 +143,9 @@ def test_the_arms_mapping_of_a_pymc_marketing_response_is_the_worlds_media(world
     for world in worlds:
         observed = PYMC_MARKETING.observe(world, 0)
         history = world.history
-        base = drawn(world.seed).simulate(world.seed)
-        alpha, lam, beta = parameters(history.channels, world.seed)
+        alpha, lam = parameters(history.channels, world.seed)
+        beta = _beta(world)
         target = float(np.max(observed.sales))
-        tools = beta * np.max(base.sales) / target  # the world's beta in the tool's scaling
         response = {
             "kernel": "GeometricAdstock",
             "length": observed.kernel_length,
@@ -130,7 +155,7 @@ def test_the_arms_mapping_of_a_pymc_marketing_response_is_the_worlds_media(world
                 name: {
                     "retention": [float(alpha[c])],
                     "scale": [2.0 * float(np.max(observed.spend[:, c])) / float(lam[c])],
-                    "coefficient": [float(tools[c]) * target],
+                    "coefficient": [float(beta[c]) * target],
                 }
                 for c, name in enumerate(observed.channels)
             },
@@ -161,8 +186,8 @@ def test_a_plans_worth_is_the_world_run_on_over_the_quarter_and_the_tail(worlds)
     rng = np.random.default_rng(113)
     for world in worlds:
         history, truth = world.history, PYMC_MARKETING.truth(world)
-        base = drawn(world.seed).simulate(world.seed)
-        alpha, lam, beta = parameters(history.channels, world.seed)
+        alpha, lam = parameters(history.channels, world.seed)
+        beta = _beta(world)
         quarter = truth.quarter
         for weekly in (
             truth.best.weekly,
@@ -174,7 +199,7 @@ def test_a_plans_worth_is_the_world_run_on_over_the_quarter_and_the_tail(worlds)
                     [history.spend[:, c], np.full(PLANNED, weekly[c]), np.zeros(LENGTH - 1)]
                 )
                 scale = history.spend[:, c].max()
-                media = _pymc(spend, alpha[c], lam[c], beta[c], scale, np.max(base.sales))
+                media = _pymc(spend, alpha[c], lam[c], beta[c], scale, np.max(history.sales))
                 ran += media[WEEKS:].sum()
             assert worth(truth.cells, weekly) == pytest.approx(ran, rel=1e-12, abs=0.0)
 
