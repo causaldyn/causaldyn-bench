@@ -21,8 +21,10 @@ S-shaped (:mod:`~causaldyn_bench.scorecard.s_curves`); family 5 sets the spend b
 history shows (:mod:`~causaldyn_bench.scorecard.outside`); family 7 lets an arm read only the last
 weeks of a history (:mod:`~causaldyn_bench.scorecard.short`); family 8 is ten geos drawn by
 :mod:`chc.geo_world`, planned geo by geo and tested by geo experiments
-(:mod:`~causaldyn_bench.scorecard.geo`); family 10 is family 8 at three geos, at eight and at
-fifty small, noisy ones (:mod:`~causaldyn_bench.scorecard.few_geos`); family 12 is Meridian's home
+(:mod:`~causaldyn_bench.scorecard.geo`); family 9 is family 8 with each geo's own media lifting
+its ring neighbours too (:mod:`~causaldyn_bench.scorecard.spillover`); family 10 is family 8 at
+three geos, at eight and at fifty small, noisy ones (:mod:`~causaldyn_bench.scorecard.few_geos`);
+family 12 is Meridian's home
 ground, its media in Meridian's own form at its default priors
 (:mod:`~causaldyn_bench.scorecard.meridian`); family 13 is PyMC-Marketing's home ground, its media
 in PyMC-Marketing's default form at its default adstock and saturation priors
