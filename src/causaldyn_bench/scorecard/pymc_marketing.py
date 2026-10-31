@@ -1,23 +1,23 @@
 """Family 13: PyMC-Marketing's home ground, worlds whose media are PyMC-Marketing's default class,
 its adstock and its curve drawn from its default priors.
 
-PyMC-Marketing 1.2.0's ``MMM`` (``pymc_marketing/mmm/mmm.py``) scales each channel's spend by its
+PyMC-Marketing 1.3.0's ``MMM`` (``pymc_marketing/mmm/mmm.py``) scales each channel's spend by its
 largest week over the history and the target by its largest week (``DataDerivedScaling(method=
-"max")``, lines 551-554, the reduction signed, ``scaling.py`` lines 138-140), puts the scaled spend
-through its adstock and then its saturation (``adstock_first=True``, line 474), and multiplies the
+"max")``, lines 581-584, the reduction signed, ``scaling.py`` lines 138-140), puts the scaled spend
+through its adstock and then its saturation (``adstock_first=True``, line 504), and multiplies the
 contribution back by the target's scale. With its default components each channel's media in week
 ``t`` are
 
     m_{c,t} = beta_c T logistic(lam_c x_{c,t}),  logistic(z) = (1 - e^{-z}) / (1 + e^{-z}),
     x_{c,t} = sum_{l < L} alpha_c^l s_{c,t-l} / (S_c sum_{l < L} alpha_c^l),
 
-``GeometricAdstock`` normalised (``components/adstock.py`` lines 215-216: ``normalize=True`` by
+``GeometricAdstock`` normalised (``components/adstock.py`` lines 326-327: ``normalize=True`` by
 default, though ``transformers.geometric_adstock`` itself defaults to False, line 241), nothing
 spent before the history, and ``LogisticSaturation`` (``components/saturation.py`` line 259), at
 ``S_c`` the channel's largest spend and ``T`` the target's scale, the largest sales of the
 history. The adstock and the curve are drawn from the components' default priors:
 
-* ``alpha_c ~ Beta(1, 3)`` (``components/adstock.py`` line 448);
+* ``alpha_c ~ Beta(1, 3)`` (``components/adstock.py`` line 559);
 * ``lam_c ~ Gamma(3, 1)``, shape 3 and rate 1 (``components/saturation.py`` line 262).
 
 Family 0, Track M v2, has this class too, at its own parameters, drawn on the range Heusch's three

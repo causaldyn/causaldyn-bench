@@ -1,6 +1,6 @@
 """PyMC-Marketing's own transforms on worlds of family 13, recorded for the test that holds them.
 
-Runs PyMC-Marketing 1.2.0's ``GeometricAdstock`` (``pymc_marketing/mmm/components/adstock.py``),
+Runs PyMC-Marketing 1.3.0's ``GeometricAdstock`` (``pymc_marketing/mmm/components/adstock.py``),
 whose ``function`` is ``transformers.geometric_adstock`` at the component's own ``normalize``, and
 ``transformers.logistic_saturation`` (``pymc_marketing/mmm/transformers.py``), in the PyMC-Marketing
 arm's pinned environment (``scripts/pymc_marketing_arm.txt``) at float64, on each channel of the
