@@ -1,7 +1,8 @@
 """The PyMC-Marketing arm's own rule for the lift rows its likelihood takes, read from
-``scripts/pymc_marketing_lift.py`` without PyMC-Marketing: an export carries every test, and the arm
-drops the tests whose sales did not fall, and counts them; on a geo export it apportions each test
-across its tested geos at one ROI, rows that sum back to the test."""
+``scripts/pymc_marketing_lift.py`` without PyMC-Marketing: an export carries every test, and the
+tool's signed likelihood takes each whatever way its sales moved, refusing only a row that is not
+finite or holds no error; on a geo export the arm apportions each test across its tested geos at one
+ROI, rows that sum back to the test."""
 
 import importlib.util
 from pathlib import Path
@@ -20,36 +21,38 @@ lift = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(lift)
 
 
-def test_the_arm_takes_a_row_whose_sales_moved_with_its_spend_and_counts_the_rest():
+def test_the_arm_takes_every_finite_row_with_an_error_whichever_way_its_sales_moved():
     world = {
-        "lift_delta_x": np.array([-2.0, -2.0, -2.0, 3.0, 3.0, -1.0]),
-        "lift_delta_y": np.array([-5.0, 0.0, 4.0, 1.0, -1.0, -1e-300]),
+        "lift_x": np.array([2.0, 2.0, 2.0, 1.0, 2.0, 2.0, np.inf, 2.0, 2.0]),
+        "lift_delta_x": np.array([-2.0, -2.0, -2.0, 3.0, -2.0, -2.0, -2.0, -2.0, -2.0]),
+        "lift_delta_y": np.array([-5.0, 0.0, 4.0, -1.0, np.nan, -5.0, -5.0, -5.0, -5.0]),
+        "lift_sigma": np.array([1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0, -1.0, np.inf]),
     }
     keep, dropped = lift.taken(world)
-    np.testing.assert_array_equal(keep, [True, False, False, True, False, True])
-    assert dropped == 3
+    np.testing.assert_array_equal(keep, [True, True, True, True, False, False, False, False, False])
+    assert dropped == 5
 
 
-def test_on_a_geo_export_whose_tests_rose_the_arm_drops_them_itself(tmp_path):
+def test_on_a_geo_export_whose_tests_rose_the_arm_takes_them(tmp_path):
     seed = GEO.pilots["policy-0"][3]
     path = export(GEO.observe(GEO.world("policy-0", seed), 4), tmp_path)
     with np.load(path) as world:
         assert world["lift_channel"].size == 12 and int(world["lift_dropped"]) == 0
+        assert int(np.count_nonzero(world["lift_delta_y"] >= 0.0)) == 4
         keep, dropped = lift.taken(world)
-        np.testing.assert_array_equal(keep, world["lift_delta_y"] < 0.0)
-    assert (int(keep.sum()), dropped) == (8, 4)
+    assert (int(keep.sum()), dropped) == (12, 0)
 
 
-def test_on_a_national_export_the_rows_are_the_ladders_and_the_arm_drops_the_one_that_rose(
+def test_on_a_national_export_the_rows_are_the_ladders_and_the_arm_takes_the_one_that_rose(
     tmp_path,
 ):
-    # drawn world 900's top rung holds one test whose sales rose, as the budgets run's export did
+    # drawn world 900's top rung holds one test whose sales rose, which 1.2.0 refused
     path = export(TRACK_M2.observe(TRACK_M2.world("drawn", 900), 4), tmp_path)
     with np.load(path) as world:
         assert world["lift_channel"].size == 12 and int(world["lift_dropped"]) == 0
+        assert int(np.count_nonzero(world["lift_delta_y"] >= 0.0)) == 1
         keep, dropped = lift.taken(world)
-        np.testing.assert_array_equal(keep, world["lift_delta_y"] < 0.0)
-    assert dropped == 1
+    assert (int(keep.sum()), dropped) == (12, 0)
 
 
 def _two_tests():
@@ -88,13 +91,13 @@ def _sums_back(world, rows, test):
 def test_a_test_of_five_geos_splits_into_five_rows_that_sum_back_to_it():
     """Each tested geo's row withholds its own mean spend over the dark weeks and reads its share of
     the change in sales, at an error ``s_g * sigma * sqrt(m)``; a test of one geo is its own row,
-    and a test whose sales rose drops its every row."""
+    taken though its sales rose."""
     world = _two_tests()
     rows, keep = lift.apportioned(world)
     np.testing.assert_array_equal(rows["test"], [0, 0, 0, 0, 0, 1])
     np.testing.assert_array_equal(rows["geo"], [0, 1, 2, 3, 4, 5])
     np.testing.assert_array_equal(rows["channel"], ["b"] * 5 + ["a"])
-    np.testing.assert_array_equal(keep, [True] * 5 + [False])
+    np.testing.assert_array_equal(keep, [True] * 6)
     np.testing.assert_allclose(rows["x"][:5], world["spend"][1:3, :5, 1].mean(axis=0), rtol=1e-15)
     np.testing.assert_array_equal(rows["delta_x"], -rows["x"])
     share = rows["x"][:5] / rows["x"][:5].sum()
@@ -115,5 +118,22 @@ def test_on_the_familys_geo_export_each_test_splits_into_its_five_geos(tmp_path)
         at = rows["test"] == test
         np.testing.assert_array_equal(rows["geo"][at], np.flatnonzero(world["lift_geos"][test]))
         _sums_back(world, rows, test)
-    np.testing.assert_array_equal(keep, np.repeat(world["lift_delta_y"] < 0.0, 5))
-    assert int(keep.sum()) == 40
+    assert np.all(keep)
+
+
+def test_a_tested_geo_that_spent_nothing_on_the_channel_is_refused():
+    """Its share of the test is nought, and so is its error; the test's other rows still sum back
+    to it, and, their errors read at the test's five geos, hold four fifths of its information."""
+    world = _two_tests()
+    world["spend"][1:3, 2, 1] = 0.0
+    world["lift_x"][0] = world["spend"][1:3, :5, 1].sum(axis=1).mean()
+    world["lift_delta_x"][0] = -world["lift_x"][0]
+    rows, keep = lift.apportioned(world)
+    assert (rows["delta_y"][2], rows["sigma"][2]) == (0.0, 0.0)
+    np.testing.assert_array_equal(keep, [True, True, False, True, True, True])
+    at = keep & (rows["test"] == 0)
+    dx, dy, sigma = (float(world[f"lift_{key}"][0]) for key in ("delta_x", "delta_y", "sigma"))
+    assert rows["delta_x"][at].sum() == pytest.approx(dx, rel=1e-14, abs=0.0)
+    assert rows["delta_y"][at].sum() == pytest.approx(dy, rel=1e-14, abs=0.0)
+    information = np.sum(rows["delta_x"][at] ** 2 / rows["sigma"][at] ** 2)
+    assert information == pytest.approx(0.8 * dx**2 / sigma**2, rel=1e-13, abs=0.0)

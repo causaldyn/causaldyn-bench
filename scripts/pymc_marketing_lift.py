@@ -1,24 +1,27 @@
-"""The lift rows of an export that PyMC-Marketing 1.2.0's lift likelihood takes.
+"""The lift rows of an export that PyMC-Marketing 1.3.0's lift likelihood takes.
 
-``add_lift_test_measurements`` refuses a row whose change in sales does not follow its change in
-spend (``assert_monotonic``: ``delta_x * delta_y >= 0``), and its likelihood is a Gamma of the
-change's size, with no density at nought; so it takes a row where ``delta_x * delta_y > 0``. An
-export carries every test whichever way its sales moved, so the arm drops the rest itself and
-counts them. Kept apart from :mod:`pymc_marketing_arm`, which imports PyMC-Marketing, so the
-bench's tests read the rule in the bench's environment.
+``add_lift_test_measurements`` reads each row signed on its default likelihood, ``Prior("Normal")``
+(``pymc_marketing/mmm/lift_test.py`` line 196): the model's change in the curve is the mean and the
+row's ``delta_y`` the observation, at the row's ``sigma`` (lines 611-619). It no longer calls
+``assert_monotonic`` (lines 359-371, deprecated): a test whose sales rose, or did not move, is
+taken as it is. It refuses a row only whose ``x``, ``delta_x``, ``delta_y`` or ``sigma`` is not
+finite, or whose ``sigma`` is not positive (lines 64-92, read at line 569); so the arm takes the
+rest and counts what it refuses, none in an export the bench writes. Kept apart from
+:mod:`pymc_marketing_arm`, which imports PyMC-Marketing, so the bench's tests read the rule in the
+bench's environment.
 
-A geo model's likelihood reads each row at one coordinate of its geo axis (``exact_row_indices``):
-a row is one geo's, its change in spend and in sales that geo's. A geo export's test takes ``m``
-geos dark and reads their change in sales together, so the arm apportions it across them
-(:func:`apportioned`). CHOICE, the arm's and not the tool's: one ROI across a test's geos, as the
-test's own design assumes. Geo ``g``'s row withholds its own spend, ``delta_x_g``, the geo's mean
-weekly spend over the dark weeks; it reads the share ``s_g = delta_x_g / sum delta_x`` of the
-test's change in sales, and an error of ``s_g * sigma * sqrt(m)``. Read as independent, the ``m``
-rows then hold the one test's information about a common return, ``delta_x**2 / sigma**2`` on a
-Gaussian likelihood, and give its estimate, ``delta_y / delta_x``: the rows sum back to the test.
-The geo arm reads them on a Normal likelihood for that reason, where a national export's rows keep
-the tool's Gamma. Each row takes its test's sign, so a test whose sales did not fall drops its
-every row, counted.
+A geo model's likelihood reads each row at one coordinate of its geo axis (``exact_row_indices``,
+line 232, as in 1.2.0): a row is one geo's, its change in spend and in sales that geo's. A geo
+export's test takes ``m`` geos dark and reads their change in sales together, so the arm apportions
+it across them (:func:`apportioned`). CHOICE, the arm's and not the tool's: one ROI across a
+test's geos, as the test's own design assumes. Geo ``g``'s row withholds its own spend,
+``delta_x_g``, the geo's mean weekly spend over the dark weeks; it reads the share ``s_g = delta_x_g
+/ sum delta_x`` of the test's change in sales, and an error of ``s_g * sigma * sqrt(m)``. Read as
+independent, the ``m`` rows then hold the one test's information about a common return,
+``delta_x**2 / sigma**2`` on a Gaussian likelihood, and give its estimate, ``delta_y / delta_x``:
+the rows sum back to the test. The tool's default likelihood is that Gaussian, so the identity is
+exact at the default. A geo the test took dark that spent nothing on the channel holds no share and
+no error, and is refused.
 """
 
 from __future__ import annotations
@@ -30,14 +33,16 @@ from typing import Any
 import numpy as np
 
 
+def _valid(x: Any, delta_x: Any, delta_y: Any, sigma: Any) -> np.ndarray:
+    """Which rows the likelihood takes: every value finite and the error positive."""
+    columns = [np.asarray(column, dtype=float) for column in (x, delta_x, delta_y, sigma)]
+    return np.logical_and.reduce([np.isfinite(column) for column in columns]) & (columns[3] > 0.0)
+
+
 def taken(world: Mapping[str, Any]) -> tuple[np.ndarray, int]:
     """Which of ``world``'s lift rows the likelihood takes, a mask over them, and how many of the
     rows the export holds it does not take."""
-    keep = (
-        np.asarray(world["lift_delta_x"], dtype=float)
-        * np.asarray(world["lift_delta_y"], dtype=float)
-        > 0.0
-    )
+    keep = _valid(*(world[f"lift_{key}"] for key in ("x", "delta_x", "delta_y", "sigma")))
     return keep, int(keep.size - np.count_nonzero(keep))
 
 
@@ -67,4 +72,4 @@ def apportioned(world: Mapping[str, Any]) -> tuple[dict[str, np.ndarray], np.nda
         parts["delta_y"].append(share * float(world["lift_delta_y"][i]))
         parts["sigma"].append(share * float(world["lift_sigma"][i]) * math.sqrt(geos.size))
     rows = {key: np.concatenate(value) if value else np.empty(0) for key, value in parts.items()}
-    return rows, rows["delta_x"] * rows["delta_y"] > 0.0
+    return rows, _valid(rows["x"], rows["delta_x"], rows["delta_y"], rows["sigma"])
