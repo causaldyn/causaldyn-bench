@@ -5,19 +5,41 @@ dependency of the bench: this script runs in a throwaway environment, reads the 
 :func:`causaldyn_bench.budget_regret.export` wrote, and writes each world's plan as JSON, which the
 bench scores on the world's own channels.
 
-Each world is fitted as a practitioner fits PyMC-Marketing 1.2.0's media-mix model:
+Each world is fitted as a practitioner fits PyMC-Marketing 1.3.0's media-mix model:
 
 * ``MMM`` with its defaults, ``GeometricAdstock(l_max=6)`` (normalised by default) and
   ``LogisticSaturation``, the world's forms; the observed promotion indicator and price as
   controls; three yearly harmonics, as Heusch's (2026a) realistic specification;
-* every geo test its lift likelihood takes entered through ``add_lift_test_measurements``, as the
-  bench reduced it, at the tool's default likelihood, a Gamma of the change's size. An export
-  carries every test, whichever way its sales moved; the likelihood takes a test whose sales fell,
-  so the arm drops the rest and counts them (``lift_dropped``, :mod:`pymc_marketing_lift`);
+* every geo test entered through ``add_lift_test_measurements``, as the bench reduced it, at the
+  tool's default likelihood, a Normal of the signed change (below). An export carries every test,
+  whichever way its sales moved, and the likelihood takes each: the arm counts the rows it would
+  refuse (``lift_dropped``, :mod:`pymc_marketing_lift`), none in an export the bench writes. The
+  budgets run's export (version 1) left out the tests whose sales rose, for 1.2.0, and its digests
+  pin it; a version-1 record's ``lift_dropped`` adds those;
 * NUTS at PyMC's defaults: 4 chains of 1000 tuning and 1000 kept draws, ``target_accept`` 0.8;
 * the quarter planned by its own optimiser, ``budget_optimizer(start, end).allocate_budget``, at
   the bench's weekly budget and box, starting the week after the history so the history's
   carryover runs into the plan.
+
+**The lift likelihood, as 1.3.0's source reads it.** ``MMM.add_lift_test_measurements``
+(``pymc_marketing/mmm/mmm.py`` lines 4127-4134) takes ``likelihood=None``, a ``Prior``, and keeps
+``dist`` as a keyword-only alias; ``_resolve_likelihood`` (line 4272; ``mmm/lift_test.py`` lines
+180-207) makes ``None`` into ``Prior("Normal")`` (line 196) and a ``dist`` class into
+``Prior(dist.__name__)`` with a ``DeprecationWarning`` (lines 185-193). 1.2.0's default was
+``dist=pmd.Gamma`` (``mmm.py`` line 3765), read at ``mu=abs(model lift)`` on ``abs(delta_y)``
+(``lift_test.py`` lines 439-442). In 1.3.0 ``add_saturation_observations`` no longer calls
+``assert_monotonic`` (1.2.0's line 399; 1.3.0's lines 359-371 keep it, deprecated, for importers);
+it validates the rows (line 569, ``_validate_lift_likelihood_data``, lines 95-140): ``x``,
+``delta_x``, ``delta_y`` and ``sigma`` finite and ``sigma`` positive (lines 64-92), and, on a Gamma
+alone, ``delta_y > 0`` and ``delta_x > 0`` (lines 129-140), so 1.3.0's Gamma takes no test that cuts
+spend. The likelihood is then the signed one: ``mu`` the model's change in the curve over the row,
+``saturation(x + delta_x) - saturation(x)``, ``observed`` the row's ``delta_y``, ``sigma`` the
+row's (lines 611-619). ``Normal`` and ``StudentT`` are the real-line likelihoods it supports (lines
+46-49), StudentT only with an ``nu`` the caller gives (lines 116-120); the arm passes nothing and
+reads every row on the default Normal. The national and the geo model are one class and one call:
+the method needs a column for each of ``MMM.dims`` (``mmm.py`` lines 4266-4270), and each row reads
+the curve at one coordinate of each (``exact_row_indices``, ``lift_test.py`` line 232), as in
+1.2.0; ``scale_lift_measurements`` is 1.2.0's.
 
 Weeks are dated Mondays from 2023-01-02; PyMC-Marketing's harmonics read the day of the year over
 365.25 days, which drifts from the world's 52-week year by under a week over its three years.
@@ -70,18 +92,14 @@ each test across its tested geos (:func:`pymc_marketing_lift.apportioned`). CHOI
 assumption and not the tool's: one ROI across a test's geos, as the test's own design assumes. Each
 geo's row withholds the geo's own mean spend over the dark weeks and reads that share of the test's
 change in sales, at an error that lets the ``m`` rows, read as independent on a Gaussian
-likelihood, hold the one test's information. So the arm reads these rows on a Normal likelihood,
-``dist=pymc.dims.Normal``, where the identity is exact. The tool's default, a Gamma of the change's
-size, has an information about its mean at a fixed error of ``(4 a psi'(a) - 3) / sigma**2`` at
-shape ``a``, the squared z; a row's shape is its test's over ``m``, so on the Gamma the five rows of
-a weak test would hold up to 5.49 times its information (at a squared z of 0.39), twice it where the
-test's squared z is 7.8, and 1.5 times it at 15.9: a handicap the apportionment, not the tool, would
-make. A national export's tests keep the Gamma, one row a test. The tool still departs from the
-identity once: its geo model gives each geo its own saturation and coefficient on each channel, so
-a row informs its own geo's curve alone, with a share of the test's information, and no common
-return adds the rows up. Each row takes its test's sign, so a test whose sales did not fall drops
-its every row: ``lift_rows`` and ``lift_dropped`` count rows, ``lift_tests`` the tests taken and
-dropped.
+likelihood, hold the one test's information. The tool's default likelihood is that Normal, so the
+identity is exact at the default and the arm asks for no other. On the rows 1.2.0 took, those whose
+sales fell, 1.3.0's signed Normal is 1.2.0's Normal of the sizes that the geo arm asked for: the
+model's change and the observed one are both negative there, so the residual's size is the same.
+The tool still departs from the identity once: its geo model gives each geo its own saturation and
+coefficient on each channel, so a row informs its own geo's curve alone, with a share of the test's
+information, and no common return adds the rows up. ``lift_rows`` and ``lift_dropped`` count rows,
+``lift_tests`` the tests taken and dropped.
 
 The quarter is planned by its own optimiser over every geo's cells, from the status quo, at the
 weekly budget and in each cell's box, each national channel's spend in a geo held to the geo's
@@ -126,7 +144,6 @@ from typing import Any
 import arviz as az  # ty: ignore[unresolved-import]
 import numpy as np
 import pandas as pd
-import pymc.dims as pmd  # ty: ignore[unresolved-import]
 import pytensor  # ty: ignore[unresolved-import]
 import xarray as xr  # ty: ignore[unresolved-import]
 from geo_export import cells, geo, panel
@@ -561,8 +578,7 @@ def plan_geo(path: Path, smoke: bool) -> dict[str, Any]:
                     "geo": [names[int(g)] for g in split["geo"][keep]],
                     **{key: split[key][keep] for key in ("x", "delta_x", "delta_y", "sigma")},
                 }
-            ),
-            dist=pmd.Normal,
+            )
         )
     tests = int(np.asarray(world["lift_channel"]).size)
     taken_tests = int(np.unique(split["test"][keep]).size)

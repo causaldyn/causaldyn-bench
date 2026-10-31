@@ -1,8 +1,8 @@
 """The likelihood the PyMC-Marketing arm asks for, read without PyMC-Marketing:
 ``scripts/pymc_marketing_arm.py`` loaded beside stand-ins for the tools it imports, and its model
-replaced by one that records the lift rows it is handed and stops the fit there. A geo export's
-rows, apportioned across the tested geos, are read on a Normal likelihood, where their information
-is the one test's; a national export's keep the tool's default."""
+replaced by one that records the lift rows it is handed and stops the fit there. Every export's
+rows, a geo export's apportioned across the tested geos, are read on the tool's default likelihood,
+a Normal, where a geo test's rows hold the one test's information; the arm asks for none."""
 
 import importlib.util
 import sys
@@ -84,16 +84,15 @@ def _handed(call):
     return rows, kwargs
 
 
-def test_a_geo_exports_apportioned_rows_are_read_on_a_normal_likelihood(arm, tmp_path):
-    module, lift, dims = arm
+def test_a_geo_exports_apportioned_rows_are_read_on_the_tools_default_likelihood(arm, tmp_path):
+    module, lift, _ = arm
     seed = GEO.pilots["policy-0"][3]
     path = export(GEO.observe(GEO.world("policy-0", seed), 4), tmp_path)
     rows, kwargs = _handed(lambda: module.plan_geo(path, smoke=False))
-    assert kwargs == {"dist": dims.Normal}
-    assert kwargs["dist"] is not dims.Gamma
+    assert kwargs == {}
     with np.load(path) as world:
         split, keep = lift.apportioned(world)
-    assert len(rows) == int(keep.sum()) == 40
+    assert len(rows) == int(keep.sum()) == 60
     expected = pd.DataFrame(
         {
             "channel": split["channel"][keep],
@@ -111,5 +110,5 @@ def test_a_national_exports_rows_keep_the_tools_default_likelihood(arm, tmp_path
     assert kwargs == {}
     with np.load(path) as world:
         keep, _ = lift.taken(world)
-        assert len(rows) == int(keep.sum()) == 11
+        assert len(rows) == int(keep.sum()) == 12
         np.testing.assert_array_equal(rows["delta_y"], world["lift_delta_y"][keep])

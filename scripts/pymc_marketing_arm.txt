@@ -1,5 +1,5 @@
-# PyMC-Marketing arm's environment (scripts/pymc_marketing_arm.py), resolved 2026-10-18 for Python 3.12 by
-# echo pymc-marketing==1.2.0 | uv pip compile - --python-version 3.12 --no-header --no-annotate
+# PyMC-Marketing arm's environment (scripts/pymc_marketing_arm.py), resolved 2026-10-31 for Python 3.12 by
+# echo pymc-marketing==1.3.0 | uv pip compile - --python-version 3.12 --no-header --no-annotate
 # uv run --no-project --python 3.12 --with-requirements scripts/pymc_marketing_arm.txt python scripts/pymc_marketing_arm.py ...
 annotated-types==0.8.0
 arviz==1.3.0
@@ -11,8 +11,10 @@ cachetools==6.2.6
 cloudpickle==3.1.2
 contourpy==1.4.0
 cycler==0.12.1
-filelock==4.2.2
-fonttools==4.67.0
+filelock==4.2.5
+fonttools==4.68.0
+h5netcdf==1.8.2
+h5py==3.16.0
 joblib==1.6.0
 kiwisolver==1.5.1
 lazy-loader==0.6
@@ -20,35 +22,36 @@ llvmlite==0.50.0
 markdown-it-py==4.2.0
 matplotlib==3.11.2
 mdurl==0.1.2
-narwhals==2.27.1
+narwhals==2.28.0
 numba==0.68.0
 numpy==2.4.6
 packaging==26.3
-pandas==3.0.6
+pandas==3.1.0
 patsy==1.0.3
 pillow==13.0.0
 preliz==0.28.0
-pydantic==2.14.1
-pydantic-core==2.50.1
+pydantic==2.14.2
+pydantic-core==2.50.2
 pygments==2.21.0
 pymc==6.3.2
 pymc-extras==0.15.1
-pymc-marketing==1.2.0
+pymc-marketing==1.3.0
 pyparsing==3.3.3
 pyprojroot==0.3.0
-pytensor==3.3.4
+pytensor==3.3.6
 pytensor-distributions==0.3.3
-python-dateutil==2.9.0.post0
+python-dateutil==3.0.0
 pyyaml==6.0.3
 rich==15.0.0
 scikit-learn==1.9.1
 scipy==1.18.1
 seaborn==0.13.2
-setuptools==84.0.0
+setuptools==84.2.1
 six==1.17.0
 threadpoolctl==3.7.0
 tqdm==4.70.1
 typing-extensions==4.16.0
 typing-inspection==0.4.4
+tzdata==2026.6
 xarray==2026.9.0
 xarray-einstats==0.11.0
