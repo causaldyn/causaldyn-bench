@@ -42,22 +42,32 @@ HORIZON = PLANNED + LENGTH - 1
 # spillover: one pair for each of the two hosts that recorded them, a cloud sandbox and an
 # AVX2 laptop, whose compiled kernels move the exports' last bits. On a third class, record what
 # origin/main reads there and check that the change reads the same before adding it.
+# One pair per machine class on each of the lock's forks. Python 3.11's fork holds older numpy and
+# jax, which move rung 4's readings by at most 3e-13, relative, and leave rung 0 alone.
 DIGESTS = {
     (GEO, "policy-0"): {
         ("b35cccc30d161f74", "6960cc8dcd601dd1"),
         ("b9ff110d6eb32c4e", "753096a0687361f8"),
+        ("b35cccc30d161f74", "a17bf8c99848239b"),
+        ("b9ff110d6eb32c4e", "6df546ec801a08fe"),
     },
     (GEO, "policy-0.5"): {
         ("a846b14a3a7adf90", "7876835bb73ac1b3"),
         ("f752b9f84a1fda67", "c143d563096b33ff"),
+        ("a846b14a3a7adf90", "991a4eefcb0a00d4"),
+        ("f752b9f84a1fda67", "937991d1d9a1f1ab"),
     },
     (FEW_GEOS, "geos-3"): {
         ("ef143986dfd2274a", "1859cea3dad99599"),
         ("98888ed7bff6dcb1", "c55a0458e752549a"),
+        ("ef143986dfd2274a", "e8960e342c27c881"),
+        ("98888ed7bff6dcb1", "fa3309ae7fecfe9d"),
     },
     (FEW_GEOS, "geos-50"): {
         ("93e080fc8fbe9bdc", "06667d86d2629408"),
         ("62b3b75f5933f620", "b128d9465598282b"),
+        ("93e080fc8fbe9bdc", "0ea6c7767ff7693f"),
+        ("62b3b75f5933f620", "37422de79c4aaea8"),
     },
 }
 
