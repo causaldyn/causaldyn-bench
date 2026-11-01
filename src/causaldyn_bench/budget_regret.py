@@ -36,7 +36,8 @@ each universe.
 * *PyMC-Marketing* 1.2.0: its default model fitted to the history, every test whose sales fell
   entered as a lift measurement (:func:`lift_rows`, :func:`budgets_rows`), NUTS at its defaults, the
   quarter planned by its own optimiser (``scripts/pymc_marketing_arm.py``, in the environment
-  ``scripts/pymc_marketing_arm.txt`` pins).
+  ``scripts/pymc_marketing_arm.txt`` pins). The arm has since moved to 1.3.0, whose Gamma refuses a
+  test that cuts spend, so this run's numbers reproduce only from both files as of ``b843176``.
 
 The run's export holds those tests alone: PyMC-Marketing's likelihood cannot take a test whose
 sales did not fall, and the export left such a test out for every arm that read it, a selection on

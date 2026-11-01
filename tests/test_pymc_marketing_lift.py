@@ -123,7 +123,7 @@ def test_on_the_familys_geo_export_each_test_splits_into_its_five_geos(tmp_path)
 
 def test_a_tested_geo_that_spent_nothing_on_the_channel_is_refused():
     """Its share of the test is nought, and so is its error; the test's other rows still sum back
-    to it, and, their errors read at the test's five geos, hold four fifths of its information."""
+    to it and, their errors read at the four geos that spent, hold the whole of its information."""
     world = _two_tests()
     world["spend"][1:3, 2, 1] = 0.0
     world["lift_x"][0] = world["spend"][1:3, :5, 1].sum(axis=1).mean()
@@ -136,4 +136,4 @@ def test_a_tested_geo_that_spent_nothing_on_the_channel_is_refused():
     assert rows["delta_x"][at].sum() == pytest.approx(dx, rel=1e-14, abs=0.0)
     assert rows["delta_y"][at].sum() == pytest.approx(dy, rel=1e-14, abs=0.0)
     information = np.sum(rows["delta_x"][at] ** 2 / rows["sigma"][at] ** 2)
-    assert information == pytest.approx(0.8 * dx**2 / sigma**2, rel=1e-13, abs=0.0)
+    assert information == pytest.approx(dx**2 / sigma**2, rel=1e-13, abs=0.0)

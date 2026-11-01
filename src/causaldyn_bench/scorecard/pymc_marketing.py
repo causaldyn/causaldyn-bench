@@ -66,8 +66,8 @@ from causaldyn_bench.scorecard.seeds import Role, pilot, rng, scored, stream
 from causaldyn_bench.scorecard.track_m2 import TRACK_M2, World, observation, still, truth
 
 FAMILY = 13
-# PyMC-Marketing 1.2.0's default priors: GeometricAdstock's alpha, LogisticSaturation's lam (shape
-# and rate)
+# PyMC-Marketing's default priors, the same in 1.2.0 and 1.3.0: GeometricAdstock's alpha,
+# LogisticSaturation's lam (shape and rate)
 ALPHA = (1.0, 3.0)
 LAM = (3.0, 1.0)
 

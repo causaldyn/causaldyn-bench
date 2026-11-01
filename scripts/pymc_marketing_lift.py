@@ -70,6 +70,7 @@ def apportioned(world: Mapping[str, Any]) -> tuple[dict[str, np.ndarray], np.nda
         parts["x"].append(x)
         parts["delta_x"].append(delta_x)
         parts["delta_y"].append(share * float(world["lift_delta_y"][i]))
-        parts["sigma"].append(share * float(world["lift_sigma"][i]) * math.sqrt(geos.size))
+        taken = np.count_nonzero(x > 0.0)
+        parts["sigma"].append(share * float(world["lift_sigma"][i]) * math.sqrt(taken))
     rows = {key: np.concatenate(value) if value else np.empty(0) for key, value in parts.items()}
     return rows, _valid(rows["x"], rows["delta_x"], rows["delta_y"], rows["sigma"])
