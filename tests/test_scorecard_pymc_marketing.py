@@ -105,7 +105,8 @@ def test_the_worlds_transforms_are_pymc_marketings_own():
         c = history.channels.index(case["channel"])
         spend = history.spend[:, c]
         scale = float(spend.max())
-        assert scale == case["scale"]
+        # a spend's largest week moves in its last bits between machine classes
+        assert scale == pytest.approx(case["scale"], rel=AGREE, abs=0.0)
         n = len(history.channels)
         at = dataclasses.replace(
             history,
@@ -118,7 +119,7 @@ def test_the_worlds_transforms_are_pymc_marketings_own():
         np.testing.assert_allclose(at._effect_of(c, spend), case["saturated"], rtol=AGREE, atol=0.0)
         if case["corner"] is None:
             ours = (history.retention[c], history.saturation[c])
-            assert ours == (case["alpha"], case["lam"] / scale)
+            assert ours == pytest.approx((case["alpha"], case["lam"] / scale), rel=AGREE, abs=0.0)
             theirs = history.effect[c] * np.asarray(case["saturated"])
             np.testing.assert_allclose(history.media[:, c], theirs, rtol=AGREE, atol=0.0)
     corners = {(case["channel"], case["corner"]) for case in record["cases"]}
