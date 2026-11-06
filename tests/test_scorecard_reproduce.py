@@ -20,6 +20,7 @@ from causaldyn_bench.scorecard.reproduce import (
     compare,
     differences,
     machine_class,
+    record,
     regenerate,
     versions,
 )
@@ -121,11 +122,27 @@ def test_a_tool_runs_where_its_environment_is_found_and_is_scored_beside_the_ben
         made = regenerate({"drawn": 2}, (0, 1), rivals=(stub, RIVALS[0]), root=str(tmp_path))
     assert made.ran == ("stub",) and set(made.skipped) == {RIVALS[0].name}
     assert len(made.records) == 4
-    for record in made.records:
-        assert record.arms["stub"].regret == record.arms["status quo"].regret
-        assert record.arms["stub"].record["cost"] == {"wall_seconds": 1.0, "threads": "1"}
+    for world in made.records:
+        assert world.arms["stub"].regret == world.arms["status quo"].regret
+        assert world.arms["stub"].record["cost"] == {"wall_seconds": 1.0, "threads": "1"}
     without = [r.as_json() for r in made.records]
     for r in without:
         del r["arms"]["stub"]
     found = compare(made, {"records": without, "digests": {}}, machine_class())
     assert (found["numbers"], found["uncommitted"], found["not run"]) == ([], ["stub"], [])
+
+
+def test_a_class_adds_its_digests_and_moves_no_committed_number(committed, run):
+    other = copy.deepcopy(committed)
+    other["digests"] = {"another class": committed["digests"][next(iter(committed["digests"]))]}
+    added = record(run, committed["worlds"], committed["rungs"], other)
+    assert added["records"] == committed["records"] and added["report"] == committed["report"]
+    assert added["digests"] == other["digests"] | {
+        machine_class(): {"under": versions(), "exports": dict(sorted(run.digests.items()))}
+    }
+    moved = copy.deepcopy(other)
+    moved["records"][0]["best"] *= 1 + 10 * TOLERANCE
+    with pytest.raises(RuntimeError, match="not the committed one"):
+        record(run, committed["worlds"], committed["rungs"], moved)
+    fresh = record(run, committed["worlds"], committed["rungs"], None)
+    assert compare(run, fresh, machine_class())["numbers"] == []

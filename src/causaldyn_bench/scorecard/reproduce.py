@@ -302,26 +302,27 @@ def versions() -> dict[str, str]:
 def record(
     run: Run, worlds: Mapping[str, int], rungs: Sequence[int], previous: Mapping[str, Any] | None
 ) -> dict[str, Any]:
-    """The committed cells of ``run``: this machine class's digests beside the classes
-    ``previous`` holds, once ``run``'s numbers are ``previous``'s.
+    """The committed cells: ``run``'s where there are none yet, ``previous``'s otherwise, with this
+    machine class's digests added once ``run``'s numbers are ``previous``'s within the tolerance.
+    The numbers stay the first class's, so a class that adds its digests moves none of them.
 
     Raises:
         RuntimeError: the run's numbers or this class's digests are not the previous reference's.
     """
     machine = machine_class()
-    digests = {} if previous is None else dict(previous["digests"])
+    held = {machine: {"under": versions(), "exports": dict(sorted(run.digests.items()))}}
     if previous is not None:
         found = compare(run, previous, machine)
         if found["numbers"] or found["digests"]:
             raise RuntimeError(f"the run is not the committed one: {found}")
-    digests[machine] = {"under": versions(), "exports": dict(sorted(run.digests.items()))}
+        return {**previous, "digests": {**previous["digests"], **held}}
     return {
         "family": 0,
         "pilot": True,
         "worlds": dict(worlds),
         "rungs": list(rungs),
         "tolerance": TOLERANCE,
-        "digests": digests,
+        "digests": held,
         "records": [r.as_json() for r in run.records],
         "report": report(TRACK_M2, run.records),
     }
