@@ -419,6 +419,50 @@ the scoring refuses those records rather than score them on other worlds. `just 
 extras, `cuda13`, `cuda12`, `cuda13-local`, `cuda12-local`, `rocm7-local`, `tpu` and `oneapi`, are
 the library's, which are JAX's. Python 3.11–3.15, the free-threaded 3.14t and 3.15t included.
 
+### Pre-registration
+
+A scored run is pre-registered: its design, sample and reading are fixed in a file before its first
+scored seed is drawn, and the file's SHA-256 is made public then, in a signed tag of this repository
+whose message is the file's line as `sha256sum` prints it. The maintainer runs and pushes the
+`git tag -s` command that `uv run python scripts/preregistration_tag.py FILE` prints; the script
+creates and pushes nothing itself. `git tag -v NAME` checks the tag's signature, and
+`git tag -l --format='%(contents:subject)' NAME | sha256sum -c` checks the file. Every scored report
+prints the SHA-256 of the pre-registration its run declares, in its header and its JSON
+(`causaldyn_bench.scorecard.report`), and is not written without it; a test reads every committed
+scored report against its file, so a report whose file changed after its tag, or is gone, fails.
+
+### Reproducing a cell
+
+```bash
+scripts/reproduce.sh                     # the scorecard's committed cells, regenerated and compared
+```
+
+`scripts/reproduce.sh` regenerates the scorecard's committed cells
+([`results/scorecard_reproduce.json`](results/scorecard_reproduce.json)) from their stored seeds:
+family 0's first five pilot worlds of each environment at rungs 0, 1 and 2, scored through every arm
+the bench runs (`causaldyn_bench.scorecard.reproduce`). Every number must be the committed one
+within 1e-9, the bench's tie between two regrets, so a reproduction moves no verdict. Every export's
+digest must be the committed one where the machine class and the versions of numpy, SciPy, JAX and
+the library are those it was recorded under: a digest hashes a world's exact bits, which move with
+numpy's AVX-512 kernels, so the digests are kept by machine class, and printed rather than compared
+elsewhere. The script exits 0 only where the cells reproduce. Outside the image it runs the status
+quo and the equal split, and names each tool's arm it skipped and why: PyMC-Marketing, Meridian,
+Orbit and Robyn each need an environment of their own, which the [`Containerfile`](Containerfile)
+builds, CPU only, beside the bench's environment from `uv.lock`: the tools' Python environments from
+their pinned files under `scripts/`, and Robyn's R library from `scripts/robyn_arm.lock.txt`, which
+compiles for hours. `.github/workflows/image.yml` builds the image weekly and on demand, never on a
+push, and publishes nothing.
+
+Image digest: filled at the first published build.
+
+**An open invitation.** We invite anyone outside this project to rerun a cell from the image and
+report what they find, in an issue, or in a pull request that adds their machine class's digests
+(`scripts/reproduce.sh --record` adds them only where every number agrees). A rerun that matches is,
+in the words of ACM's Artifact Review and Badging, *Results Reproduced*: "The main results of the
+paper have been obtained in a subsequent study by a person or team other than the authors, using, in
+part, artifacts provided by the author." A rerun that does not match is as welcome: it is a finding
+about the bench.
+
 ### Paper tables
 
 Every table in papers P1 ("Debias every channel"), P2 ("Fold design for cross-fitting on networks
