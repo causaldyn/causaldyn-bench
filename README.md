@@ -457,11 +457,9 @@ Image digest: filled at the first published build.
 
 **An open invitation.** We invite anyone outside this project to rerun a cell from the image and
 report what they find, in an issue, or in a pull request that adds their machine class's digests
-(`scripts/reproduce.sh --record` adds them only where every number agrees). A rerun that matches is,
-in the words of ACM's Artifact Review and Badging, *Results Reproduced*: "The main results of the
-paper have been obtained in a subsequent study by a person or team other than the authors, using, in
-part, artifacts provided by the author." A rerun that does not match is as welcome: it is a finding
-about the bench.
+(`scripts/reproduce.sh --record` adds them only where every number agrees). A rerun that matches,
+by a person or team other than the authors, is what ACM's Artifact Review and Badging policy calls
+*Results Reproduced*. A rerun that does not match is as welcome: it is a finding about the bench.
 
 ### Paper tables
 
