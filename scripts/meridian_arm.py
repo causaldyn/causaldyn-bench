@@ -70,7 +70,8 @@ beside the plan:
   coefficient ``beta`` times the KPI's population-scaled standard deviation and the population.
   Beside them, ``Analyzer.incremental_outcome`` week by week over the history, the decomposition
   the bench checks them against;
-* ``settings``, ``versions`` and ``cost``, the wall and CPU seconds of the whole arm;
+* ``settings``, ``versions`` and ``cost``, the wall and CPU seconds of the whole arm, and where it
+  ran (``scripts/arm_machine.py``);
 * ``forecast`` is n/a: Meridian's ``expected_outcome`` refuses periods outside the training window,
   since its weekly effects would need a model of their own there, and the record says so.
 
@@ -116,6 +117,7 @@ from typing import Any
 import arviz as az  # ty: ignore[unresolved-import]
 import numpy as np
 import pandas as pd
+from arm_machine import machine
 from geo_export import channel_quarter, geo, panel
 from meridian import backend, constants  # ty: ignore[unresolved-import]
 from meridian.analysis import analyzer, optimizer, tensors  # ty: ignore[unresolved-import]
@@ -655,6 +657,7 @@ def main() -> None:
             record["cost"] = {
                 "wall_seconds": time.perf_counter() - began,
                 "cpu_seconds": _cpu() - spent,
+                **machine(),
             }
             if args.smoke:
                 record["smoke"] = "smoke, not a result"

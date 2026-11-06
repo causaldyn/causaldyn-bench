@@ -55,7 +55,8 @@ Each record carries, beside the plan:
   KTR's own;
 * ``response``: ``unmapped``. The model multiplies its channels, so no channel's contribution is a
   part of the sales on its own, which ``chc.response`` needs;
-* ``settings``, ``versions`` and ``cost``, the wall and CPU seconds of the whole arm.
+* ``settings``, ``versions`` and ``cost``, the wall and CPU seconds of the whole arm, and where it
+  ran (``scripts/arm_machine.py``).
 
 **A geo export** (family 8) is read as the market's: Orbit is national, so the arm fits it on the
 KPI and the spend summed over the geos, and plans one weekly spend a channel, in the box and at the
@@ -96,6 +97,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from arm_machine import machine
 from geo_export import geo, national
 from orbit.models import KTR  # ty: ignore[unresolved-import]
 from scipy.optimize import brentq, minimize
@@ -570,6 +572,7 @@ def main() -> None:
         record["cost"] = {
             "wall_seconds": time.perf_counter() - began,
             "cpu_seconds": _cpu() - spent,
+            **machine(),
         }
         if args.smoke:
             record["smoke"] = "smoke, not a result"

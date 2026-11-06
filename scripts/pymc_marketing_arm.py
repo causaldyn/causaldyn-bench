@@ -81,7 +81,8 @@ test's date. CHOICE: the Monday of its first dark week. Each record carries, bes
   5 % and 95 % quantiles, and their correlation with the history's last week; beside them the
   lengthscale's mean and quantiles, in weeks. The optimiser's graph draws nothing, so no other
   number of the record moves;
-* ``settings``, ``versions`` and ``cost``, the wall and CPU seconds of the whole arm.
+* ``settings``, ``versions`` and ``cost``, the wall and CPU seconds of the whole arm, and where it
+  ran (``scripts/arm_machine.py``).
 
 **A geo export** (family 8, one holding ``population``) is fitted by PyMC-Marketing's
 multidimensional ``MMM`` with ``dims=("geo",)``, static media alone: each geo's KPI and spend, a
@@ -146,6 +147,7 @@ import numpy as np
 import pandas as pd
 import pytensor  # ty: ignore[unresolved-import]
 import xarray as xr  # ty: ignore[unresolved-import]
+from arm_machine import machine
 from geo_export import cells, geo, panel
 from pymc_marketing.hsgp_kwargs import HSGPKwargs  # ty: ignore[unresolved-import]
 from pymc_marketing.mmm import (  # ty: ignore[unresolved-import]
@@ -732,6 +734,7 @@ def main() -> None:
             record["cost"] = {
                 "wall_seconds": time.perf_counter() - began,
                 "cpu_seconds": _cpu() - spent,
+                **machine(),
             }
             if args.smoke:
                 record["smoke"] = "smoke, not a result"

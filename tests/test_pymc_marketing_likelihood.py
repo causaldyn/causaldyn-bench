@@ -69,6 +69,7 @@ def arm():
         dims = stand_ins["pymc"].dims = stand_ins["pymc.dims"]
         for name, stand_in in stand_ins.items():
             patch.setitem(sys.modules, name, stand_in)
+        _load(patch, "arm_machine")
         _load(patch, "geo_export")
         lift = _load(patch, "pymc_marketing_lift")
         module = _load(patch, "pymc_marketing_arm")

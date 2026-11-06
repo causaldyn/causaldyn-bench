@@ -38,6 +38,7 @@ def arm():
     with pytest.MonkeyPatch.context() as patch:
         patch.setitem(sys.modules, "orbit", package)
         patch.setitem(sys.modules, "orbit.models", models)
+        _load(patch, "arm_machine")
         _load(patch, "geo_export")
         yield _load(patch, "orbit_arm")
 

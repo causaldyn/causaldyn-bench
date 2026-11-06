@@ -77,7 +77,8 @@
 #   unnormalised, as Robyn's recursion; the curve Hill at the model's inflexion with its alpha as
 #   the slope; the coefficient the ridge's. Beside them, the selected model's own decomposition of
 #   the history (xDecompVecCollect), which the bench checks them against;
-# * `settings`, `versions` and `cost`, the wall and CPU seconds of the whole arm;
+# * `settings`, `versions` and `cost`, the wall and CPU seconds of the whole arm, and where it ran
+#   (`machine`);
 # * `forecast` and `gain_interval` are n/a: Robyn forecasts no week after its modelling window, and
 #   plans on one selected model, a point estimate, and the record says so.
 #
@@ -657,6 +658,22 @@ versions <- function() {
   )
 }
 
+# Where the arm ran, as the scorecard's compute table reads a record's `cost`: the CPU's model, the
+# threads the process was given (OMP_NUM_THREADS, as the harness sets it), and the process's peak
+# resident memory so far, Linux's VmHWM in bytes, nevergrad's included, since reticulate embeds it.
+# A field the system does not report is null.
+machine <- function() {
+  read <- function(file) tryCatch(readLines(file, warn = FALSE), error = function(e) character())
+  model <- grep("^model name", read("/proc/cpuinfo"), value = TRUE)
+  peak <- grep("^VmHWM:", read("/proc/self/status"), value = TRUE)
+  threads <- Sys.getenv("OMP_NUM_THREADS", unset = NA)
+  list(
+    cpu_model = if (length(model)) trimws(sub("^model name[^:]*:", "", model[1])) else NULL,
+    threads = if (is.na(threads)) NULL else threads,
+    peak_rss_bytes = if (length(peak)) 1024 * as.numeric(gsub("[^0-9]", "", peak[1])) else NULL
+  )
+}
+
 option <- function(args, name, default = NULL) {
   at <- match(name, args)
   if (is.na(at)) {
@@ -730,9 +747,12 @@ main <- function() {
     record$warnings <- seen
     spent <- proc.time() - began
     if (second) {
-      record$cost <- list(
-        wall_seconds = spent[["elapsed"]],
-        cpu_seconds = sum(spent[c("user.self", "sys.self", "user.child", "sys.child")])
+      record$cost <- c(
+        list(
+          wall_seconds = spent[["elapsed"]],
+          cpu_seconds = sum(spent[c("user.self", "sys.self", "user.child", "sys.child")])
+        ),
+        machine()
       )
       if (smoke) record$smoke <- "smoke, not a result"
     } else {
