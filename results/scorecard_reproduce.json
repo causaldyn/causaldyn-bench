@@ -1,0 +1,2904 @@
+{
+ "family": 0,
+ "pilot": true,
+ "worlds": {
+  "drawn": 5,
+  "reference": 5
+ },
+ "rungs": [
+  0,
+  1,
+  2
+ ],
+ "tolerance": 1e-09,
+ "digests": {
+  "x86-64 without AVX-512": {
+   "under": {
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "jax": "0.11.2",
+    "jaxlib": "0.11.2",
+    "causal-hybrid-control": "0.23.0"
+   },
+   "exports": {
+    "drawn/900/k0": "32eb0b3ebf6e19f0",
+    "drawn/900/k1": "51385d1e7f63184e",
+    "drawn/900/k2": "0da4424dbc340532",
+    "drawn/901/k0": "fc9eaf14870c2ea4",
+    "drawn/901/k1": "3052a06e62e989aa",
+    "drawn/901/k2": "fc9936663d2ba03f",
+    "drawn/902/k0": "4f7497fa132c5b83",
+    "drawn/902/k1": "9bbb8ba51bd7d73e",
+    "drawn/902/k2": "89476c24a89302a2",
+    "drawn/903/k0": "634137db47e02eff",
+    "drawn/903/k1": "99fb60b9c5d1c336",
+    "drawn/903/k2": "e21ff485f82a4aad",
+    "drawn/904/k0": "b68208d6d092e2a3",
+    "drawn/904/k1": "e937c86ab140928b",
+    "drawn/904/k2": "cb3155a25ab1e565",
+    "reference/900/k0": "ac438b928dcd19e3",
+    "reference/900/k1": "32049adf2c7b1f57",
+    "reference/900/k2": "810c7a12f198897c",
+    "reference/901/k0": "4faf4410dfffec54",
+    "reference/901/k1": "a29b97498e3e9868",
+    "reference/901/k2": "8e62f57de657b190",
+    "reference/902/k0": "3d6100eea372278c",
+    "reference/902/k1": "4c8ab0d58c86d918",
+    "reference/902/k2": "9a085681e0e53534",
+    "reference/903/k0": "f609a739f8c5b388",
+    "reference/903/k1": "98d4d395f721d932",
+    "reference/903/k2": "a04734d50a46795c",
+    "reference/904/k0": "1e8ec14d67f35ea4",
+    "reference/904/k1": "8dfbf64bc5f8a0b7",
+    "reference/904/k2": "e5fcfbce366a56be"
+   }
+  }
+ },
+ "records": [
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 900,
+   "index": 0,
+   "pilot": true,
+   "k": 0,
+   "budget": 2129.539659956416,
+   "best": 7853.493322813375,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.12432630404000801,
+    "equal split": 0.13982744115129225,
+    "return": 3.6878831000377366,
+    "price": 3.1058104737851404
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.12432630404000801,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.13982744115129225,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 3.0517687258957356,
+     "mroi": 2.851263936118336
+    },
+    "meta": {
+     "roi": 3.674561987114954,
+     "mroi": 3.5393102542908976
+    },
+    "tv": {
+     "roi": 2.8648676287960453,
+     "mroi": 2.6973089047591743
+    }
+   },
+   "spend": {
+    "pla": 4279.7940520537895,
+    "meta": 2762.6646094927755,
+    "tv": 1475.6999782790995
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 901,
+   "index": 1,
+   "pilot": true,
+   "k": 0,
+   "budget": 2034.008529168968,
+   "best": 7029.328172133317,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.041646040033063055,
+    "equal split": 0.02608342514532007,
+    "return": 3.455899064005046,
+    "price": 2.8027823437591497
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.041646040033063055,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.02608342514532007,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 2.8810687842927103,
+     "mroi": 2.7554059004971965
+    },
+    "meta": {
+     "roi": 2.721626305505137,
+     "mroi": 2.6268105360832306
+    },
+    "tv": {
+     "roi": 2.9358376695428743,
+     "mroi": 2.691948787284231
+    }
+   },
+   "spend": {
+    "pla": 4044.1020644466307,
+    "meta": 2623.074773106328,
+    "tv": 1468.8572791229144
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 902,
+   "index": 2,
+   "pilot": true,
+   "k": 0,
+   "budget": 2061.0066382622085,
+   "best": 9617.655018806101,
+   "channels": 3,
+   "oracle_bounds": 0,
+   "covariates": {
+    "status quo": 0.012538263211725157,
+    "equal split": 0.011701696175350875,
+    "return": 4.66648425107232,
+    "price": 3.9394201754891967
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.012538263211725157,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.011701696175350875,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 4.107748158855924,
+     "mroi": 3.6399549841531322
+    },
+    "meta": {
+     "roi": 3.9847741860205703,
+     "mroi": 3.8178529166061854
+    },
+    "tv": {
+     "roi": 3.9811888746360813,
+     "mroi": 3.6723078223483103
+    }
+   },
+   "spend": {
+    "pla": 4051.151402814913,
+    "meta": 2715.403922590149,
+    "tv": 1477.4712276437717
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 903,
+   "index": 3,
+   "pilot": true,
+   "k": 0,
+   "budget": 2062.831249353335,
+   "best": 6069.128280616978,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.06289343192103489,
+    "equal split": 0.11771496428040266,
+    "return": 2.942135127398111,
+    "price": 2.4009428819076706
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.06289343192103489,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.11771496428040266,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 2.685415380843174,
+     "mroi": 2.5304151714181566
+    },
+    "meta": {
+     "roi": 2.2263320260134827,
+     "mroi": 2.1568054342837457
+    },
+    "tv": {
+     "roi": 2.296250864812325,
+     "mroi": 2.1577501261996583
+    }
+   },
+   "spend": {
+    "pla": 4060.638095660259,
+    "meta": 2727.263993712486,
+    "tv": 1463.4229080405962
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 904,
+   "index": 4,
+   "pilot": true,
+   "k": 0,
+   "budget": 2093.918856136768,
+   "best": 5727.942910688667,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.14251663099472772,
+    "equal split": 0.044566129014456085,
+    "return": 2.7355133146164934,
+    "price": 2.493226963025957
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.14251663099472772,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.044566129014456085,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 1.9707294715502917,
+     "mroi": 1.8447531956042633
+    },
+    "meta": {
+     "roi": 2.56565347381794,
+     "mroi": 2.513111025974221
+    },
+    "tv": {
+     "roi": 2.5323885983909307,
+     "mroi": 2.4130156753100263
+    }
+   },
+   "spend": {
+    "pla": 4150.29836585771,
+    "meta": 2795.431335512663,
+    "tv": 1429.9457231766992
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 900,
+   "index": 0,
+   "pilot": true,
+   "k": 1,
+   "budget": 2129.539659956416,
+   "best": 7853.493322813375,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.12432630404000801,
+    "equal split": 0.13982744115129225,
+    "return": 3.6878831000377366,
+    "price": 3.1058104737851404
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.12432630404000801,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.13982744115129225,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 3.0517687258957356,
+     "mroi": 2.851263936118336
+    },
+    "meta": {
+     "roi": 3.674561987114954,
+     "mroi": 3.5393102542908976
+    },
+    "tv": {
+     "roi": 2.8648676287960453,
+     "mroi": 2.6973089047591743
+    }
+   },
+   "spend": {
+    "pla": 4279.7940520537895,
+    "meta": 2762.6646094927755,
+    "tv": 1475.6999782790995
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 901,
+   "index": 1,
+   "pilot": true,
+   "k": 1,
+   "budget": 2034.008529168968,
+   "best": 7029.328172133317,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.041646040033063055,
+    "equal split": 0.02608342514532007,
+    "return": 3.455899064005046,
+    "price": 2.8027823437591497
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.041646040033063055,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.02608342514532007,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 2.8810687842927103,
+     "mroi": 2.7554059004971965
+    },
+    "meta": {
+     "roi": 2.721626305505137,
+     "mroi": 2.6268105360832306
+    },
+    "tv": {
+     "roi": 2.9358376695428743,
+     "mroi": 2.691948787284231
+    }
+   },
+   "spend": {
+    "pla": 4044.1020644466307,
+    "meta": 2623.074773106328,
+    "tv": 1468.8572791229144
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 902,
+   "index": 2,
+   "pilot": true,
+   "k": 1,
+   "budget": 2061.0066382622085,
+   "best": 9617.655018806101,
+   "channels": 3,
+   "oracle_bounds": 0,
+   "covariates": {
+    "status quo": 0.012538263211725157,
+    "equal split": 0.011701696175350875,
+    "return": 4.66648425107232,
+    "price": 3.9394201754891967
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.012538263211725157,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.011701696175350875,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 4.107748158855924,
+     "mroi": 3.6399549841531322
+    },
+    "meta": {
+     "roi": 3.9847741860205703,
+     "mroi": 3.8178529166061854
+    },
+    "tv": {
+     "roi": 3.9811888746360813,
+     "mroi": 3.6723078223483103
+    }
+   },
+   "spend": {
+    "pla": 4051.151402814913,
+    "meta": 2715.403922590149,
+    "tv": 1477.4712276437717
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 903,
+   "index": 3,
+   "pilot": true,
+   "k": 1,
+   "budget": 2062.831249353335,
+   "best": 6069.128280616978,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.06289343192103489,
+    "equal split": 0.11771496428040266,
+    "return": 2.942135127398111,
+    "price": 2.4009428819076706
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.06289343192103489,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.11771496428040266,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 2.685415380843174,
+     "mroi": 2.5304151714181566
+    },
+    "meta": {
+     "roi": 2.2263320260134827,
+     "mroi": 2.1568054342837457
+    },
+    "tv": {
+     "roi": 2.296250864812325,
+     "mroi": 2.1577501261996583
+    }
+   },
+   "spend": {
+    "pla": 4060.638095660259,
+    "meta": 2727.263993712486,
+    "tv": 1463.4229080405962
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 904,
+   "index": 4,
+   "pilot": true,
+   "k": 1,
+   "budget": 2093.918856136768,
+   "best": 5727.942910688667,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.14251663099472772,
+    "equal split": 0.044566129014456085,
+    "return": 2.7355133146164934,
+    "price": 2.493226963025957
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.14251663099472772,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.044566129014456085,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 1.9707294715502917,
+     "mroi": 1.8447531956042633
+    },
+    "meta": {
+     "roi": 2.56565347381794,
+     "mroi": 2.513111025974221
+    },
+    "tv": {
+     "roi": 2.5323885983909307,
+     "mroi": 2.4130156753100263
+    }
+   },
+   "spend": {
+    "pla": 4150.29836585771,
+    "meta": 2795.431335512663,
+    "tv": 1429.9457231766992
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 900,
+   "index": 0,
+   "pilot": true,
+   "k": 2,
+   "budget": 2129.539659956416,
+   "best": 7853.493322813375,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.12432630404000801,
+    "equal split": 0.13982744115129225,
+    "return": 3.6878831000377366,
+    "price": 3.1058104737851404
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.12432630404000801,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.13982744115129225,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 3.0517687258957356,
+     "mroi": 2.851263936118336
+    },
+    "meta": {
+     "roi": 3.674561987114954,
+     "mroi": 3.5393102542908976
+    },
+    "tv": {
+     "roi": 2.8648676287960453,
+     "mroi": 2.6973089047591743
+    }
+   },
+   "spend": {
+    "pla": 4279.7940520537895,
+    "meta": 2762.6646094927755,
+    "tv": 1475.6999782790995
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 901,
+   "index": 1,
+   "pilot": true,
+   "k": 2,
+   "budget": 2034.008529168968,
+   "best": 7029.328172133317,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.041646040033063055,
+    "equal split": 0.02608342514532007,
+    "return": 3.455899064005046,
+    "price": 2.8027823437591497
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.041646040033063055,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.02608342514532007,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 2.8810687842927103,
+     "mroi": 2.7554059004971965
+    },
+    "meta": {
+     "roi": 2.721626305505137,
+     "mroi": 2.6268105360832306
+    },
+    "tv": {
+     "roi": 2.9358376695428743,
+     "mroi": 2.691948787284231
+    }
+   },
+   "spend": {
+    "pla": 4044.1020644466307,
+    "meta": 2623.074773106328,
+    "tv": 1468.8572791229144
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 902,
+   "index": 2,
+   "pilot": true,
+   "k": 2,
+   "budget": 2061.0066382622085,
+   "best": 9617.655018806101,
+   "channels": 3,
+   "oracle_bounds": 0,
+   "covariates": {
+    "status quo": 0.012538263211725157,
+    "equal split": 0.011701696175350875,
+    "return": 4.66648425107232,
+    "price": 3.9394201754891967
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.012538263211725157,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.011701696175350875,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 4.107748158855924,
+     "mroi": 3.6399549841531322
+    },
+    "meta": {
+     "roi": 3.9847741860205703,
+     "mroi": 3.8178529166061854
+    },
+    "tv": {
+     "roi": 3.9811888746360813,
+     "mroi": 3.6723078223483103
+    }
+   },
+   "spend": {
+    "pla": 4051.151402814913,
+    "meta": 2715.403922590149,
+    "tv": 1477.4712276437717
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 903,
+   "index": 3,
+   "pilot": true,
+   "k": 2,
+   "budget": 2062.831249353335,
+   "best": 6069.128280616978,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.06289343192103489,
+    "equal split": 0.11771496428040266,
+    "return": 2.942135127398111,
+    "price": 2.4009428819076706
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.06289343192103489,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.11771496428040266,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 2.685415380843174,
+     "mroi": 2.5304151714181566
+    },
+    "meta": {
+     "roi": 2.2263320260134827,
+     "mroi": 2.1568054342837457
+    },
+    "tv": {
+     "roi": 2.296250864812325,
+     "mroi": 2.1577501261996583
+    }
+   },
+   "spend": {
+    "pla": 4060.638095660259,
+    "meta": 2727.263993712486,
+    "tv": 1463.4229080405962
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 904,
+   "index": 4,
+   "pilot": true,
+   "k": 2,
+   "budget": 2093.918856136768,
+   "best": 5727.942910688667,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.14251663099472772,
+    "equal split": 0.044566129014456085,
+    "return": 2.7355133146164934,
+    "price": 2.493226963025957
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.14251663099472772,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.044566129014456085,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 1.9707294715502917,
+     "mroi": 1.8447531956042633
+    },
+    "meta": {
+     "roi": 2.56565347381794,
+     "mroi": 2.513111025974221
+    },
+    "tv": {
+     "roi": 2.5323885983909307,
+     "mroi": 2.4130156753100263
+    }
+   },
+   "spend": {
+    "pla": 4150.29836585771,
+    "meta": 2795.431335512663,
+    "tv": 1429.9457231766992
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 900,
+   "index": 0,
+   "pilot": true,
+   "k": 0,
+   "budget": 2129.539659956416,
+   "best": 8517.752838350563,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.31892494743647365,
+    "equal split": 0.7205301011523494,
+    "return": 3.9998094416916805,
+    "price": 3.5009427626762153
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.31892494743647365,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.7205301011523494,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 4.1403998074555135,
+     "mroi": 3.7128984616373426
+    },
+    "meta": {
+     "roi": 2.907996839406661,
+     "mroi": 2.746711648782529
+    },
+    "tv": {
+     "roi": 1.6472819073739842,
+     "mroi": 1.5862660691064103
+    }
+   },
+   "spend": {
+    "pla": 4279.7940520537895,
+    "meta": 2762.6646094927755,
+    "tv": 1475.6999782790995
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 901,
+   "index": 1,
+   "pilot": true,
+   "k": 0,
+   "budget": 2034.008529168968,
+   "best": 8208.775090550951,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.33931935643432465,
+    "equal split": 0.7305439436262643,
+    "return": 4.035762374066739,
+    "price": 3.5757160940960313
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.33931935643432465,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.7305439436262643,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 4.207508434823152,
+     "mroi": 3.862265316019676
+    },
+    "meta": {
+     "roi": 2.9165771553627224,
+     "mroi": 2.767642997184459
+    },
+    "tv": {
+     "roi": 1.6464506340744212,
+     "mroi": 1.5843834622418538
+    }
+   },
+   "spend": {
+    "pla": 4044.1020644466307,
+    "meta": 2623.074773106328,
+    "tv": 1468.8572791229144
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 902,
+   "index": 2,
+   "pilot": true,
+   "k": 0,
+   "budget": 2061.0066382622085,
+   "best": 8291.848981314697,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.34144102910822943,
+    "equal split": 0.7264892625021705,
+    "return": 4.023203432428624,
+    "price": 3.5643569967470605
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.34144102910822943,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.7264892625021705,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 4.193425377540718,
+     "mroi": 3.82869683226202
+    },
+    "meta": {
+     "roi": 2.9156873383675967,
+     "mroi": 2.7633087264315344
+    },
+    "tv": {
+     "roi": 1.6489886994657832,
+     "mroi": 1.5916469751841111
+    }
+   },
+   "spend": {
+    "pla": 4051.151402814913,
+    "meta": 2715.403922590149,
+    "tv": 1477.4712276437717
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 903,
+   "index": 3,
+   "pilot": true,
+   "k": 0,
+   "budget": 2062.831249353335,
+   "best": 8267.603570816413,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.33787283644823524,
+    "equal split": 0.7252277668282286,
+    "return": 4.007891374249918,
+    "price": 3.5584649883041086
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.33787283644823524,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.7252277668282286,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 4.1869098459865,
+     "mroi": 3.8117601646479584
+    },
+    "meta": {
+     "roi": 2.915615988102288,
+     "mroi": 2.7627534156610802
+    },
+    "tv": {
+     "roi": 1.6495654500153434,
+     "mroi": 1.5929687283984453
+    }
+   },
+   "spend": {
+    "pla": 4060.638095660259,
+    "meta": 2727.263993712486,
+    "tv": 1463.4229080405962
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 904,
+   "index": 4,
+   "pilot": true,
+   "k": 0,
+   "budget": 2093.918856136768,
+   "best": 8389.997032264657,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.3293485101499154,
+    "equal split": 0.7280093091196516,
+    "return": 4.006839619250579,
+    "price": 3.5387034273945277
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.3293485101499154,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.7280093091196516,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 4.175866552731373,
+     "mroi": 3.78692892394516
+    },
+    "meta": {
+     "roi": 2.9121348956055106,
+     "mroi": 2.755400049646514
+    },
+    "tv": {
+     "roi": 1.6498560789509096,
+     "mroi": 1.593899639872453
+    }
+   },
+   "spend": {
+    "pla": 4150.29836585771,
+    "meta": 2795.431335512663,
+    "tv": 1429.9457231766992
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 900,
+   "index": 0,
+   "pilot": true,
+   "k": 1,
+   "budget": 2129.539659956416,
+   "best": 8517.752838350563,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.31892494743647365,
+    "equal split": 0.7205301011523494,
+    "return": 3.9998094416916805,
+    "price": 3.5009427626762153
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.31892494743647365,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.7205301011523494,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 4.1403998074555135,
+     "mroi": 3.7128984616373426
+    },
+    "meta": {
+     "roi": 2.907996839406661,
+     "mroi": 2.746711648782529
+    },
+    "tv": {
+     "roi": 1.6472819073739842,
+     "mroi": 1.5862660691064103
+    }
+   },
+   "spend": {
+    "pla": 4279.7940520537895,
+    "meta": 2762.6646094927755,
+    "tv": 1475.6999782790995
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 901,
+   "index": 1,
+   "pilot": true,
+   "k": 1,
+   "budget": 2034.008529168968,
+   "best": 8208.775090550951,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.33931935643432465,
+    "equal split": 0.7305439436262643,
+    "return": 4.035762374066739,
+    "price": 3.5757160940960313
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.33931935643432465,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.7305439436262643,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 4.207508434823152,
+     "mroi": 3.862265316019676
+    },
+    "meta": {
+     "roi": 2.9165771553627224,
+     "mroi": 2.767642997184459
+    },
+    "tv": {
+     "roi": 1.6464506340744212,
+     "mroi": 1.5843834622418538
+    }
+   },
+   "spend": {
+    "pla": 4044.1020644466307,
+    "meta": 2623.074773106328,
+    "tv": 1468.8572791229144
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 902,
+   "index": 2,
+   "pilot": true,
+   "k": 1,
+   "budget": 2061.0066382622085,
+   "best": 8291.848981314697,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.34144102910822943,
+    "equal split": 0.7264892625021705,
+    "return": 4.023203432428624,
+    "price": 3.5643569967470605
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.34144102910822943,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.7264892625021705,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 4.193425377540718,
+     "mroi": 3.82869683226202
+    },
+    "meta": {
+     "roi": 2.9156873383675967,
+     "mroi": 2.7633087264315344
+    },
+    "tv": {
+     "roi": 1.6489886994657832,
+     "mroi": 1.5916469751841111
+    }
+   },
+   "spend": {
+    "pla": 4051.151402814913,
+    "meta": 2715.403922590149,
+    "tv": 1477.4712276437717
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 903,
+   "index": 3,
+   "pilot": true,
+   "k": 1,
+   "budget": 2062.831249353335,
+   "best": 8267.603570816413,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.33787283644823524,
+    "equal split": 0.7252277668282286,
+    "return": 4.007891374249918,
+    "price": 3.5584649883041086
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.33787283644823524,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.7252277668282286,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 4.1869098459865,
+     "mroi": 3.8117601646479584
+    },
+    "meta": {
+     "roi": 2.915615988102288,
+     "mroi": 2.7627534156610802
+    },
+    "tv": {
+     "roi": 1.6495654500153434,
+     "mroi": 1.5929687283984453
+    }
+   },
+   "spend": {
+    "pla": 4060.638095660259,
+    "meta": 2727.263993712486,
+    "tv": 1463.4229080405962
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 904,
+   "index": 4,
+   "pilot": true,
+   "k": 1,
+   "budget": 2093.918856136768,
+   "best": 8389.997032264657,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.3293485101499154,
+    "equal split": 0.7280093091196516,
+    "return": 4.006839619250579,
+    "price": 3.5387034273945277
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.3293485101499154,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.7280093091196516,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 4.175866552731373,
+     "mroi": 3.78692892394516
+    },
+    "meta": {
+     "roi": 2.9121348956055106,
+     "mroi": 2.755400049646514
+    },
+    "tv": {
+     "roi": 1.6498560789509096,
+     "mroi": 1.593899639872453
+    }
+   },
+   "spend": {
+    "pla": 4150.29836585771,
+    "meta": 2795.431335512663,
+    "tv": 1429.9457231766992
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 900,
+   "index": 0,
+   "pilot": true,
+   "k": 2,
+   "budget": 2129.539659956416,
+   "best": 8517.752838350563,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.31892494743647365,
+    "equal split": 0.7205301011523494,
+    "return": 3.9998094416916805,
+    "price": 3.5009427626762153
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.31892494743647365,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.7205301011523494,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 4.1403998074555135,
+     "mroi": 3.7128984616373426
+    },
+    "meta": {
+     "roi": 2.907996839406661,
+     "mroi": 2.746711648782529
+    },
+    "tv": {
+     "roi": 1.6472819073739842,
+     "mroi": 1.5862660691064103
+    }
+   },
+   "spend": {
+    "pla": 4279.7940520537895,
+    "meta": 2762.6646094927755,
+    "tv": 1475.6999782790995
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 901,
+   "index": 1,
+   "pilot": true,
+   "k": 2,
+   "budget": 2034.008529168968,
+   "best": 8208.775090550951,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.33931935643432465,
+    "equal split": 0.7305439436262643,
+    "return": 4.035762374066739,
+    "price": 3.5757160940960313
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.33931935643432465,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.7305439436262643,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 4.207508434823152,
+     "mroi": 3.862265316019676
+    },
+    "meta": {
+     "roi": 2.9165771553627224,
+     "mroi": 2.767642997184459
+    },
+    "tv": {
+     "roi": 1.6464506340744212,
+     "mroi": 1.5843834622418538
+    }
+   },
+   "spend": {
+    "pla": 4044.1020644466307,
+    "meta": 2623.074773106328,
+    "tv": 1468.8572791229144
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 902,
+   "index": 2,
+   "pilot": true,
+   "k": 2,
+   "budget": 2061.0066382622085,
+   "best": 8291.848981314697,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.34144102910822943,
+    "equal split": 0.7264892625021705,
+    "return": 4.023203432428624,
+    "price": 3.5643569967470605
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.34144102910822943,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.7264892625021705,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 4.193425377540718,
+     "mroi": 3.82869683226202
+    },
+    "meta": {
+     "roi": 2.9156873383675967,
+     "mroi": 2.7633087264315344
+    },
+    "tv": {
+     "roi": 1.6489886994657832,
+     "mroi": 1.5916469751841111
+    }
+   },
+   "spend": {
+    "pla": 4051.151402814913,
+    "meta": 2715.403922590149,
+    "tv": 1477.4712276437717
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 903,
+   "index": 3,
+   "pilot": true,
+   "k": 2,
+   "budget": 2062.831249353335,
+   "best": 8267.603570816413,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.33787283644823524,
+    "equal split": 0.7252277668282286,
+    "return": 4.007891374249918,
+    "price": 3.5584649883041086
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.33787283644823524,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.7252277668282286,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 4.1869098459865,
+     "mroi": 3.8117601646479584
+    },
+    "meta": {
+     "roi": 2.915615988102288,
+     "mroi": 2.7627534156610802
+    },
+    "tv": {
+     "roi": 1.6495654500153434,
+     "mroi": 1.5929687283984453
+    }
+   },
+   "spend": {
+    "pla": 4060.638095660259,
+    "meta": 2727.263993712486,
+    "tv": 1463.4229080405962
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 904,
+   "index": 4,
+   "pilot": true,
+   "k": 2,
+   "budget": 2093.918856136768,
+   "best": 8389.997032264657,
+   "channels": 3,
+   "oracle_bounds": 2,
+   "covariates": {
+    "status quo": 0.3293485101499154,
+    "equal split": 0.7280093091196516,
+    "return": 4.006839619250579,
+    "price": 3.5387034273945277
+   },
+   "arms": {
+    "status quo": {
+     "regret": 0.3293485101499154,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    },
+    "equal split": {
+     "regret": 0.7280093091196516,
+     "failure": null,
+     "moved": null,
+     "bounds": 0,
+     "realised": null,
+     "uplift": null,
+     "covered": null,
+     "crps": null,
+     "record": {
+      "error": null
+     },
+     "roi": null,
+     "mroi": null,
+     "roi_covered": null,
+     "mroi_covered": null,
+     "returns": null,
+     "unread": null,
+     "mape": null,
+     "roi_coverage": null,
+     "mroi_coverage": null
+    }
+   },
+   "returns": {
+    "pla": {
+     "roi": 4.175866552731373,
+     "mroi": 3.78692892394516
+    },
+    "meta": {
+     "roi": 2.9121348956055106,
+     "mroi": 2.755400049646514
+    },
+    "tv": {
+     "roi": 1.6498560789509096,
+     "mroi": 1.593899639872453
+    }
+   },
+   "spend": {
+    "pla": 4150.29836585771,
+    "meta": 2795.431335512663,
+    "tv": 1429.9457231766992
+   }
+  }
+ ],
+ "report": {
+  "family": 0,
+  "name": "Track M v2",
+  "kind": "pilot",
+  "preregistration": null,
+  "labels": [
+   "The world's media are PyMC-Marketing's default class: its logistic saturation is the world's tanh curve, and its normalised geometric adstock at the kernel's length is the world's kernel.",
+   "Every arm is told the kernel's length.",
+   "A geo test is two universes at the market's scale, so its gap holds no noise between regions beyond the noise drawn."
+  ],
+  "cells": [
+   {
+    "k": 0,
+    "environment": "drawn",
+    "worlds": 5,
+    "look": 5,
+    "arms": {
+     "status quo": {
+      "regret": {
+       "mean": 0.07678413404011178,
+       "low": 0.008390568431241932,
+       "high": 0.14517769964898164,
+       "n": 5
+      },
+      "failed": 0,
+      "moved": 0,
+      "crps": null,
+      "mape": null,
+      "coverage": null,
+      "shares": null
+     },
+     "equal split": {
+      "regret": {
+       "mean": 0.06797873115336439,
+       "low": -0.0030960978913798787,
+       "high": 0.13905356019810866,
+       "n": 5
+      },
+      "failed": 0,
+      "moved": 0,
+      "crps": null,
+      "mape": null,
+      "coverage": null,
+      "shares": null
+     }
+    }
+   },
+   {
+    "k": 0,
+    "environment": "reference",
+    "worlds": 5,
+    "look": 5,
+    "arms": {
+     "status quo": {
+      "regret": {
+       "mean": 0.33338133591543573,
+       "low": 0.3218391495195098,
+       "high": 0.34492352231136164,
+       "n": 5
+      },
+      "failed": 0,
+      "moved": 0,
+      "crps": null,
+      "mape": null,
+      "coverage": null,
+      "shares": null
+     },
+     "equal split": {
+      "regret": {
+       "mean": 0.7261600766457329,
+       "low": 0.7215428167386122,
+       "high": 0.7307773365528536,
+       "n": 5
+      },
+      "failed": 0,
+      "moved": 0,
+      "crps": null,
+      "mape": null,
+      "coverage": null,
+      "shares": null
+     }
+    }
+   },
+   {
+    "k": 0,
+    "environment": "pooled",
+    "worlds": 5,
+    "look": 10,
+    "arms": {
+     "status quo": {
+      "regret": {
+       "mean": 0.20508273497777374,
+       "low": 0.10473789765667937,
+       "high": 0.3054275722988681,
+       "n": 10
+      },
+      "failed": 0,
+      "moved": 0,
+      "crps": null,
+      "mape": null,
+      "coverage": null,
+      "shares": null
+     },
+     "equal split": {
+      "regret": {
+       "mean": 0.3970694038995487,
+       "low": 0.14741446450534418,
+       "high": 0.6467243432937533,
+       "n": 10
+      },
+      "failed": 0,
+      "moved": 0,
+      "crps": null,
+      "mape": null,
+      "coverage": null,
+      "shares": null
+     }
+    }
+   },
+   {
+    "k": 1,
+    "environment": "drawn",
+    "worlds": 5,
+    "look": 5,
+    "arms": {
+     "status quo": {
+      "regret": {
+       "mean": 0.07678413404011178,
+       "low": 0.008390568431241932,
+       "high": 0.14517769964898164,
+       "n": 5
+      },
+      "failed": 0,
+      "moved": 0,
+      "crps": null,
+      "mape": null,
+      "coverage": null,
+      "shares": null
+     },
+     "equal split": {
+      "regret": {
+       "mean": 0.06797873115336439,
+       "low": -0.0030960978913798787,
+       "high": 0.13905356019810866,
+       "n": 5
+      },
+      "failed": 0,
+      "moved": 0,
+      "crps": null,
+      "mape": null,
+      "coverage": null,
+      "shares": null
+     }
+    }
+   },
+   {
+    "k": 1,
+    "environment": "reference",
+    "worlds": 5,
+    "look": 5,
+    "arms": {
+     "status quo": {
+      "regret": {
+       "mean": 0.33338133591543573,
+       "low": 0.3218391495195098,
+       "high": 0.34492352231136164,
+       "n": 5
+      },
+      "failed": 0,
+      "moved": 0,
+      "crps": null,
+      "mape": null,
+      "coverage": null,
+      "shares": null
+     },
+     "equal split": {
+      "regret": {
+       "mean": 0.7261600766457329,
+       "low": 0.7215428167386122,
+       "high": 0.7307773365528536,
+       "n": 5
+      },
+      "failed": 0,
+      "moved": 0,
+      "crps": null,
+      "mape": null,
+      "coverage": null,
+      "shares": null
+     }
+    }
+   },
+   {
+    "k": 1,
+    "environment": "pooled",
+    "worlds": 5,
+    "look": 10,
+    "arms": {
+     "status quo": {
+      "regret": {
+       "mean": 0.20508273497777374,
+       "low": 0.10473789765667937,
+       "high": 0.3054275722988681,
+       "n": 10
+      },
+      "failed": 0,
+      "moved": 0,
+      "crps": null,
+      "mape": null,
+      "coverage": null,
+      "shares": null
+     },
+     "equal split": {
+      "regret": {
+       "mean": 0.3970694038995487,
+       "low": 0.14741446450534418,
+       "high": 0.6467243432937533,
+       "n": 10
+      },
+      "failed": 0,
+      "moved": 0,
+      "crps": null,
+      "mape": null,
+      "coverage": null,
+      "shares": null
+     }
+    }
+   },
+   {
+    "k": 2,
+    "environment": "drawn",
+    "worlds": 5,
+    "look": 5,
+    "arms": {
+     "status quo": {
+      "regret": {
+       "mean": 0.07678413404011178,
+       "low": 0.008390568431241932,
+       "high": 0.14517769964898164,
+       "n": 5
+      },
+      "failed": 0,
+      "moved": 0,
+      "crps": null,
+      "mape": null,
+      "coverage": null,
+      "shares": null
+     },
+     "equal split": {
+      "regret": {
+       "mean": 0.06797873115336439,
+       "low": -0.0030960978913798787,
+       "high": 0.13905356019810866,
+       "n": 5
+      },
+      "failed": 0,
+      "moved": 0,
+      "crps": null,
+      "mape": null,
+      "coverage": null,
+      "shares": null
+     }
+    }
+   },
+   {
+    "k": 2,
+    "environment": "reference",
+    "worlds": 5,
+    "look": 5,
+    "arms": {
+     "status quo": {
+      "regret": {
+       "mean": 0.33338133591543573,
+       "low": 0.3218391495195098,
+       "high": 0.34492352231136164,
+       "n": 5
+      },
+      "failed": 0,
+      "moved": 0,
+      "crps": null,
+      "mape": null,
+      "coverage": null,
+      "shares": null
+     },
+     "equal split": {
+      "regret": {
+       "mean": 0.7261600766457329,
+       "low": 0.7215428167386122,
+       "high": 0.7307773365528536,
+       "n": 5
+      },
+      "failed": 0,
+      "moved": 0,
+      "crps": null,
+      "mape": null,
+      "coverage": null,
+      "shares": null
+     }
+    }
+   },
+   {
+    "k": 2,
+    "environment": "pooled",
+    "worlds": 5,
+    "look": 10,
+    "arms": {
+     "status quo": {
+      "regret": {
+       "mean": 0.20508273497777374,
+       "low": 0.10473789765667937,
+       "high": 0.3054275722988681,
+       "n": 10
+      },
+      "failed": 0,
+      "moved": 0,
+      "crps": null,
+      "mape": null,
+      "coverage": null,
+      "shares": null
+     },
+     "equal split": {
+      "regret": {
+       "mean": 0.3970694038995487,
+       "low": 0.14741446450534418,
+       "high": 0.6467243432937533,
+       "n": 10
+      },
+      "failed": 0,
+      "moved": 0,
+      "crps": null,
+      "mape": null,
+      "coverage": null,
+      "shares": null
+     }
+    }
+   }
+  ],
+  "compute": {
+   "status quo": {
+    "records": 30,
+    "cpu_model": null,
+    "threads": null,
+    "peak_rss_gib": null,
+    "wall_seconds_a_fit": null,
+    "core_hours": null
+   },
+   "equal split": {
+    "records": 30,
+    "cpu_model": null,
+    "threads": null,
+    "peak_rss_gib": null,
+    "wall_seconds_a_fit": null,
+    "core_hours": null
+   }
+  }
+ }
+}
