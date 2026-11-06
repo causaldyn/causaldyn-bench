@@ -148,6 +148,7 @@ def test_the_crps_of_one_draw_is_its_error_and_of_many_the_normals_closed_form()
     expected = np.mean([(1 + 1) / 2 - 2 / 4, (2 + 3) / 2 - 1 / 4])
     assert crps(two, target) == pytest.approx(expected)
     y, z = 0.3, np.random.default_rng(0).standard_normal((200_000, 1))
+    # the closed form, checked in Maxima by scripts/crps_gaussian.mac
     closed = y * (2 * norm.cdf(y) - 1) + 2 * norm.pdf(y) - 1 / math.sqrt(math.pi)
     assert crps(z, np.array([y])) == pytest.approx(closed, abs=3e-3)
     with pytest.raises(ValueError, match="draws of 2 weeks"):

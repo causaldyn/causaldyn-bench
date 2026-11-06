@@ -1,0 +1,62 @@
+/* The CRPS of a Gaussian forecast N(mu, s^2) at an outcome y, in closed form (Gneiting, Raftery,
+   Westveld and Goldman 2005, eq. 5):
+
+     CRPS = s (z (2 Phi(z) - 1) + 2 phi(z) - 1 / sqrt(pi)),   z = (y - mu) / s,
+
+   the formula tests/test_scorecard_scoring.py holds the scorecard's CRPS to at mu = 0, s = 1.
+   Checked three ways, each printing PASS or FAIL:
+   1. symbolically, as the kernel form E|X - y| - E|X - X'| / 2, both expectations integrated;
+   2. numerically, as the defining integral of (F(x) - [x >= y])^2 over the line, against the
+      closed form in bigfloat at sample points;
+   3. the sorted-draws form the scorecard's crps() reads E|X - X'| / 2 by, sum_i (2 i - n - 1)
+      x_(i) / n^2, against the half mean of |x_i - x_j| over every pair, in exact rationals.
+   Run: timeout 300 maxima --very-quiet -Q -b scripts/crps_gaussian.mac </dev/null, then grep the
+   output for FAIL and Lisp error: an error does not set the exit code. */
+ratprint : false$
+fpprec : 30$
+assume(s > 0)$
+
+Phi(z) := (1 + erf(z / sqrt(2))) / 2$
+phi(z) := exp(-z^2 / 2) / sqrt(2 * %pi)$
+pdf(x, m, v) := exp(-(x - m)^2 / (2 * v)) / sqrt(2 * %pi * v)$
+closed(mu, s, y) := block([z : (y - mu) / s],
+  s * (z * (2 * Phi(z) - 1) + 2 * phi(z) - 1 / sqrt(%pi)))$
+
+report(name, ok) := print(if ok then "PASS" else "FAIL", name)$
+
+/* 1. E|X - y| for X ~ N(mu, s^2), in u = x - mu with a = y - mu, split at a; and E|D| for
+   D = X - X' ~ N(0, 2 s^2) */
+assume(a > 0)$
+below : integrate((a - u) * pdf(u, 0, s^2), u, minf, a)$
+above : integrate((u - a) * pdf(u, 0, s^2), u, a, inf)$
+spread : 2 * integrate(d * pdf(d, 0, 2 * s^2), d, 0, inf)$
+forget(a > 0)$
+report("E|X - X'| = 2 s / sqrt(pi)", is(radcan(spread - 2 * s / sqrt(%pi)) = 0))$
+gap : radcan(expand(below + above - spread / 2 - closed(mu, s, mu + a)))$
+report("kernel form = closed form, y > mu", is(gap = 0))$
+/* the closed form is even in y - mu, as the kernel form is */
+report("closed form even about mu",
+       is(radcan(expand(closed(mu, s, mu + t) - closed(mu, s, mu - t))) = 0))$
+
+/* 2. the defining integral, in double precision by QUADPACK, against bigfloat */
+crps_integral(mu, s, y) := block([F : lambda([x], (1 + erf((x - mu) / (s * sqrt(2)))) / 2)],
+  first(quad_qagi(F(x)^2, x, minf, y, 'epsrel = 1d-13, 'epsabs = 0d0))
+  + first(quad_qagi((1 - F(x))^2, x, y, inf, 'epsrel = 1d-13, 'epsabs = 0d0)))$
+points : [[0, 1, 3/10], [0, 1, 0], [5/2, 3/4, -1], [-1, 2, 4], [10, 1/10, 10]]$
+worst : 0$
+for p in points do block([numeric, exact],
+  numeric : crps_integral(p[1], p[2], p[3]),
+  exact : bfloat(closed(p[1], p[2], p[3])),
+  worst : max(worst, abs(numeric - exact) / exact),
+  print("  mu, s, y =", p, " integral", numeric, " closed", exact))$
+print("  largest relative gap", float(worst))$
+report("defining integral = closed form within 1e-10", is(worst < 1/10^10))$
+
+/* 3. the sorted-draws form, exact: any sample, its draws sorted */
+pairs(xs) := block([n : length(xs)],
+  sum(sum(abs(xs[i] - xs[j]), j, 1, n), i, 1, n) / (2 * n^2))$
+sorted_form(xs) := block([ys : sort(xs), n : length(xs)],
+  sum((2 * i - n - 1) * ys[i], i, 1, n) / n^2)$
+samples : [[3/2], [0, 2], [1, -2, 7/3, 0, 5], [-1/7, 4, 4, 9/2, -3, 11/5, 0]]$
+report("sorted-draws form = half the mean pairwise distance",
+       every(lambda([xs], is(sorted_form(xs) - pairs(xs) = 0)), samples))$
