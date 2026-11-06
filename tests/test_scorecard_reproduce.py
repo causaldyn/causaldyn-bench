@@ -135,8 +135,10 @@ def test_a_tool_runs_where_its_environment_is_found_and_is_scored_beside_the_ben
 def test_a_class_adds_its_digests_and_moves_no_committed_number(committed, run):
     other = copy.deepcopy(committed)
     other["digests"] = {"another class": committed["digests"][next(iter(committed["digests"]))]}
+    # the first class's last bits, within the tolerance of this run's
+    other["records"][0]["best"] *= 1 + TOLERANCE / 10
     added = record(run, committed["worlds"], committed["rungs"], other)
-    assert added["records"] == committed["records"] and added["report"] == committed["report"]
+    assert added["records"] == other["records"] and added["report"] == other["report"]
     assert added["digests"] == other["digests"] | {
         machine_class(): {"under": versions(), "exports": dict(sorted(run.digests.items()))}
     }
