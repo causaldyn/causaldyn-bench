@@ -1,0 +1,40 @@
+name: image
+
+# Builds the reproduction image (`Containerfile`) once a week and on demand, never on a push: its
+# R library alone compiles for hours. It builds and prints the image's digest; nothing is published
+# or pushed. The image builds from the bench and the library side by side, the library checked out
+# at the tag of the version uv.lock names, as the Containerfile's header says.
+
+on:
+  schedule:
+    - cron: "17 3 * * 1"  # Mondays, 03:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          path: causaldyn-bench
+      - name: The library's version in uv.lock
+        id: library
+        run: |
+          version=$(python3 -c 'import tomllib; lock = tomllib.load(open("causaldyn-bench/uv.lock", "rb")); print(next(p["version"] for p in lock["package"] if p["name"] == "causal-hybrid-control"))')
+          echo "ref=v$version" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          repository: causaldyn/causal-hybrid-control
+          ref: ${{ steps.library.outputs.ref }}
+          path: causal-hybrid-control
+      - name: Room for the image
+        # the runner's preinstalled SDKs the build never reads, about 20 GB
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+      - name: Build
+        run: podman build -f causaldyn-bench/Containerfile -t causaldyn-bench-reproduce .
+      - name: Digest
+        run: podman image inspect --format '{{.Id}} {{.Digest}}' causaldyn-bench-reproduce
