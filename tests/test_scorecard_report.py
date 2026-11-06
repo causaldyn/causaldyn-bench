@@ -236,7 +236,7 @@ def test_the_compute_table_reads_only_what_the_records_hold():
 
 
 def _preregistration(tmp_path):
-    path = tmp_path / "m2.md"
+    path = tmp_path / "design.md"
     path.write_text("# The design, fixed before the first scored world\n")
     return path
 
