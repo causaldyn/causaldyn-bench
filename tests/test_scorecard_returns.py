@@ -25,7 +25,20 @@ STILL = (TRACK_M2, "drawn", 905)
 MOVING = (DRIFT, "trend", 220100)
 SPREAD = (0.9, 1.0, 1.1)  # an arm's three draws, the world's coefficient times each
 TOP = len(STARTS)
-NEW = dict.fromkeys(("roi", "mroi", "roi_covered", "mroi_covered", "returns", "unread"))
+# the fields a score of a response gained, each read as None from a record written before it
+NEW = dict.fromkeys(
+    (
+        "roi",
+        "mroi",
+        "roi_covered",
+        "mroi_covered",
+        "returns",
+        "unread",
+        "mape",
+        "roi_coverage",
+        "mroi_coverage",
+    )
+)
 
 
 @pytest.fixture(scope="module", params=[STILL, MOVING], ids=["still", "moving"])
@@ -235,6 +248,22 @@ def test_an_arm_off_the_worlds_returns_scores_its_error_and_its_coverage(drawn_w
         assert arm.roi_covered == arm.mroi_covered == 0.0
 
 
+def test_coverage_is_read_at_80_90_and_95_percent_beside_one_another(drawn_world):
+    family, world, observed = drawn_world
+    truth = family.truth(world)
+    # 21 draws whose coefficients are the world's times these: their central 95 % runs from 0.995
+    # to 1.195 of it, holding the world's own; their central 90 % and 80 % start at 1.01 and 1.02
+    spread = (0.98, *np.linspace(1.01, 1.2, 20))
+    with jax.enable_x64(True):
+        response = _truths(world, observed, spread=spread)
+        arm = score_arm(truth, observed, _plan(observed, response=response))
+        exact = score_arm(truth, observed, _plan(observed, response=_truths(world, observed)))
+    assert arm.roi_coverage == arm.mroi_coverage == {"80": 0.0, "90": 0.0, "95": 1.0}
+    assert exact.roi_coverage == exact.mroi_coverage == {"80": 1.0, "90": 1.0, "95": 1.0}
+    assert arm.roi_coverage is not None
+    assert (arm.roi_covered, exact.roi_covered) == (arm.roi_coverage["90"], 1.0)
+
+
 def _nudged(response):
     """Every coefficient a hundred-thousandth off: ten times the least slip a mapping's check
     catches."""
@@ -283,16 +312,18 @@ def test_a_world_record_keeps_the_worlds_returns_and_reads_a_record_without_them
         name: {"roi": truth.returns.roi[c], "mroi": truth.returns.marginal[c]}
         for c, name in enumerate(observed.channels)
     }
+    spent = observed.spend[_slice(observed)].sum(axis=0)
+    assert scored.spend == {name: spent[c] for c, name in enumerate(observed.channels)}
     assert scored.arms["status quo"].unread is None and scored.arms["x"].unread is None
     text = json.dumps(scored.as_json(), allow_nan=False)
     assert WorldRecord.from_json(json.loads(text)) == scored
     older = json.loads(text)
-    del older["returns"]
+    del older["returns"], older["spend"]
     for arm in older["arms"].values():
         for key in NEW:
             del arm[key]
     back = WorldRecord.from_json(older)
-    assert back.returns == {}
+    assert back.returns == back.spend == {}
     assert (back.arms["x"].roi, back.arms["x"].returns, back.arms["x"].unread) == (None,) * 3
     assert dataclasses.replace(back.arms["x"], **NEW) == dataclasses.replace(
         scored.arms["x"], **NEW

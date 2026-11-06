@@ -24,10 +24,12 @@ the plan's ``gain`` over the status quo, in the outcome's units over the quarter
 tail, the claim less the gain the plan realised, per euro of the budget, and, where it gives a
 ``gain_interval``, whether that holds the realised gain; where it gives a ``forecast``, draws of the
 quarter's weekly sales at the status quo, their CRPS, averaged over the weeks and read in units of
-the history's mean weekly sales; where it gives a ``response`` its tool's decomposition holds
+the history's mean weekly sales, and beside it the field's MAPE on that holdout, the draws' mean
+against the sales week by week; where it gives a ``response`` its tool's decomposition holds
 (:mod:`.mapping`), each channel's ROI and mROI on the export's window (:mod:`.returns`) read off its
 draws against the world's: the relative error of the draws' mean, averaged over the channels, and
-the share of the channels whose truth the draws' central 90 % holds. A response that is missing,
+the share of the channels whose truth the draws' central 90 % holds, and their central 80 % and
+95 % beside it. A response that is missing,
 unmapped, malformed or off its tool's decomposition is not read, and the score says why. A failed
 fit claims, forecasts and maps nothing.
 
@@ -67,6 +69,7 @@ from causaldyn_bench.scorecard.truth import worth
 BUILT_IN = ("status quo", "equal split")  # the arms every world scores without a record
 AXES = ("regret", "realised", "uplift", "crps", "roi", "mroi")  # the axes a paired difference reads
 LEVEL = 0.9  # the central share of a response's draws its returns' coverage reads
+LEVELS = (0.8, LEVEL, 0.95)  # the central shares its coverage is read at beside one another
 # what a score keeps of a record beside its numbers: neither the plan, nor the draws of its forecast
 # and its response, nor where it ran
 ASIDE = (
@@ -103,6 +106,11 @@ class ArmScore:
     # each channel's ROI and mROI as the draws give them: their mean and their central 90 %'s ends
     returns: dict[str, dict[str, list[float]]] | None = None
     unread: str | None = None  # why a record's response was not read, where it was not
+    mape: float | None = None  # the forecast's draws' mean against the quarter's sales
+    # the share of the channels whose ROI the draws' central share holds, at each of ``LEVELS``,
+    # named by its percent
+    roi_coverage: dict[str, float] | None = None
+    mroi_coverage: dict[str, float] | None = None  # the same of the mROI
 
 
 def crps(draws: Series, target: Series) -> float:
@@ -117,6 +125,22 @@ def crps(draws: Series, target: Series) -> float:
     weights = (2.0 * np.arange(1, n + 1) - n - 1)[:, None]
     half = (weights * np.sort(draws, axis=0)).sum(axis=0) / n**2
     return float(np.mean(spread - half))
+
+
+def mape(draws: Series, target: Series) -> float:
+    """The mean absolute percentage error of the draws' mean, ``(draws, weeks)``, against
+    ``target``, averaged over the weeks, as a share: the point forecast's error the field reports
+    on a holdout beside a proper score."""
+    if draws.ndim != 2 or draws.shape[1] != target.size or draws.shape[0] < 1:
+        raise ValueError(f"a forecast is draws of {target.size} weeks, not {draws.shape}")
+    if not np.all(target != 0.0):
+        raise ValueError("a percentage error reads a target that is nowhere 0")
+    return float(np.mean(np.abs(draws.mean(axis=0) - target) / np.abs(target)))
+
+
+def percent(level: float) -> str:
+    """A central share's name, its percent: ``"80"`` for 0.8."""
+    return f"{100 * level:g}"
 
 
 def _read(
@@ -147,6 +171,11 @@ def _read(
         low, high = np.quantile(draws, [(1.0 - LEVEL) / 2.0, (1.0 + LEVEL) / 2.0], axis=0)
         read[key] = float(np.mean(np.abs(mean - true) / np.abs(true)))
         read[f"{key}_covered"] = float(np.mean((low <= true) & (true <= high)))
+        read[f"{key}_coverage"] = {}
+        for level in LEVELS:
+            ends = np.quantile(draws, [(1.0 - level) / 2.0, (1.0 + level) / 2.0], axis=0)
+            held = (ends[0] <= true) & (true <= ends[1])
+            read[f"{key}_coverage"][percent(level)] = float(np.mean(held))
         for c, name in enumerate(observation.channels):
             read["returns"][name][key] = [float(mean[c]), float(low[c]), float(high[c])]
     return read
@@ -180,7 +209,7 @@ def _score(
     for value in (loss, realised):
         if value is not None and value < -TIE:
             raise RuntimeError(f"a plan beat the best plan by {-value:.3g} per euro")
-    uplift = covered = score = None
+    uplift = covered = score = error = None
     if not failure and record.get("gain") is not None:
         on = truth.cells if truth.realised is None else truth.realised
         gain = worth(on, plan) - worth(on, quarter.status_quo)
@@ -193,6 +222,7 @@ def _score(
     if not failure and record.get("forecast") is not None:
         draws = np.asarray(record["forecast"], dtype=float)
         score = crps(draws, truth.target) / truth.scale
+        error = mape(draws, truth.target)
     read: dict[str, Any] = {}
     if not failure and observation is not None:
         if observation.roi_window != truth.returns.window:
@@ -212,6 +242,7 @@ def _score(
         covered,
         score,
         kept,
+        mape=error,
         **read,
     )
 
@@ -245,6 +276,8 @@ class WorldRecord:
     covariates: dict[str, float]
     arms: dict[str, ArmScore]
     returns: dict[str, dict[str, float]] = field(default_factory=dict)  # each channel's ROI, mROI
+    # each channel's spend over the window its returns are read on, the market's on a geo world
+    spend: dict[str, float] = field(default_factory=dict)
 
     def as_json(self) -> dict[str, Any]:
         """The record as strict JSON holds it: a covariate that is not a number as null."""
@@ -297,6 +330,8 @@ def score_world(
         )
     truth = family.truth(world)
     quarter = truth.quarter
+    first, last = observation.roi_window
+    spent = observation.market_spend[first - 1 : last].sum(axis=0)
     arms = {
         name: _score(truth, {"error": None, "weekly": plan})
         for name, plan in zip(BUILT_IN, (quarter.status_quo, quarter.equal_split()), strict=True)
@@ -325,6 +360,7 @@ def score_world(
             name: {"roi": float(truth.returns.roi[c]), "mroi": float(truth.returns.marginal[c])}
             for c, name in enumerate(observation.channels)
         },
+        spend={name: float(spent[c]) for c, name in enumerate(observation.channels)},
     )
 
 

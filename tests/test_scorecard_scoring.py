@@ -24,6 +24,7 @@ from causaldyn_bench.scorecard.scoring import (
     WorldRecord,
     crps,
     look,
+    mape,
     paired,
     score_arm,
     score_world,
@@ -161,6 +162,24 @@ def test_a_forecast_is_scored_by_its_crps_in_units_of_mean_weekly_sales(truth, o
     assert score_arm(truth, observed, _plan(observed, weekly, forecast=off)).crps == pytest.approx(
         0.1
     )
+
+
+def test_a_forecast_is_scored_by_its_mape_on_the_holdout_beside_its_crps(truth, observed):
+    weekly = truth.quarter.status_quo
+    exact = score_arm(truth, observed, _plan(observed, weekly, forecast=[list(truth.target)]))
+    assert exact.mape == 0.0
+    # two draws whose mean is the sales a tenth over in every week
+    over = [list(truth.target), list(1.2 * truth.target)]
+    scored = score_arm(truth, observed, _plan(observed, weekly, forecast=over))
+    assert scored.mape == pytest.approx(0.1, rel=1e-12, abs=0.0)
+    assert scored.crps is not None and scored.crps > 0.0
+    assert score_arm(truth, observed, _plan(observed, weekly)).mape is None
+    failed = _plan(observed, weekly, forecast=over) | {"error": "ValueError: x"}
+    assert score_arm(truth, observed, failed).mape is None
+    with pytest.raises(ValueError, match="nowhere 0"):
+        mape(np.ones((2, 2)), np.array([1.0, 0.0]))
+    with pytest.raises(ValueError, match="draws of 2 weeks"):
+        mape(np.ones((2, 3)), np.ones(2))
 
 
 def test_where_the_quarter_realises_another_path_the_plan_is_scored_on_it_too(world, observed):
