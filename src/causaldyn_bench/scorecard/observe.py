@@ -11,7 +11,10 @@ test's change in spend over. A tool whose likelihood cannot take a test drops it
 family's sales and spend carry a geo axis, with each geo's share of the population beside them,
 and the channels it buys nationally named. Its cells are each geo's own channels, geo by geo in
 the channels' order, then each national channel once, its spend summed over the geos it is
-allotted to; its tests name the geos each took dark.
+allotted to; its tests name the geos each took dark. Where the world prices its impressions
+(:mod:`.cpm`), the export carries each channel's impressions over the history beside its spend,
+``spend / CPM * 1000``, and its digest reads them; every other export holds no such field, and its
+digest is as it was.
 
 The ladder's tests run in universes of their own, so the history holds none of them. Where it does
 hold them, at an overlapping rung (:func:`causaldyn_bench.scorecard.ladder.overlap`), the
@@ -74,7 +77,8 @@ class Observation:
     ``(weeks,)`` and ``spend`` ``(weeks, channels)``, each with a geo axis before the channels where
     ``population`` is given; the box and the status quo hold a weekly spend for each cell.
     ``held`` is given where the history holds the lift tests, and None where they ran apart.
-    ``version`` is the export's; version 3 needs the tests' weekly gaps."""
+    ``version`` is the export's; version 3 needs the tests' weekly gaps. ``impressions``,
+    ``(weeks, channels)``, is given where the world prices its impressions, national alone."""
 
     family: int
     environment: str
@@ -97,6 +101,7 @@ class Observation:
     held: Held | None = None
     version: int = VERSION
     national: tuple[str, ...] = ()  # the channels bought nationally, where there is a geo axis
+    impressions: Series | None = None  # each channel's, where the world prices them
 
     def __post_init__(self) -> None:
         if self.version not in (FIRST, VERSION, SERIES):
@@ -148,6 +153,15 @@ class Observation:
                 not row or len(set(row)) < len(row) or not set(row) <= axis for row in geos
             ):
                 raise ValueError("each test names distinct geos of the geo axis, one row a test")
+        shown = self.impressions
+        if shown is not None and (
+            self.population is not None
+            or np.shape(shown) != self.spend.shape
+            or not (np.isfinite(shown).all() and (np.asarray(shown) >= 0.0).all())
+        ):
+            raise ValueError(
+                f"impressions are a national world's, {self.spend.shape}, finite and at least 0"
+            )
         first, last = self.roi_window
         if not 1 <= first <= last <= weeks:
             raise ValueError(f"the window {self.roi_window} lies outside weeks 1 to {weeks}")
@@ -236,6 +250,8 @@ def _fields(observation: Observation, version: int = VERSION) -> dict[str, np.nd
     if o.held is not None:
         fields["held_share"] = np.array(float(o.held.share))
         fields["held_planned"] = np.asarray(o.held.planned, dtype=float)
+    if o.impressions is not None:
+        fields["impressions"] = np.asarray(o.impressions, dtype=float)
     return fields
 
 
@@ -371,6 +387,7 @@ def _second(saved: Mapping[str, np.ndarray]) -> Observation:
         ),
         national=tuple(str(c) for c in saved["national"]) if "national" in saved else (),
         version=version,
+        impressions=saved.get("impressions"),
     )
 
 
