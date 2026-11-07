@@ -451,6 +451,15 @@ reading are scored against.
 | 20 | `promotions` | promotions follow television's bursts; the price is a lever | independent, tv-0.5, tv-0.8 | the price's contribution against a stated level |
 | 21 | `mmm_framework` | mmm-framework 1.5.0's own two data sets, read from its files and drawn from no seed: a rival's worlds, written to test its own model | national, geo | each channel's contribution and ROAS as the tool's truth files state them, and no curve: an arm's reading is scored, not a plan |
 
+Family 21 holds mmm-framework's two shipped data sets unchanged, with their Apache-2.0 notice
+(`src/causaldyn_bench/scorecard/mmm_framework_worlds/NOTICE`), and reads a file only by its
+SHA-256. `python -m causaldyn_bench.scorecard.mmm_framework` writes its pilot,
+`results/mmm_framework_pilot.{md,json}`: the bench's least-squares arm on both sets and, beside it,
+the tool's own fit as its README's example fits a model (`scripts/mmm_framework_arm.py`, records in
+`results/mmm_framework_fits/`), each channel's contribution and ROAS against the stated ones. On the
+national set the stated ROAS is not read on the file's spend: the spend it is read on is 0.80 to
+0.90 of the file's, by channel, so the contribution is the reading that needs no denominator.
+
 `python -m causaldyn_bench.scorecard.lift_inputs DIRECTORY` writes each export's lift tests beside
 it as the files a tool calibrates on: PyMC-Marketing's lift table with each test's date, the tests
 of several geos as experiments' records, and the dark weeks and the cooldown in a sidecar with the

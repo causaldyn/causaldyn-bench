@@ -18,6 +18,7 @@ from causaldyn_bench.scorecard.mmm_framework import (
     DIGESTS,
     ENVIRONMENTS,
     MMM_FRAMEWORK,
+    NO_CELL,
     WHEEL_SHA256,
     AnswerKey,
     MffWorld,
@@ -26,6 +27,8 @@ from causaldyn_bench.scorecard.mmm_framework import (
     Reading,
     Totalled,
     denominator,
+    main,
+    markdown,
     observational,
     read,
     read_mff,
@@ -36,6 +39,7 @@ from causaldyn_bench.scorecard.mmm_framework import (
 
 FAMILY = MmmFramework()
 ROOT = Path(__file__).resolve().parent.parent
+PILOT = ROOT / "results" / "mmm_framework_pilot"
 
 
 @pytest.fixture(scope="module")
@@ -288,3 +292,21 @@ def test_the_tools_record_is_read_in_the_keys_channels(worlds):
     record["roi"]["values"] = record["roi"]["values"][1:]
     with pytest.raises(ValueError, match="one row a channel"):
         tool_reading(record, world)
+
+
+def test_the_committed_pilot_is_what_the_command_writes(tmp_path):
+    """The bench's arm read again on both sets, and the tool's committed records read again, give
+    the committed pilot: the arm's numbers within 1e-6 of them, as its channels are JAX's at
+    either precision, the report's rounding and the tool's numbers exactly."""
+    committed = json.loads(PILOT.with_suffix(".json").read_text())
+    main(["--out", str(tmp_path / "pilot")])
+    fresh = json.loads((tmp_path / "pilot.json").read_text())
+    assert fresh["no_cell"] == committed["no_cell"] == dict(NO_CELL)
+    assert fresh["tool"] == committed["tool"] and set(fresh["tool"]) == set(ENVIRONMENTS)
+    for new, old in zip(fresh["worlds"], committed["worlds"], strict=True):
+        assert [a["arm"] for a in new["arms"]] == ["observational", "mmm-framework"]
+        for a, b in zip(new["arms"], old["arms"], strict=True):
+            for field in ("contribution", "roas"):
+                np.testing.assert_allclose(a[field], b[field], rtol=1e-6, atol=0)
+    if fresh["x64"]:
+        assert markdown(fresh) == PILOT.with_suffix(".md").read_text()

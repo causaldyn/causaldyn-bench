@@ -1,0 +1,362 @@
+{
+ "family": 21,
+ "mmm_framework": "1.5.0",
+ "wheel": {
+  "name": "mmm_framework-1.5.0-py3-none-any.whl",
+  "sha256": "d9e28710deb382e861f88c05e030b69a51dd5ed0b0e31855ce774382cd5be366"
+ },
+ "x64": true,
+ "worlds": [
+  {
+   "environment": "national",
+   "scenario": "realistic",
+   "violates": "(realistic mix: confounding + many controls + weak/noisy media)",
+   "representable": true,
+   "channels": [
+    "TV",
+    "Search",
+    "Social",
+    "Display",
+    "Video",
+    "Radio",
+    "Print"
+   ],
+   "controls": [
+    "category_demand",
+    "distribution",
+    "price",
+    "competitor_promo",
+    "weather",
+    "holiday"
+   ],
+   "contribution": [
+    6487.8419119819255,
+    1727.9659403433675,
+    2756.055090649586,
+    2151.0342172495475,
+    5113.032285525912,
+    1829.385588743421,
+    1150.9533533188574
+   ],
+   "roas": [
+    3.948705659744279,
+    0.33685072528505544,
+    3.193470896198502,
+    0.7648761317934988,
+    3.5811695960796595,
+    0.9579728874479099,
+    0.9463599035438345
+   ],
+   "denominator": [
+    0.843012237697095,
+    0.9047782471699559,
+    0.8311832324625894,
+    0.8845776368896688,
+    0.8017800207167461,
+    0.8582351942424259,
+    0.8440691226076865
+   ],
+   "arms": [
+    {
+     "arm": "observational",
+     "contribution": [
+      4707.0158373934755,
+      2871.799064015763,
+      2834.068430591268,
+      2525.5953587023378,
+      5302.320322698849,
+      1633.5486544305318,
+      2545.4217703422623
+     ],
+     "roas": [
+      2.4150940166905177,
+      0.5065222287538492,
+      2.7294941893591687,
+      0.7944078306102995,
+      2.9776081492702895,
+      0.7341526293223943,
+      1.7665924755776896
+     ],
+     "roas_interval": null,
+     "contribution_error": [
+      -0.2744866627066809,
+      0.6619535124894316,
+      0.02830616129784791,
+      0.1741307220727193,
+      0.03702070055547613,
+      -0.10705065980508077,
+      1.2115768315043822
+     ],
+     "roas_error": [
+      -0.3883833780492718,
+      0.5036993859081393,
+      -0.14528916089125776,
+      0.03860977953064659,
+      -0.1685375212249357,
+      -0.23363944956916727,
+      0.8667237157473915
+     ],
+     "mean_contribution_error": 0.35636075006165985,
+     "mean_roas_error": 0.3349831987029729,
+     "covered": null
+    },
+    {
+     "arm": "mmm-framework",
+     "contribution": [
+      5148.333455715056,
+      2286.145607899135,
+      2564.411388086649,
+      2555.893841574847,
+      4589.8555688227425,
+      2256.434341563141,
+      2392.901645369986
+     ],
+     "roas": [
+      2.6415269789511164,
+      0.4032258325725735,
+      2.469787217328652,
+      0.8039380001865931,
+      2.5775114504481507,
+      1.014091132369374,
+      1.6607393284530927
+     ],
+     "roas_interval": [
+      [
+       1.151463895542428,
+       4.759851816457409
+      ],
+      [
+       0.13417032330666737,
+       0.7712481392282058
+      ],
+      [
+       0.7100323914754638,
+       5.584950292274591
+      ],
+      [
+       0.22162768288762527,
+       1.9147423153288263
+      ],
+      [
+       1.1745853819613759,
+       4.941736181995782
+      ],
+      [
+       0.022391845037794494,
+       2.859111725071235
+      ],
+      [
+       0.08104634161645537,
+       4.544346093752545
+      ]
+     ],
+     "contribution_error": [
+      -0.20646441057588483,
+      0.32302700795413286,
+      -0.06953551226647203,
+      0.18821626410154435,
+      -0.10232220089518895,
+      0.23343834971010868,
+      1.0790604923039502
+     ],
+     "roas_error": [
+      -0.3310397870672934,
+      0.1970460572152517,
+      -0.22661351939399876,
+      0.05106953501281475,
+      -0.28025987563678156,
+      0.058580201649512276,
+      0.7548707655873006
+     ],
+     "mean_contribution_error": 0.31458060540104027,
+     "mean_roas_error": 0.2713542487947076,
+     "covered": 1.0
+    }
+   ]
+  },
+  {
+   "environment": "geo",
+   "scenario": "geo_heterogeneous",
+   "violates": "global media coefficients (per-geo effectiveness homogeneity)",
+   "representable": false,
+   "channels": [
+    "TV",
+    "Search",
+    "Social",
+    "Display"
+   ],
+   "controls": [
+    "Price"
+   ],
+   "contribution": [
+    11470.628737936615,
+    7517.725613513967,
+    7249.290391057258,
+    2355.0882726987993
+   ],
+   "roas": [
+    0.21759312470774,
+    2.724825481870571,
+    2.705289502584226,
+    0.13201211845419758
+   ],
+   "denominator": [
+    1.0000000000000007,
+    1.0000000000000009,
+    1.000000000000001,
+    0.9999999999999998
+   ],
+   "arms": [
+    {
+     "arm": "observational",
+     "contribution": [
+      11323.87831615372,
+      4627.992793749993,
+      19791.155113705154,
+      3129.4546133511412
+     ],
+     "roas": [
+      0.21480932936770677,
+      1.6774318913229032,
+      7.385661393723553,
+      0.1754184494500184
+     ],
+     "roas_interval": null,
+     "contribution_error": [
+      -0.01279358134027564,
+      -0.38438923795906443,
+      1.7300817109105702,
+      0.3288056543905937
+     ],
+     "roas_error": [
+      -0.01279358134027575,
+      -0.3843892379590639,
+      1.730081710910572,
+      0.3288056543905922
+     ],
+     "mean_contribution_error": 0.6140175461501259,
+     "mean_roas_error": 0.614017546150126,
+     "covered": null
+    },
+    {
+     "arm": "mmm-framework",
+     "contribution": [
+      7046.550707517434,
+      9029.626674212534,
+      9029.89919681605,
+      4642.255493418717
+     ],
+     "roas": [
+      0.13367017814718912,
+      3.272819216684868,
+      3.369776928328772,
+      0.26021699024876327
+     ],
+     "roas_interval": [
+      [
+       0.02020928238317054,
+       0.33188623372562326
+      ],
+      [
+       0.8485882046964303,
+       7.302754121082019
+      ],
+      [
+       1.1419483098308396,
+       7.299963952659137
+      ],
+      [
+       0.008230115569932486,
+       0.7535265337451339
+      ]
+     ],
+     "contribution_error": [
+      -0.3856874920715988,
+      0.20111149813458917,
+      0.2456252556740388,
+      0.9711598699860844
+     ],
+     "roas_error": [
+      -0.3856874920715988,
+      0.20111149813459006,
+      0.2456252556740397,
+      0.9711598699860813
+     ],
+     "mean_contribution_error": 0.45089602896657777,
+     "mean_roas_error": 0.45089602896657743,
+     "covered": 1.0
+    }
+   ]
+  }
+ ],
+ "tool": {
+  "national": {
+   "version": "1.5.0",
+   "settings": {
+    "kpi": "Sales",
+    "media": [
+     "TV",
+     "Search",
+     "Social",
+     "Display",
+     "Video",
+     "Radio",
+     "Print"
+    ],
+    "controls": [
+     "category_demand",
+     "distribution",
+     "price",
+     "competitor_promo",
+     "weather",
+     "holiday"
+    ],
+    "geo": false,
+    "chains": 4,
+    "draws": 2000,
+    "tune": 1000,
+    "seed": 42,
+    "backend": "numpyro",
+    "trend": "LINEAR",
+    "trend_from": "mmm_framework"
+   },
+   "fit_warnings": {
+    "UserWarning: `init='adapt_diag'` is ignored by `nuts_sampler='numpyro'`; the external sampler uses its own initialization.": 1,
+    "RuntimeWarning: invalid value encountered in scalar divide": 626
+   }
+  },
+  "geo": {
+   "version": "1.5.0",
+   "settings": {
+    "kpi": "Sales",
+    "media": [
+     "TV",
+     "Search",
+     "Social",
+     "Display"
+    ],
+    "controls": [
+     "Price"
+    ],
+    "geo": true,
+    "chains": 4,
+    "draws": 2000,
+    "tune": 1000,
+    "seed": 42,
+    "backend": "numpyro",
+    "trend": "LINEAR",
+    "trend_from": "mmm_framework"
+   },
+   "fit_warnings": {
+    "UserWarning: `init='adapt_diag'` is ignored by `nuts_sampler='numpyro'`; the external sampler uses its own initialization.": 1,
+    "RuntimeWarning: invalid value encountered in scalar divide": 2928
+   }
+  }
+ },
+ "no_cell": {
+  "status quo": "a plan, and the truth states no curve to score a plan on",
+  "equal split": "a plan, and the truth states no curve to score a plan on",
+  "CHC": "reads each channel from its lift tests, and the files hold none",
+  "myopic": "reads each channel from its lift tests, and the files hold none"
+ }
+}

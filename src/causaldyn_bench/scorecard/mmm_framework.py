@@ -563,7 +563,7 @@ def markdown(data: Mapping[str, Any]) -> str:
             + " | stated ROAS | "
             + " | ".join(f"{a['arm']}" for a in arms)
             + " | stated over the file's spend |",
-            "|---" * (3 + 2 * len(arms)) + "|",
+            "|---" * (4 + 2 * len(arms)) + "|",
         ]
         for c, channel in enumerate(world["channels"]):
             contributions = [
@@ -628,9 +628,15 @@ def markdown(data: Mapping[str, Any]) -> str:
                 f"and {settings.get('draws')} kept draws, seed {settings.get('seed')}."
             )
             warned = record["fit_warnings"]
-            lines += [f"- {warning} ({count} times)" for warning, count in warned.items()]
+            lines += [
+                f"- {warning} ({'once' if count == 1 else f'{count} times'})"
+                for warning, count in warned.items()
+            ]
             if not any(w.startswith("ConvergenceWarning") for w in warned):
-                lines.append("- No convergence warning: the tool's own check passed.")
+                lines.append(
+                    "- No ConvergenceWarning, which the tool raises where its own check of a fit "
+                    "fails."
+                )
     lines += [
         "",
         "## Arms without a cell",
