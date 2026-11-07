@@ -39,5 +39,6 @@ lasts in sales (:mod:`~causaldyn_bench.scorecard.long_term`); family 19 holds on
 flat (:mod:`~causaldyn_bench.scorecard.flat`); and family 20 sets the promotions by television's
 bursts, with the price a lever (:mod:`~causaldyn_bench.scorecard.promotions`). Families 11 and 16
 draw no worlds. :mod:`~causaldyn_bench.scorecard.lift_inputs` writes a world's lift tests as the
-files a tool calibrates on.
+files a tool calibrates on, and :mod:`~causaldyn_bench.scorecard.variance` measures what common
+random numbers and control variates remove of a comparison's variance.
 """

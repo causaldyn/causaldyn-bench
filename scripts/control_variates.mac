@@ -1,0 +1,89 @@
+/* The closed forms tests/test_scorecard_variance.py holds the scorecard's variance reductions
+   (src/causaldyn_bench/scorecard/variance.py) to, on its synthetic worlds: four normal covariates
+   x of covariance S and mean mu, two arms' regrets a = 1/5 + A' x + u and b = 1/10 + B' x + v, the
+   noise (u, v) apart from x with covariance E, and their difference d = a - b. Each check prints
+   PASS or FAIL:
+   1. the arms' variances and covariance, and the share of an unpaired comparison's variance that
+      pairing removes, 1 - var(d) / (var(a) + var(b)) = 360/539;
+   2. the slope of d on x, S^-1 cov(x, d), is A - B; var(d - (A - B)' x) = 1/10 and R^2 = 99/179;
+      the slope of a on x is A, and its R^2 is 45/61;
+   3. the control-variate estimate mean(d - beta' (x - mu)) at the slope A - B, frozen: its mean is
+      d's for any frozen slope; its variance on 40 worlds is 1/400 where mu is known, and
+      1/400 + (A - B)' S (A - B) / 100 = 299/80000 where mu is read on 100 other worlds;
+   4. a slope fitted on the 12 scored worlds themselves, p = 4 covariates: Lavenberg and Welch's
+      (n - 2) / (n - p - 2) = 5/3, the estimate's variance 5/3 * (1/10) / 12 = 1/72;
+   5. the error of a least-squares prediction from n0 normal worlds, intercept and p slopes,
+      sigma^2 (1 + 1/n0) (1 + p / (n0 - p - 2)) = sigma^2 (1 + 1/n0) (n0 - 2) / (n0 - p - 2)
+      (Breiman and Freedman 1983; E[W^-1] = S^-1 / (n0 - p - 2) for the Wishart W of the centred
+      covariates), so the left-out share at n = 40 worlds, n0 = 39, is
+      1 - (1 - R^2) (n - 3) / (n - p - 3) = 1 - (80/179) (37/33) = 2947/5907.
+   Run: timeout 300 maxima --very-quiet -Q -b scripts/control_variates.mac </dev/null, then grep the
+   output for FAIL and Lisp error: an error does not set the exit code. */
+ratprint : false$
+report(name, ok) := print(if ok then "PASS" else "FAIL", name)$
+/* a product of a row and a column, a number or a 1 x 1 matrix */
+scalar(m) := if matrixp(m) then m[1, 1] else m$
+
+S : matrix([1, 1/2, 0, 0], [1/2, 2, 0, 0], [0, 0, 1/2, 1/4], [0, 0, 1/4, 1])$
+A : matrix([1/2], [0], [1/4], [0])$
+B : matrix([1/4], [1/5], [0], [0])$
+E : matrix([1/10, 1/20], [1/20, 1/10])$
+report("S is positive definite", every(lambda([v], v > 0), float(eigenvalues(S)[1])))$
+
+/* 1. the arms and pairing */
+va : scalar(transpose(A) . S . A) + E[1, 1]$
+vb : scalar(transpose(B) . S . B) + E[2, 2]$
+cab : scalar(transpose(A) . S . B) + E[1, 2]$
+vd : va + vb - 2 * cab$
+print("  var(a), var(b), cov(a, b), var(d):", va, vb, cab, vd)$
+report("var(a) = 61/160, var(b) = 117/400, cov(a, b) = 9/40, var(d) = 179/800",
+       is(va = 61/160) and is(vb = 117/400) and is(cab = 9/40) and is(vd = 179/800))$
+pairing : 1 - vd / (va + vb)$
+print("  pairing's share", pairing, float(pairing))$
+report("pairing removes 360/539 of an unpaired comparison's variance", is(pairing = 360/539))$
+
+/* 2. the slopes */
+C : A - B$
+slope : invert(S) . (S . C)$
+report("the slope of d on x is A - B", is(slope = C))$
+vz : vd - scalar(transpose(C) . S . C)$
+r2 : 1 - vz / vd$
+report("var(d - (A - B)' x) = var(u - v) = 1/10", is(vz = 1/10) and is(vz = E[1, 1] + E[2, 2] - 2 * E[1, 2]))$
+report("R^2 of d on x = 99/179", is(r2 = 99/179))$
+report("(A - B)' S (A - B) = 99/800", is(scalar(transpose(C) . S . C) = 99/800))$
+r2a : scalar(transpose(A) . S . A) / va$
+report("the slope of a on x is A, its R^2 45/61", is(invert(S) . (S . A) = A) and is(r2a = 45/61))$
+
+/* 3. the frozen slope's estimate: z = d - beta' (x - mu) has mean E[d] whatever beta, since
+   E[x - mu] = 0, and variance var(d) - 2 beta' S C + beta' S beta */
+vfrozen(beta) := vd - 2 * scalar(transpose(beta) . S . C) + scalar(transpose(beta) . S . beta)$
+report("at beta = A - B the general form is var(u - v)", is(vfrozen(C) = vz))$
+free : matrix([b1], [b2], [b3], [b4])$
+gradient : map(lambda([b], diff(vfrozen(free), b)), [b1, b2, b3, b4])$
+at_c : subst([b1 = C[1, 1], b2 = C[2, 1], b3 = C[3, 1], b4 = C[4, 1]], gradient)$
+report("var(d - beta' x) is least at beta = A - B: its gradient vanishes there",
+       is(ratsimp(at_c) = [0, 0, 0, 0]))$
+known : vz / 40$
+centred : vz / 40 + scalar(transpose(C) . S . C) / 100$
+print("  the estimate's variance on 40 worlds, mu known and read on 100 others:", known, centred)$
+report("1/400 with mu known", is(known = 1/400))$
+report("299/80000 with mu read on 100 other worlds", is(centred = 299/80000))$
+
+/* 4. a slope fitted on the scored worlds */
+lw(n, p) := (n - 2) / (n - p - 2)$
+report("Lavenberg and Welch at n = 12, p = 4: 5/3", is(lw(12, 4) = 5/3))$
+report("the in-sample estimate's variance: 1/72", is(lw(12, 4) * vz / 12 = 1/72))$
+
+/* 5. Breiman and Freedman's prediction error, and the left-out share */
+pe(n0, p) := (1 + 1/n0) * (1 + p / (n0 - p - 2))$
+report("(1 + 1/n0)(1 + p/(n0 - p - 2)) = (1 + 1/n0)(n0 - 2)/(n0 - p - 2)",
+       is(ratsimp(pe(n0, p) - (1 + 1/n0) * (n0 - 2) / (n0 - p - 2)) = 0))$
+report("at p = 0 it is a mean's, 1 + 1/n0", is(ratsimp(pe(n0, 0) - (1 + 1/n0)) = 0))$
+/* left out at n worlds: each fit reads n - 1 of them, the raw value the others' mean */
+left(n, p, rr) := 1 - (1 - rr) * pe(n - 1, p) / pe(n - 1, 0)$
+report("the left-out share is 1 - (1 - R^2)(n - 3)/(n - p - 3)",
+       is(ratsimp(left(n, p, rr) - (1 - (1 - rr) * (n - 3) / (n - p - 3))) = 0))$
+share : left(40, 4, r2)$
+print("  the left-out share at n = 40:", share, float(share), "against R^2", float(r2))$
+report("at n = 40 it is 2947/5907", is(share = 2947/5907))$
+report("the covariates save nothing below R^2 = 4/37 at n = 40", is(left(40, 4, 4/37) = 0))$

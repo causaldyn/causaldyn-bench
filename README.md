@@ -455,6 +455,17 @@ it as the files a tool calibrates on: PyMC-Marketing's lift table with each test
 of several geos as experiments' records, and the dark weeks and the cooldown in a sidecar with the
 export's digest (`causaldyn_bench.scorecard.lift_inputs`).
 
+`python -m causaldyn_bench.scorecard.variance` measures what the design removes of a comparison's
+variance (`causaldyn_bench.scorecard.variance`): pairing the arms on the same worlds (common random
+numbers) against an unpaired comparison, and control variates on the four covariates every world
+record keeps, the slope fitted on pilot worlds and frozen, with a bootstrap interval on each share.
+It writes the table, an environment and a pair of arms a row, at the end of Track M v2's committed
+pilot reports (`results/track_m2_budgets_pilot.md`, `_pymc130`, and the external arms' two). On the
+budgets pilot's drawn worlds pairing removes 0.63 [0.31, 0.83] of the variance of CHC against
+PyMC-Marketing, and the control variates nothing more: -0.003 [-0.46, +0.19] once their slope is
+read on worlds it was not fitted on (`scripts/control_variates.mac` holds the closed forms the
+tests check them against).
+
 ### Pre-registration
 
 A scored run is pre-registered: its design, sample and reading are fixed in a file before its first

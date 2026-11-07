@@ -52,3 +52,27 @@ Each comparison: the first arm's regret less the second's over the worlds both p
 Channels planned on a bound of the box (within 1% of its width): on Meridian's 20 worlds, Meridian's 19 of 60 against the oracle's 40.
 
 Meridian's fits: 0 raised; of the rest, 1 had divergent transitions, 0 an R-hat over 1.01, 0 did not pass Meridian's own review; 20 plans moved into the box, the furthest by 0.00035 of a week's budget.
+
+## Variance reduction
+
+What each design removes of a comparison's variance a world, so of the worlds it needs for one precision: the share, with its 95 % percentile bootstrap interval over the worlds (10000 resamples). *Pairing*: the arms scored on the same worlds (common random numbers), against an unpaired comparison, `1 - var(a - b) / (var(a) + var(b))`; negative where the arms' regrets move against each other. *Control variates*: the paired difference adjusted by the world's covariates, the status quo's and the equal split's regrets, the best plan's return per euro and the budget's shadow price, `1 - var(adjusted) / var(raw)`, each world by the slope fitted on the other worlds of its environment (left out), and its raw value against the others' mean, so the share is what a slope frozen on this pilot removes from a world it was not fitted on; it is the saving where the covariates' mean is read on many more worlds than the arms are scored on. *Both*: one less the product of what each keeps. `sd` is the paired difference's.
+
+### drawn
+
+| first | second | worlds | sd | pairing [95 %] | control variates [95 %] | both [95 %] |
+|---|---|---|---|---|---|---|
+| CHC | Meridian | 40 | 0.0946 | +0.001 [-0.221, +0.250] | +0.417 [+0.044, +0.666] | +0.417 [+0.192, +0.633] |
+| PyMC-Marketing | Meridian | 40 | 0.0887 | +0.048 [-0.148, +0.313] | +0.561 [+0.256, +0.745] | +0.582 [+0.380, +0.752] |
+| CHC | Robyn | 10 | 0.1828 | -0.061 [-0.209, +0.405] | +0.731 [+0.252, +0.887] | +0.714 [+0.353, +0.877] |
+| PyMC-Marketing | Robyn | 10 | 0.2079 | -0.317 [-0.567, +0.067] | +0.753 [+0.312, +0.882] | +0.674 [+0.295, +0.847] |
+| Meridian | status quo | 40 | 0.0813 | +0.566 [+0.252, +0.814] | +0.706 [+0.495, +0.802] | +0.872 [+0.801, +0.935] |
+| Robyn | status quo | 10 | 0.0955 | +0.768 [+0.440, +0.919] | +0.417 [-0.408, +0.728] | +0.865 [+0.677, +0.928] |
+| Meridian | Robyn | 10 | 0.1435 | +0.324 [+0.204, +0.435] | +0.720 [+0.214, +0.888] | +0.811 [+0.495, +0.926] |
+
+### reference
+
+| first | second | worlds | sd | pairing [95 %] | control variates [95 %] | both [95 %] |
+|---|---|---|---|---|---|---|
+| CHC | Meridian | 20 | 0.1050 | +0.128 [-0.428, +0.521] | -0.306 [-1.145, -0.066] | -0.139 [-1.297, +0.227] |
+| PyMC-Marketing | Meridian | 20 | 0.0896 | +0.298 [+0.000, +0.713] | -0.210 [-2.031, +0.077] | +0.150 [-1.434, +0.550] |
+| Meridian | status quo | 20 | 0.0470 | +0.100 [+0.012, +0.232] | -0.462 [-0.860, -0.130] | -0.316 [-0.675, +0.064] |

@@ -53,3 +53,27 @@ CHC against each arm: CHC's regret minus the arm's over the same worlds, and the
 PyMC-Marketing's fits: 0 raised; of the rest, 1 had divergent transitions, 1 an r-hat over 1.01, 0 an optimiser that reported failure; 20 of 240 geo tests dropped, their sales not having fallen; 0 plans moved into the box.
 
 CHC's readings: 51 of 60 channels' scale intervals open above, the tests not having read the curve's bend; the plan reads the family's shape past the tested spend.
+
+## Variance reduction
+
+What each design removes of a comparison's variance a world, so of the worlds it needs for one precision: the share, with its 95 % percentile bootstrap interval over the worlds (10000 resamples). *Pairing*: the arms scored on the same worlds (common random numbers), against an unpaired comparison, `1 - var(a - b) / (var(a) + var(b))`; negative where the arms' regrets move against each other. *Control variates*: the paired difference adjusted by the world's covariates, the status quo's and the equal split's regrets, the best plan's return per euro and the budget's shadow price, `1 - var(adjusted) / var(raw)`, each world by the slope fitted on the other worlds of its environment (left out), and its raw value against the others' mean, so the share is what a slope frozen on this pilot removes from a world it was not fitted on; it is the saving where the covariates' mean is read on many more worlds than the arms are scored on. *Both*: one less the product of what each keeps. `sd` is the paired difference's.
+
+### drawn
+
+| first | second | worlds | sd | pairing [95 %] | control variates [95 %] | both [95 %] |
+|---|---|---|---|---|---|---|
+| CHC | status quo | 40 | 0.1253 | -0.145 [-0.326, +0.078] | +0.735 [+0.484, +0.885] | +0.696 [+0.496, +0.861] |
+| CHC | equal split | 40 | 0.1853 | -0.063 [-0.181, +0.091] | +0.879 [+0.744, +0.953] | +0.871 [+0.737, +0.951] |
+| CHC | observational | 40 | 0.2411 | -0.056 [-0.194, +0.168] | -0.054 [-0.750, +0.332] | -0.113 [-0.808, +0.319] |
+| CHC | myopic | 40 | 0.1329 | -0.043 [-0.254, +0.227] | +0.067 [-0.439, +0.412] | +0.027 [-0.521, +0.425] |
+| CHC | PyMC-Marketing | 40 | 0.0500 | +0.629 [+0.311, +0.826] | -0.003 [-0.458, +0.194] | +0.628 [+0.244, +0.805] |
+
+### reference
+
+| first | second | worlds | sd | pairing [95 %] | control variates [95 %] | both [95 %] |
+|---|---|---|---|---|---|---|
+| CHC | status quo | 20 | 0.1018 | -0.005 [-0.136, +0.029] | -0.171 [-1.554, +0.148] | -0.176 [-1.839, +0.134] |
+| CHC | equal split | 20 | 0.1003 | +0.023 [-0.085, +0.045] | -0.207 [-1.664, +0.112] | -0.179 [-1.902, +0.133] |
+| CHC | observational | 20 | 0.2602 | +0.132 [-0.174, +0.474] | +0.637 [+0.370, +0.819] | +0.685 [+0.454, +0.853] |
+| CHC | myopic | 20 | 0.1013 | +0.000 [-0.000, +0.000] | -0.183 [-1.751, +0.130] | -0.183 [-1.748, +0.130] |
+| CHC | PyMC-Marketing | 20 | 0.0504 | +0.868 [-0.136, +0.991] | -0.306 [-1.225, -0.118] | +0.828 [-0.741, +0.982] |
