@@ -18,8 +18,9 @@ on families 8 and 10. Every world at rung 4 (:data:`RUNG`), four go-dark tests a
 at which the lift likelihood reads anything.
 
 ``python -m causaldyn_bench.scorecard.pymc_marketing_pilot export --work DIR`` writes the exports,
-one directory an environment (:func:`directory`); the arm fits each directory into its
-``pymc-marketing`` subdirectory; ``score --work DIR`` scores every record against its world
+one directory an environment (:func:`directory`); the arm fits each world, one a process, since
+the tool's process keeps about 0.28 GB of every world it fits, into the directory's
+``pymc-marketing``; ``score --work DIR`` scores every record against its world
 (:func:`~causaldyn_bench.scorecard.scoring.score_world`) and writes
 ``results/pymc_marketing_pilot.{json,md}``, each family's report
 (:func:`~causaldyn_bench.scorecard.report.report`) and the lift tests' count. ``just
