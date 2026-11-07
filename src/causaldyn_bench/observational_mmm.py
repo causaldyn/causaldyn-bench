@@ -18,6 +18,7 @@ from __future__ import annotations
 import math
 from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import Protocol
 
 import numpy as np
 from chc.response import Channel, GeometricAdstock, Tanh
@@ -67,6 +68,22 @@ class Observed:
         return np.column_stack(columns)
 
 
+class Observable(Protocol):
+    """What :func:`fit_observational` reads of a history: :class:`Observed`'s, or another's whose
+    controls are its own."""
+
+    @property
+    def channels(self) -> tuple[str, ...]: ...
+
+    @property
+    def sales(self) -> Series: ...
+
+    @property
+    def spend(self) -> Series: ...  # (weeks, channels)
+
+    def controls(self) -> Series: ...  # (weeks, columns), an intercept among them
+
+
 def _adstock(spend: Series, retention: float, length: int) -> Series:
     weights = retention ** np.arange(length)
     return np.convolve(spend, weights / weights.sum())[: spend.size]
@@ -79,7 +96,7 @@ def channel(retention: float, scale: float, coefficient: float, length: int) -> 
 
 
 def fit_observational(
-    observed: Observed,
+    observed: Observable,
     *,
     length: int = 6,
     known: Mapping[str, Channel] | None = None,
