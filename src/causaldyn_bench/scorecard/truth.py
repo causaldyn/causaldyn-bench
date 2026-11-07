@@ -15,10 +15,12 @@ sum of its cells'.
 
 The best plan in the box at the budget:
 
-* where every cell is concave, a concave curve with an effect never negative, exact for any number
-  of cells: at a price ``mu`` per euro each cell spends where its slope over the quarter meets
-  ``13 mu``, or sits at an end of its box, and ``mu`` is found by bisection where the plan spends
-  the budget;
+* where every cell is concave, a concave curve with an effect never negative, and none is a line,
+  exact for any number of cells: at a price ``mu`` per euro each cell spends where its slope over
+  the quarter meets ``13 mu``, or sits at an end of its box, and ``mu`` is found by bisection where
+  the plan spends the budget. A line's slope does not fall, so its spend jumps from one end of its
+  box to the other at its slope's price, and no price spends the budget: a cell of bend 0 goes to
+  the bound;
 * otherwise, where every cell's curve states its bend (:attr:`Curve.bend
   <causaldyn_bench.endogenous_mmm.Curve.bend>`), as every curve of
   :data:`~causaldyn_bench.endogenous_mmm.CURVES` does, and the kinks its slope drops at, exact for
@@ -349,7 +351,7 @@ def oracle(cells: Sequence[Cell], quarter: Quarter) -> Plan:
     rate = quarter.budget / PLANNED
     if not quarter.lower.sum() <= rate <= quarter.upper.sum():
         raise ValueError(f"no plan in the box spends {rate:.6g} a week")
-    if all(cell.concave for cell in cells):
+    if all(cell.concave and cell.bend != 0.0 for cell in cells):
         return _priced(cells, quarter)
     if all(cell.bend is not None for cell in cells):
         return _bounded(cells, quarter)

@@ -458,3 +458,38 @@ def test_cells_without_a_bend_are_searched():
     np.testing.assert_array_equal(oracle(unbent, quarter).weekly, _gridded(unbent, quarter).weekly)
     with pytest.raises(ValueError, match="states its bend"):
         _envelope(unbent[0], quarter.lower[0], quarter.upper[0])
+
+
+def test_a_line_beside_a_concave_cell_takes_what_the_budget_leaves():
+    """A cell whose worth is a line in its spend, a concave curve of bend 0, and a tanh cell: the
+    best plan spends the tanh cell where its slope meets the line's and the line the rest. The
+    price's bisection cannot find it, since the line's spend jumps from one end of its box to the
+    other at its slope; the line's ``e`` against ``252 tanh(x / 50)`` puts that point at
+    ``50 acosh(sqrt(5.04 / e))``, where its slope ``5.04 sech(x / 50)^2`` meets ``e``. The bound
+    closes the worth's gap, so the spend is held to it within a millionth, where a worth within the
+    gap allows."""
+    weeks, slope = 13, 2.88
+    line = Curve(
+        lambda a, scale: np.asarray(a, dtype=float),
+        lambda a, scale: np.ones_like(np.asarray(a, dtype=float)),
+        concave=True,
+        bend=lambda scale: 0.0,
+    )
+    on = (
+        Cell(np.zeros(weeks), np.ones(weeks), line, 1.0, np.full(weeks, slope)),
+        Cell(np.zeros(weeks), np.ones(weeks), CURVES["tanh"], 2.0 / 50.0, np.full(weeks, 252.0)),
+    )
+    quarter = Quarter(
+        PLANNED * 150.0,
+        np.array([50.0, 10.0]),
+        np.array([140.0, 100.0]),
+        np.array([100.0, 50.0]),
+        np.zeros((0, 2)),
+    )
+    best = oracle(on, quarter)
+    assert quarter.feasible(best.weekly)
+    paid = 50.0 * np.arccosh(np.sqrt(5.04 / slope))
+    exact = np.array([150.0 - paid, paid])
+    np.testing.assert_allclose(best.weekly, exact, rtol=1e-6)
+    assert best.worth >= truth.worth(on, exact) - GAP * quarter.budget
+    assert _dense(on, quarter, 200_001) <= best.worth + GAP * quarter.budget
