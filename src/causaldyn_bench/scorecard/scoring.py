@@ -39,7 +39,7 @@ population (:meth:`GeoQuarter.equal_split
 <causaldyn_bench.scorecard.truth.GeoQuarter.equal_split>`). Beside the arms the score keeps
 covariates of the world that the oracle computes anyway, for control variates: the
 status quo's and the equal split's regrets, the best plan's return per euro of the budget, and the
-budget's shadow price.
+budget's shadow price (:func:`covariates`), which :mod:`.variance` reads.
 
 **Looks** (:func:`look`, :func:`paired`). Every arm is scored on the same worlds, the same truth
 and the same quarter, so their differences are paired and their common noise cancels. A world's
@@ -68,6 +68,7 @@ from causaldyn_bench.scorecard.truth import worth
 
 BUILT_IN = ("status quo", "equal split")  # the arms every world scores without a record
 AXES = ("regret", "realised", "uplift", "crps", "roi", "mroi")  # the axes a paired difference reads
+COVARIATES = ("status quo", "equal split", "return", "price")  # a world record's, in this order
 LEVEL = 0.9  # the central share of a response's draws its returns' coverage reads
 LEVELS = (0.8, LEVEL, 0.95)  # the central shares its coverage is read at beside one another
 # what a score keeps of a record beside its numbers: neither the plan, nor the draws of its forecast
@@ -298,6 +299,30 @@ class WorldRecord:
         return cls(**fields)
 
 
+def built_in(truth: Truth) -> dict[str, ArmScore]:
+    """The status quo and the equal split scored against ``truth``: the arms every world scores
+    without a record."""
+    quarter = truth.quarter
+    plans = (quarter.status_quo, quarter.equal_split())
+    return {
+        name: _score(truth, {"error": None, "weekly": plan})
+        for name, plan in zip(BUILT_IN, plans, strict=True)
+    }
+
+
+def covariates(truth: Truth, built: Mapping[str, ArmScore] | None = None) -> dict[str, float]:
+    """The world's covariates, :data:`COVARIATES`: the status quo's and the equal split's regrets,
+    the best plan's return per euro of the budget and the budget's shadow price, all of them the
+    oracle's, with no arm's fit; ``built`` the built-in arms' scores where they are at hand."""
+    built = built_in(truth) if built is None else built
+    return {
+        "status quo": built["status quo"].regret,
+        "equal split": built["equal split"].regret,
+        "return": truth.best.worth / truth.quarter.budget,
+        "price": truth.best.price,
+    }
+
+
 def score_world(
     family: Family[W],
     environment: str,
@@ -332,17 +357,8 @@ def score_world(
     quarter = truth.quarter
     first, last = observation.roi_window
     spent = observation.market_spend[first - 1 : last].sum(axis=0)
-    arms = {
-        name: _score(truth, {"error": None, "weekly": plan})
-        for name, plan in zip(BUILT_IN, (quarter.status_quo, quarter.equal_split()), strict=True)
-    }
+    arms = built_in(truth)
     arms |= {name: score_arm(truth, observation, record) for name, record in records.items()}
-    covariates = {
-        "status quo": arms["status quo"].regret,
-        "equal split": arms["equal split"].regret,
-        "return": truth.best.worth / quarter.budget,
-        "price": truth.best.price,
-    }
     return WorldRecord(
         family=number(family),
         environment=environment,
@@ -354,7 +370,7 @@ def score_world(
         best=truth.best.worth,
         channels=len(truth.cells),
         oracle_bounds=on_bounds(quarter, truth.best.weekly),
-        covariates=covariates,
+        covariates=covariates(truth, arms),
         arms=arms,
         returns={
             name: {"roi": float(truth.returns.roi[c]), "mroi": float(truth.returns.marginal[c])}
