@@ -35,13 +35,26 @@ so a CPM held at its level (:meth:`Law.held`) leaves the drawn world as it was, 
 
 The world's budget and bidding read its sales before media, so its spend is the drawn world's; its
 media and sales move with the prices, and so does every lift test, which reads the response of its
-own weeks. The best plan is made in spend through the quarter's prices as the world draws them
-(:func:`causaldyn_bench.scorecard.truth.cells`): a cell's adstock is still affine in its weekly
-spend, the history's carryover read at the history's prices and each week of the quarter's spend
-at that week's. No arm reads the quarter's prices. The export carries each channel's impressions
-over the history beside its spend (:class:`~causaldyn_bench.scorecard.observe.Observation`), so a
-plan made on the true curves still leaves regret where the quarter's prices move off what the
-history shows.
+own weeks. The export carries each channel's impressions over the history beside its spend
+(:class:`~causaldyn_bench.scorecard.observe.Observation`).
+
+**The best plan** is made in spend as family 1 makes it under every law (:mod:`.drift`): on the
+quarter as the bench expects it from the history, which no arm reads, with the quarter's own prices
+giving the best plan in hindsight, against which a plan's realised regret is read. Given the log's
+state ``y_{c,T}`` in the history's last week, ``y_{c,T+h}`` is normal with mean
+``phi_c^h y_{c,T}`` and variance ``s_c^2 (1 - phi_c^{2h})``, so a euro is expected to buy
+
+    E[level_c / CPM_{c,T+h}] = exp(-a_c sin(2 pi (T + h) / 52) - phi_c^h y_{c,T}
+                                   + s_c^2 (1 - phi_c^{2h}) / 2)
+
+(:attr:`Price.expected`; ``scripts/cpm_expectation.mac`` checks it). A cell's adstock is affine in
+its weekly spend at any prices (:func:`causaldyn_bench.scorecard.truth.cells`): the history's
+carryover is read at the history's prices and each week of the quarter's spend at that week's,
+expected or realised. What a euro buys enters the adstock, inside the curve, where under the other
+laws the effect multiplies the curve from outside, so the plan best on the expected prices is the
+certainty-equivalent plan, best for the expected adstock, and not exactly the plan best in
+expectation. On the first eight pilot worlds the plan best on 2 000 sampled quarters returns at most
+3e-4 a euro of the budget more than it, on that sample, and nothing more on four of them.
 """
 
 from __future__ import annotations
@@ -79,10 +92,12 @@ class Law:
         nought = np.zeros_like(level)
         return cls(level, nought, nought, nought)
 
-    def path(self, shocks: Series, onward: Series) -> Series:
-        """The CPM over the history and the weeks after it, ``(weeks + horizon, channels)``:
+    def price(self, shocks: Series, onward: Series) -> Price:
+        """The prices over the history and the weeks after it, ``(weeks + horizon, channels)``:
         ``shocks``' first row starts the log's autoregression the week before the history's first,
-        one row a week of the history after it, and ``onward``'s rows run it on, one a week."""
+        one row a week of the history after it, and ``onward``'s rows run it on, one a week; and
+        what a euro is expected to buy in each week after the history, given the log in its last."""
+        weeks = shocks.shape[0] - 1
         steps = np.vstack([shocks[1:], onward])
         innovation = self.sd * np.sqrt(1.0 - self.persistence**2)
         y = self.sd * shocks[0]
@@ -90,9 +105,15 @@ class Law:
         for row in steps:
             y = self.persistence * y + innovation * row
             logs.append(y)
+        log = np.stack(logs)
         week = np.arange(1, steps.shape[0] + 1)[:, None]
         season = self.amplitude * np.sin(2.0 * math.pi * week / YEAR)
-        return self.level * np.exp(season + np.stack(logs))
+        cpm = self.level * np.exp(season + log)
+        decay = self.persistence ** np.arange(1, onward.shape[0] + 1)[:, None]
+        ahead = np.exp(
+            -season[weeks:] - decay * log[weeks - 1] + self.sd**2 * (1.0 - decay**2) / 2.0
+        )
+        return Price(self.level, cpm, np.vstack([self.level / cpm[:weeks], ahead]))
 
 
 def draw(generator: np.random.Generator, channels: Sequence[str]) -> Law:
@@ -107,11 +128,21 @@ def draw(generator: np.random.Generator, channels: Sequence[str]) -> Law:
 
 @dataclass(frozen=True, eq=False)
 class Price:
-    """A world's prices: each channel's level, ``(channels,)``, and its CPM in each week of the
-    history, the quarter and the kernel's tail, ``(weeks, channels)``."""
+    """A world's prices: each channel's level, ``(channels,)``, its CPM in each week of the
+    history, the quarter and the kernel's tail, ``(weeks, channels)``, and what a euro is
+    ``expected`` to buy in each of those weeks against what it buys at the level: the history's
+    weeks as they were, each later one as the law expects it given the history; None where the
+    prices are known in advance."""
 
     level: Series
     cpm: Series
+    expected: Series | None = None
+
+    @property
+    def anticipated(self) -> Series:
+        """What the best plan reads a euro to buy in each week: :attr:`expected`, or :attr:`buys`
+        where the prices are known in advance."""
+        return self.buys if self.expected is None else self.expected
 
     @property
     def buys(self) -> Series:

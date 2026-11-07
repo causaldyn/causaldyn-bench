@@ -1,7 +1,7 @@
 """Family 1's cpm environment: the CPM law draws the path its formula gives, the export carries the
 impressions the spend bought, the response acts on them, a CPM held at its level is the static world
-bit for bit, the best plan moves with the quarter's prices, and the bench's own arms plan a pilot
-world of it end to end."""
+bit for bit, the best plan reads the prices the law expects and the plan in hindsight the realised
+ones, each moving with its own, and the bench's own arms plan a pilot world of it end to end."""
 
 import dataclasses
 import math
@@ -13,14 +13,15 @@ import pytest
 from causaldyn_bench.budget_regret import TIE, plans
 from causaldyn_bench.endogenous_mmm import YEAR, MediaMixWorld, _media
 from causaldyn_bench.lift_calibration import STARTS
-from causaldyn_bench.mmm_decision import PLANNED
+from causaldyn_bench.mmm_decision import PLANNED, Quarter
 from causaldyn_bench.scorecard import cpm, ladder
 from causaldyn_bench.scorecard.continuation import Shadow
 from causaldyn_bench.scorecard.drift import CPM, DRIFT, ENVIRONMENTS, FAMILY, LAWS, priced_world
 from causaldyn_bench.scorecard.observe import export, read
 from causaldyn_bench.scorecard.scoring import BUILT_IN, score_world
 from causaldyn_bench.scorecard.seeds import Role, rng
-from causaldyn_bench.scorecard.track_m2 import window
+from causaldyn_bench.scorecard.track_m2 import still, window
+from causaldyn_bench.scorecard.truth import Cell, cells, oracle, worth
 
 SEED = DRIFT.pilots[CPM][0]
 WEEKS = 156
@@ -129,6 +130,7 @@ def test_a_cpm_held_at_its_level_is_the_static_world_bit_for_bit(seed):
     ours, theirs = DRIFT.truth(held), DRIFT.truth(static)
     assert ours.best.worth == theirs.best.worth and ours.best.price == theirs.best.price
     assert np.array_equal(ours.best.weekly, theirs.best.weekly)
+    assert ours.realised is None and ours.hindsight is None  # a held price has nothing to realise
     for mine, other in zip(ours.cells, theirs.cells, strict=True):
         assert np.array_equal(mine.carry, other.carry) and np.array_equal(mine.reach, other.reach)
     assert np.array_equal(ours.returns.roi, theirs.returns.roi)
@@ -143,32 +145,98 @@ def test_a_cpm_held_at_its_level_is_the_static_world_bit_for_bit(seed):
     assert not np.array_equal(drawn.history.sales, static.history.sales)
 
 
-def _priced(world, factor, channel):
-    """``world`` with ``channel``'s CPM times ``factor`` over the quarter and the tail."""
+def _priced(world, factor, channel, which):
+    """``world`` with ``channel``'s CPM times ``factor`` over the quarter and the tail, as the law
+    expects it or as the quarter realises it."""
     price = world.price
-    moved = price.cpm.copy()
-    moved[WEEKS:, channel] *= factor
-    return dataclasses.replace(world, price=cpm.Price(price.level, moved))
+    drawn, expected = price.cpm.copy(), price.expected.copy()
+    if which == "realised":
+        drawn[WEEKS:, channel] *= factor
+    else:
+        expected[WEEKS:, channel] /= factor
+    return dataclasses.replace(world, price=cpm.Price(price.level, drawn, expected))
 
 
+@pytest.mark.parametrize("which", ["expected", "realised"])
 @pytest.mark.parametrize("channel, factor", [(0, 2.0), (1, 0.5), (2, 0.5)])
-def test_the_best_plan_moves_with_the_quarters_prices(world, channel, factor):
-    """On the first pilot world the best plan holds Meta and television at the foot of their boxes
-    and gives paid shopping the rest: dearer impressions of paid shopping over the quarter, or
-    cheaper ones of Meta or television, move euros to the channel whose price fell against the
-    others'. The history's carryover is read at the history's prices either way, and each week of
-    the quarter's spend reaches as far as it buys."""
+def test_each_best_plan_moves_with_its_own_prices(world, channel, factor, which):
+    """On the first pilot world both the best plan and the plan in hindsight hold Meta and
+    television at the foot of their boxes and give paid shopping the rest. Dearer impressions of
+    paid shopping over the quarter, or cheaper ones of Meta or television, move euros to the
+    channel whose price fell against the others': in the best plan where the law expects it, in
+    the plan in hindsight where the quarter realises it, and in that one alone. The history's
+    carryover is read at the history's prices either way, and each week of the quarter's spend
+    reaches as far as it buys."""
     base = DRIFT.truth(world)
     quarter = base.quarter
-    np.testing.assert_array_equal(base.best.weekly[1:], quarter.lower[1:])
-    assert quarter.lower[0] + 1.0 < base.best.weekly[0] < quarter.upper[0] - 1.0
-    moved = DRIFT.truth(_priced(world, factor, channel))
-    shift = moved.best.weekly - base.best.weekly
-    assert quarter.feasible(moved.best.weekly)
+    assert base.hindsight is not None
+    for plan in (base.best, base.hindsight):
+        np.testing.assert_array_equal(plan.weekly[1:], quarter.lower[1:])
+        assert quarter.lower[0] + 1.0 < plan.weekly[0] < quarter.upper[0] - 1.0
+    moved = DRIFT.truth(_priced(world, factor, channel, which))
+    on, still_on = ("best", "hindsight") if which == "expected" else ("hindsight", "best")
+    shift = getattr(moved, on).weekly - getattr(base, on).weekly
+    assert quarter.feasible(getattr(moved, on).weekly)
     assert (shift[channel] < -1.0) if factor > 1.0 else (shift[channel] > 1.0)
-    cell, before = moved.cells[channel], base.cells[channel]
+    assert np.array_equal(getattr(moved, still_on).weekly, getattr(base, still_on).weekly)
+    cells_on = "cells" if which == "expected" else "realised"
+    cell, before = getattr(moved, cells_on)[channel], getattr(base, cells_on)[channel]
     assert np.array_equal(cell.carry, before.carry)
     np.testing.assert_allclose(cell.reach, before.reach / factor, rtol=1e-15, atol=0.0)
+
+
+def _quarters(world, draws, seed):
+    """``draws`` quarters of what a euro buys, ``(draws, horizon, channels)``, run on from the log
+    in the history's last week by the world's law, from a generator of the test's own."""
+    law = cpm.draw(rng(FAMILY, Role.PARAMETERS, world.seed), world.history.channels)
+    price = world.price
+    horizon = price.cpm.shape[0] - WEEKS
+    t = np.arange(1, WEEKS + horizon + 1)[:, None]
+    season = law.amplitude * np.sin(2 * math.pi * t / YEAR)
+    log = np.log(price.cpm[:WEEKS] / price.level) - season[:WEEKS]
+    shocks = np.random.default_rng(seed).standard_normal((draws, horizon, 3))
+    y = np.broadcast_to(log[-1], (draws, 3)).copy()
+    out = np.empty_like(shocks)
+    for h in range(horizon):
+        y = law.persistence * y + law.sd * np.sqrt(1 - law.persistence**2) * shocks[:, h]
+        out[:, h] = np.exp(-season[WEEKS + h] - y)
+    return out
+
+
+def test_the_best_plan_reads_what_a_euro_is_expected_to_buy(world):
+    """The expected prices are the history's as they were and, after it, the mean of the quarters
+    the law runs on from the history's last week: within five standard errors of 20 000 sampled
+    quarters at every week and channel (a false red below 1e-4 over its 54 cells). The plan best
+    on them is the certainty-equivalent plan: on 2 000 sampled quarters the plan best on their
+    average returns more by at most 1e-3 a euro of the budget, here and on the pilot world where
+    the difference is largest of the first eight."""
+    price = world.price
+    np.testing.assert_array_equal(price.expected[:WEEKS], price.buys[:WEEKS])
+    sampled = _quarters(world, 20_000, 7)
+    mean, error = sampled.mean(axis=0), sampled.std(axis=0, ddof=1) / math.sqrt(20_000)
+    assert np.all(np.abs(mean - price.expected[WEEKS:]) < 5.0 * error)
+    assert not np.array_equal(price.expected[WEEKS:], price.buys[WEEKS:])
+    for case in (world, DRIFT.world(CPM, SEED + 5)):
+        assert case.price is not None
+        history, known = case.history, case.price.buys[:WEEKS]
+        quarter, path = Quarter.after(history), still(history)
+        best = DRIFT.truth(case).best
+        each = [
+            cells(history, quarter, path, buys=np.vstack([known, q]))
+            for q in _quarters(case, 2_000, 8)
+        ]
+        average = tuple(
+            Cell(
+                np.concatenate([e[c].carry for e in each]),
+                np.concatenate([e[c].reach for e in each]),
+                each[0][c].curve,
+                each[0][c].scale,
+                np.concatenate([e[c].effect for e in each]) / len(each),
+            )
+            for c in range(3)
+        )
+        gap = (oracle(average, quarter).worth - worth(average, best.weekly)) / quarter.budget
+        assert -1e-12 <= gap < 1e-3
 
 
 def _total(history, price, c, spend):
@@ -262,7 +330,8 @@ def test_the_bench_arms_plan_a_pilot_world_of_the_environment_end_to_end(world):
     assert (scored.family, scored.environment, scored.index) == (1, CPM, 0)
     assert set(scored.arms) == {*BUILT_IN, *records}
     for score in scored.arms.values():
-        assert score.failure is None and score.regret >= -TIE and score.realised is None
+        assert score.failure is None and score.regret >= -TIE
+        assert score.realised is not None and score.realised >= -TIE
 
 
 def test_the_family_names_the_cpm_environment_after_its_laws():

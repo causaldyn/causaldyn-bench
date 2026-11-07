@@ -429,7 +429,7 @@ reading are scored against.
 | family | module | what it stresses | environments | truth beyond the best plan and the returns |
 |---|---|---|---|---|
 | 0 | `track_m2` | Track M v2 itself | drawn, reference | |
-| 1 | `drift` | each channel's effect drifts; in cpm its cost per thousand impressions moves instead, a log-AR(1) about a seasonal mean (`causaldyn_bench.scorecard.cpm`), the response reads the impressions the spend buys, and the export carries them beside the spend | walk, trend, step, season, revert, static, cpm | |
+| 1 | `drift` | each channel's effect drifts; in cpm its cost per thousand impressions moves instead, a log-AR(1) about a seasonal mean (`causaldyn_bench.scorecard.cpm`), the response reads the impressions the spend buys, and the export carries them beside the spend; as under the other laws, the best plan reads the prices the law expects and the realised ones are scored in hindsight | walk, trend, step, season, revert, static, cpm | |
 | 2 | `confounded` | spend follows a sentiment no arm observes; in search-demand only paid shopping's does, and every arm reads a query volume that television raises | kappa-0.5, kappa-1, kappa-2, search-demand | search-demand: each channel's return with the queries held |
 | 3 | `collinear` | two channels' spend moves together | r-0.9, r-0.97, r-0.99 | |
 | 4 | `s_curves` | every curve is S-shaped | hill-2, weibull-2, logistic-4 | |

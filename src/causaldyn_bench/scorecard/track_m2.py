@@ -161,12 +161,17 @@ def truth(
     returns on last year's spend: on the history as planned, or, where ``held``'s tests ran in the
     market, on the history as it ran them. The quarter's carryover is the same, since a test's
     darkness is over before the kernel reaches the quarter. Where the world prices its
-    impressions, the cells and the returns read the spend at the world's prices (:mod:`.cpm`)."""
+    impressions (:mod:`.cpm`), the best plan reads the prices the world expects, and the realised
+    cells and the returns the prices it drew."""
     quarter = Quarter.after(world.history, box)
-    buys = None if world.price is None else world.price.buys
-    expected = cells(world.history, quarter, world.expected, buys=buys)
+    buys = anticipated = None
+    moved = not np.array_equal(world.realised, world.expected)
+    if world.price is not None:
+        buys, anticipated = world.price.buys, world.price.anticipated
+        moved = moved or not np.array_equal(buys, anticipated)
+    expected = cells(world.history, quarter, world.expected, buys=anticipated)
     realised = hindsight = None
-    if not np.array_equal(world.realised, world.expected):
+    if moved:
         realised = cells(world.history, quarter, world.realised, buys=buys)
         hindsight = oracle(realised, quarter)
     return Truth(

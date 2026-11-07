@@ -25,15 +25,18 @@ drawn apart:
 * *cpm*: ``x = 0``, and each channel's cost per thousand impressions moving by the CPM law, a
   first-order autoregression in its log about a seasonal mean, with the channel's response acting
   on the impressions its spend buys (:mod:`.cpm`). The export carries each channel's impressions
-  beside its spend; the best plan reads the quarter's prices as the world draws them, which no arm
-  reads. Held at its level, the CPM leaves the static world bit for bit (:func:`priced_world`).
+  beside its spend; the best plan reads the prices the law expects given the history, and the
+  quarter's own prices give the best plan in hindsight, as under the laws above. Held at its level,
+  the CPM leaves the static world bit for bit (:func:`priced_world`).
 
 Given its state at ``T``, ``x_{T+h}`` is normal under every law, so its expected multiplier is
 ``exp(mean + variance / 2)``. The best plan is made for each channel's effect times that, from the
 state at ``T``, which the bench knows and no arm does: a plan's worth is linear in the effect, so
 the plan best on the expected path is the plan best in expectation. The quarter realises a path of
 its own, drawn from the family's continuation stream; where it is another, a plan's regret against
-the best plan in hindsight is scored beside it.
+the best plan in hindsight is scored beside it. In the cpm environment what a euro buys enters
+the adstock, inside the curve, so the plan best on the expected prices is the certainty-equivalent
+plan rather than exactly the plan best in expectation (:mod:`.cpm` bounds the difference).
 
 The parameters, the history's shocks and the quarter's are drawn from the family's streams
 (:mod:`.seeds`) for the world's seed, in that order of roles, the CPM law's in the cpm environment;
@@ -284,7 +287,7 @@ def priced_world(seed: int, moving: cpm.Law | None = None) -> World:
         moving = cpm.draw(rng(FAMILY, Role.PARAMETERS, seed), base.channels)
     shocks = rng(FAMILY, Role.PATH, seed).standard_normal((weeks + 1, channels))
     onward = rng(FAMILY, Role.CONTINUATION, seed).standard_normal((horizon, channels))
-    price = cpm.Price(moving.level, moving.path(shocks, onward))
+    price = moving.price(shocks, onward)
     history = cpm.priced(base, price.buys[:weeks])
     path = still(history)
     quarter = shadow(generator, history, seed, path, price.buys)

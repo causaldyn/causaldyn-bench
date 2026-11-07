@@ -1,0 +1,55 @@
+/* What a euro is expected to buy, the price the cpm environment's best plan reads
+   (src/causaldyn_bench/scorecard/cpm.py). The log of a channel's CPM about its seasonal mean is a
+   first-order autoregression, y_t = phi y_{t-1} + s sqrt(1 - phi^2) eps_t, eps standard normal.
+   Each check prints PASS or FAIL:
+   1. given y_T, y_{T+h} is normal of mean phi^h y_T and variance s^2 (1 - phi^(2 h)): the
+      recursion m_h = phi m_{h-1}, v_h = phi^2 v_{h-1} + s^2 (1 - phi^2) from m_0 = y_T, v_0 = 0,
+      at h = 1 .. 8, and the closed form solves it for every h;
+   2. E[exp(-Y)] = exp(-mu + sigma^2 / 2) for Y normal of mean mu and variance sigma^2, by the
+      integral and in bfloat at sample points;
+   3. so a euro is expected to buy level / CPM_{T+h} = exp(-a sin(2 pi (T + h) / 52) - phi^h y_T
+      + s^2 (1 - phi^(2 h)) / 2) times what it buys at the level; and a CPM held at its level,
+      a = phi = s = 0, is expected to buy 1, as it buys.
+   Run: timeout 300 maxima --very-quiet -Q -b scripts/cpm_expectation.mac </dev/null, then grep the
+   output for FAIL and Lisp error: an error does not set the exit code. */
+ratprint : false$
+fpprec : 40$
+report(name, ok) := print(if ok then "PASS" else "FAIL", name)$
+
+/* 1. the moments h weeks on */
+ahead_mean(h) := if h = 0 then yT else phi * ahead_mean(h - 1)$
+ahead_var(h) := if h = 0 then 0 else phi^2 * ahead_var(h - 1) + s^2 * (1 - phi^2)$
+report("the mean h weeks on is phi^h y_T, h = 1 .. 8",
+       every(lambda([h], is(ratsimp(ahead_mean(h) - phi^h * yT) = 0)), makelist(h, h, 1, 8)))$
+report("the variance h weeks on is s^2 (1 - phi^(2 h)), h = 1 .. 8",
+       every(lambda([h], is(ratsimp(ahead_var(h) - s^2 * (1 - phi^(2 * h))) = 0)),
+             makelist(h, h, 1, 8)))$
+closed(h) := s^2 * (1 - phi^(2 * h))$
+report("s^2 (1 - phi^(2 h)) solves the recursion for every h",
+       is(ratsimp(expand(closed(h) - (phi^2 * closed(h - 1) + s^2 * (1 - phi^2)))) = 0))$
+
+/* 2. the normal's exponential moment */
+assume(sigma > 0)$
+density : exp(-(x - mu)^2 / (2 * sigma^2)) / sqrt(2 * %pi * sigma^2)$
+report("the density integrates to 1", is(ratsimp(integrate(density, x, minf, inf)) = 1))$
+moment : integrate(exp(-x) * density, x, minf, inf)$
+report("E[exp(-Y)] = exp(-mu + sigma^2 / 2)", is(ratsimp(moment - exp(-mu + sigma^2 / 2)) = 0))$
+numeric(m, sd) := block([f, got],
+  f : subst([mu = m, sigma = sd], exp(-x) * density),
+  got : quad_qagi(f, x, minf, inf, 'epsrel = 1d-13)[1],
+  abs(got / float(exp(-m + sd^2 / 2)) - 1))$
+worst : lmax(map(lambda([p], numeric(p[1], p[2])), [[0.3, 0.2], [-0.7, 0.05], [1.1, 0.35]]))$
+print("  the numeric integral's worst relative error:", worst)$
+report("quad_qagi agrees with exp(-mu + sigma^2 / 2) at three points to 1e-10", is(worst < 1d-10))$
+bf : bfloat(subst([mu = 3/10, sigma = 1/5], exp(-mu + sigma^2 / 2)))$
+report("in bfloat at mu = 0.3, sigma = 0.2 it is exp(-0.28)", is(abs(bf - bfloat(exp(-28/100))) < 10^(-35)))$
+
+/* 3. what a euro is expected to buy */
+season(t) := a * sin(2 * %pi * t / 52)$
+expected_buys(h) := exp(-season(T + h)) * subst([mu = phi^h * yT, sigma = sqrt(closed(h))],
+                                                exp(-mu + sigma^2 / 2))$
+code(h) := exp(-season(T + h) - phi^h * yT + s^2 * (1 - phi^(2 * h)) / 2)$
+report("cpm.py's form is exp(-season) E[exp(-y_{T+h})], h = 1 .. 8",
+       every(lambda([h], is(ratsimp(expected_buys(h) / code(h)) = 1)), makelist(h, h, 1, 8)))$
+report("held at its level, a = phi = s = 0, a euro is expected to buy 1, h = 1 .. 8",
+       every(lambda([h], is(subst([a = 0, phi = 0, s = 0], code(h)) = 1)), makelist(h, h, 1, 8)))$
