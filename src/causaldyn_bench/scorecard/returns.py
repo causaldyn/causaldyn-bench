@@ -87,20 +87,31 @@ def _window_returns(
     return roi, np.sum(held * marginal(every, own), axis=1) / spent
 
 
-def true_returns(history: MediaMixWorld, window: tuple[int, int]) -> Returns:
+def true_returns(
+    history: MediaMixWorld, window: tuple[int, int], buys: Series | None = None
+) -> Returns:
     """Each channel's ROI and mROI on ``window`` in ``history``: through its own kernel and curve,
-    at its effect in each week."""
+    at its effect in each week. Where the world prices its impressions (:mod:`.cpm`), ``buys``,
+    ``(weeks, channels)`` from the history's first week, is what a euro bought of the curve's input
+    in each week: the curve reads the spend times it, and a return is still per euro spent."""
     effects = history.effect_path()
+    weeks = history.spend.shape[0]
+    first, last = window
     roi, marginal = [], []
     for c, (curve, lam) in enumerate(zip(history.curves(), history.saturation, strict=True)):
+        spend = history.spend[:, c]
+        bought = spend if buys is None else spend * buys[:weeks, c]
         one, slope = _window_returns(
-            history.spend[:, c],
+            bought,
             window,
             history.kernel(c)[None, :],
             effects[None, :, c],
             lambda a, curve=curve, lam=lam: curve.value(a, lam),
             lambda a, along, curve=curve, lam=lam: curve.slope(a, lam) * along,
         )
+        if buys is not None:  # per euro, not per unit of the curve's input
+            per = bought[first - 1 : last].sum() / spend[first - 1 : last].sum()
+            one, slope = one * per, slope * per
         roi.append(float(one[0]))
         marginal.append(float(slope[0]))
     return Returns(window, np.array(roi), np.array(marginal))

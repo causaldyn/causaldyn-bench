@@ -14,6 +14,7 @@ from causaldyn_bench.mmm_decision import PLANNED, Quarter
 from causaldyn_bench.scorecard.continuation import Shadow
 from causaldyn_bench.scorecard.drift import (
     DRIFT,
+    ENVIRONMENTS,
     LAWS,
     Revert,
     Season,
@@ -252,8 +253,9 @@ def test_a_drifting_world_is_scored_on_both_paths(worlds):
 
 
 def test_the_family_draws_its_own_blocks():
-    assert number(DRIFT) == 1 and tuple(DRIFT.scored) == tuple(LAWS) == tuple(DRIFT.pilots)
-    for e, name in enumerate(LAWS):
+    assert number(DRIFT) == 1 and tuple(DRIFT.scored) == ENVIRONMENTS == tuple(DRIFT.pilots)
+    assert ENVIRONMENTS[: len(LAWS)] == tuple(LAWS)  # the laws keep their blocks
+    for e, name in enumerate(ENVIRONMENTS):
         assert DRIFT.scored[name] == range(221_000 + 1_000 * e, 222_000 + 1_000 * e)
         assert DRIFT.pilots[name] == range(220_000 + 100 * e, 220_100 + 100 * e)
     assert all(label.endswith(".") for label in DRIFT.labels)

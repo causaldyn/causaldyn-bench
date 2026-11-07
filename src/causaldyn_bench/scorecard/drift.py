@@ -1,4 +1,5 @@
-"""Family 1: Track M v2's drawn worlds with each channel's effect drifting over the weeks.
+"""Family 1: Track M v2's drawn worlds with each channel's effect, or the price of its impressions,
+drifting over the weeks.
 
 Each channel's media in week ``t`` are its media in the drawn world times ``m_{c,t} = e^{x_{c,t}}``,
 so its effect in that week is ``beta_c m_{c,t}``. The world's budget and bidding read its sales
@@ -20,7 +21,12 @@ drawn apart:
 * *revert*: ``x_t = phi_c x_{t-1} + s_c sqrt(1 - phi_c^2) eps_t``, started from its stationary
   law ``N(0, s_c^2)``, ``phi_c`` uniform on ``[0.8, 0.97]`` and ``s_c`` on ``[0.15, 0.4]``;
   ``exp(phi_c^h x_T + s_c^2 (1 - phi_c^{2h}) / 2)``;
-* *static*: ``x = 0``; Track M v2's world, bit for bit.
+* *static*: ``x = 0``; Track M v2's world, bit for bit;
+* *cpm*: ``x = 0``, and each channel's cost per thousand impressions moving by the CPM law, a
+  first-order autoregression in its log about a seasonal mean, with the channel's response acting
+  on the impressions its spend buys (:mod:`.cpm`). The export carries each channel's impressions
+  beside its spend; the best plan reads the quarter's prices as the world draws them, which no arm
+  reads. Held at its level, the CPM leaves the static world bit for bit (:func:`priced_world`).
 
 Given its state at ``T``, ``x_{T+h}`` is normal under every law, so its expected multiplier is
 ``exp(mean + variance / 2)``. The best plan is made for each channel's effect times that, from the
@@ -30,8 +36,9 @@ its own, drawn from the family's continuation stream; where it is another, a pla
 the best plan in hindsight is scored beside it.
 
 The parameters, the history's shocks and the quarter's are drawn from the family's streams
-(:mod:`.seeds`) for the world's seed, in that order of roles; the world beneath the drift, its
-quarter's processes and its lift tests' noise are Track M v2's for the same seed.
+(:mod:`.seeds`) for the world's seed, in that order of roles, the CPM law's in the cpm environment;
+the world beneath the drift, its quarter's processes and its lift tests' noise are Track M v2's for
+the same seed.
 """
 
 from __future__ import annotations
@@ -47,11 +54,12 @@ from numpy.typing import NDArray
 
 from causaldyn_bench.endogenous_mmm import YEAR, MediaMixWorld, Series
 from causaldyn_bench.mmm_decision import PLANNED, drawn
+from causaldyn_bench.scorecard import cpm
 from causaldyn_bench.scorecard.continuation import shadow
 from causaldyn_bench.scorecard.family import Truth
 from causaldyn_bench.scorecard.observe import Observation
 from causaldyn_bench.scorecard.seeds import Role, pilot, rng, scored, stream
-from causaldyn_bench.scorecard.track_m2 import TRACK_M2, World, observation, truth
+from causaldyn_bench.scorecard.track_m2 import TRACK_M2, World, observation, still, truth
 
 FAMILY = 1
 
@@ -206,6 +214,10 @@ LAWS: dict[str, Callable[[np.random.Generator, int, int], Law]] = {
 }
 
 
+CPM = "cpm"  # the environment whose prices move, not its effect
+ENVIRONMENTS = (*LAWS, CPM)
+
+
 def law(environment: str, seed: int, channels: int, weeks: int) -> Law:
     """The law of ``environment`` with each channel's parameters drawn for world ``seed``."""
     if environment not in LAWS:
@@ -259,6 +271,26 @@ def drift(history: MediaMixWorld, multiplier: Series) -> Drifted:
     return Drifted(**kept, multiplier=multiplier)
 
 
+def priced_world(seed: int, moving: cpm.Law | None = None) -> World:
+    """The cpm environment's world ``seed``: Track M v2's drawn world for the seed, its effect
+    still, each channel's CPM drawn by its law, or by ``moving`` where it is given; the law's
+    parameters, its history's shocks and its quarter's drawn from the family's streams for the
+    seed, in that order of roles."""
+    generator = drawn(seed)
+    base = generator.simulate(seed)
+    weeks, channels = base.spend.shape
+    horizon = PLANNED + base.kernel_length - 1
+    if moving is None:
+        moving = cpm.draw(rng(FAMILY, Role.PARAMETERS, seed), base.channels)
+    shocks = rng(FAMILY, Role.PATH, seed).standard_normal((weeks + 1, channels))
+    onward = rng(FAMILY, Role.CONTINUATION, seed).standard_normal((horizon, channels))
+    price = cpm.Price(moving.level, moving.path(shocks, onward))
+    history = cpm.priced(base, price.buys[:weeks])
+    path = still(history)
+    quarter = shadow(generator, history, seed, path, price.buys)
+    return World(CPM, seed, generator, history, quarter, path, path, price=price)
+
+
 class Drift:
     """Family 1."""
 
@@ -269,12 +301,16 @@ class Drift:
         "channel's effect. The other laws, and every law's ranges, are the bench's own.",
         "Beneath the drift each world is a Track M v2 drawn world, whose media are "
         "PyMC-Marketing's default class; under the static law it is that world, bit for bit.",
+        "In the cpm environment each channel's response reads the impressions its spend buys, "
+        "which the export carries beside the spend.",
         *TRACK_M2.labels[1:],
     )
-    pilots = MappingProxyType({name: pilot(FAMILY, e) for e, name in enumerate(LAWS)})
-    scored = MappingProxyType({name: scored(FAMILY, e) for e, name in enumerate(LAWS)})
+    pilots = MappingProxyType({name: pilot(FAMILY, e) for e, name in enumerate(ENVIRONMENTS)})
+    scored = MappingProxyType({name: scored(FAMILY, e) for e, name in enumerate(ENVIRONMENTS)})
 
     def world(self, environment: str, seed: int) -> World:
+        if environment == CPM:
+            return priced_world(seed)
         if environment not in LAWS:
             raise ValueError(f"{self.name} has no environment {environment!r}")
         generator = drawn(seed)

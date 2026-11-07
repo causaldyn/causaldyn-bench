@@ -75,10 +75,13 @@ def shadow(
     world: MediaMixWorld,
     seed: int,
     effect: ArrayLike | None = None,
+    buys: ArrayLike | None = None,
 ) -> Shadow:
     """The quarter after ``world``'s history, which ``generator`` drew from ``seed``, at the status
     quo: ``effect``, ``(channels, 13 + L - 1)``, is each channel's effect path over the quarter and
-    the kernel's tail, the channel's coefficient where it is None."""
+    the kernel's tail, the channel's coefficient where it is None; ``buys``, where the world prices
+    its impressions, what a euro buys of each channel's curve's input in each week from the
+    history's first (:func:`causaldyn_bench.scorecard.truth.cells`)."""
     draw = rng(0, Role.CONTINUATION, seed)
     weeks = world.week.size
     week = np.arange(weeks + 1, weeks + PLANNED + 1)
@@ -105,7 +108,7 @@ def shadow(
     premedia = baseline + promotion
 
     quarter = Quarter.after(world)
-    cells = truth.cells(world, quarter, effect)
+    cells = truth.cells(world, quarter, effect, buys=buys)
     media = np.column_stack(
         [
             cell.returns(float(w))[:PLANNED]

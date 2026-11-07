@@ -132,13 +132,17 @@ def cells(
     quarter: Quarter,
     effect: ArrayLike | None = None,
     curves: Sequence[Curve] | None = None,
+    buys: ArrayLike | None = None,
 ) -> tuple[Cell, ...]:
     """Each of ``world``'s channels as a cell over the quarter after ``quarter.history``: the
     history's carryover and the reach of a unit a week through the channel's kernel, the world's
     own (:meth:`MediaMixWorld.kernel`), nothing spent after the quarter; on the world's curves, or
     on ``curves``, one a channel, each at the channel's ``saturation``, his ``lambda``; and the
     channel's constant effect, or ``effect``, a path a channel over the quarter and the kernel's
-    tail, ``(channels, 13 + L - 1)``."""
+    tail, ``(channels, 13 + L - 1)``. Where the world prices its impressions (:mod:`.cpm`),
+    ``buys``, ``(weeks, channels)`` from the history's first week through the quarter's last or
+    beyond, is what a euro buys of the curve's input in each week: the history's carryover is read
+    at the history's and the quarter's reach at the quarter's."""
     horizon = PLANNED + world.kernel_length - 1
     channels = len(world.channels)
     paths = (
@@ -148,26 +152,41 @@ def cells(
     )
     if paths.shape != (channels, horizon):
         raise ValueError(f"an effect path is {(channels, horizon)}, not {paths.shape}")
+    bought = None if buys is None else np.asarray(buys, dtype=float)
+    weeks = quarter.history.shape[0] + PLANNED
+    if bought is not None and (
+        bought.ndim != 2 or bought.shape[0] < weeks or bought.shape[1] != channels
+    ):
+        raise ValueError(
+            f"what a euro buys runs over {weeks} weeks or more of {channels}, not {bought.shape}"
+        )
     curves = curves or world.curves()
     out = []
     for c, lam in enumerate(world.saturation):
-        carry, reach = _adstocks(quarter.history[:, c], world.kernel(c))
+        column = None if bought is None else bought[:, c]
+        carry, reach = _adstocks(quarter.history[:, c], world.kernel(c), column)
         out.append(Cell(carry, reach, curves[c], lam, paths[c]))
     return tuple(out)
 
 
-def _adstocks(history: Series, kernel: Series) -> tuple[Series, Series]:
+def _adstocks(history: Series, kernel: Series, buys: Series | None = None) -> tuple[Series, Series]:
     """A cell's adstock over the quarter and the kernel's tail as ``carry + weekly * reach``: the
     carryover of ``history``, its weekly spend before the quarter, through ``kernel``, its weights
-    from lag 0, and the reach of one unit a week over the quarter, nothing spent after it."""
+    from lag 0, and the reach of one unit a week over the quarter, nothing spent after it; each
+    week's spend times ``buys`` in that week, where it is given."""
     length = kernel.size
     weeks = history.size
     # the week each of the horizon's weeks reads at each lag of the kernel, numbered from 0
     source = weeks + np.arange(PLANNED + length - 1)[:, None] - np.arange(length)[None, :]
     before = source < weeks
     during = (source >= weeks) & (source < weeks + PLANNED)
+    if buys is not None:
+        history = history * buys[:weeks]
     spent = np.where(before, history[np.minimum(source, weeks - 1)], 0.0)
-    return spent @ kernel, during @ kernel
+    if buys is None:
+        return spent @ kernel, during @ kernel
+    unit = np.where(during, buys[np.minimum(source, weeks + PLANNED - 1)], 0.0)
+    return spent @ kernel, unit @ kernel
 
 
 def geo_curve(saturation: Saturation, people: float) -> tuple[Curve, float]:

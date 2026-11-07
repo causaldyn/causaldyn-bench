@@ -31,6 +31,7 @@ from causaldyn_bench.lift_calibration import TEST
 from causaldyn_bench.mmm_decision import BOX, PLANNED, Quarter
 from causaldyn_bench.scorecard import ladder
 from causaldyn_bench.scorecard.continuation import Shadow, shadow
+from causaldyn_bench.scorecard.cpm import Price
 from causaldyn_bench.scorecard.family import Truth
 from causaldyn_bench.scorecard.observe import Held, Observation
 from causaldyn_bench.scorecard.returns import true_returns
@@ -44,7 +45,8 @@ class World:
     after it at the status quo, and each channel's effect over the quarter and the kernel's tail,
     ``(channels, 13 + L - 1)``, as the best plan expects it and as the quarter realises it.
     ``measured`` holds each control a family measures beyond the measurement layer's, over the
-    history and over the quarter as it will be read: none on Track M v2."""
+    history and over the quarter as it will be read: none on Track M v2. ``price`` is each
+    channel's cost per thousand impressions, where the family prices them (:mod:`.cpm`)."""
 
     environment: str
     seed: int
@@ -54,6 +56,7 @@ class World:
     expected: Series
     realised: Series
     measured: Mapping[str, tuple[Series, Series]] = field(default_factory=dict)
+    price: Price | None = None
 
 
 def still(history: MediaMixWorld) -> Series:
@@ -94,8 +97,8 @@ def observation(family: int, world: World, k: int, box: tuple[float, float] = BO
     """All an arm reads of ``world`` at rung ``k``: the history as the measurement layer reads it,
     and each control the family measures beside it, the quarter's budget, box and status quo, each
     channel's box ``box`` times its mean, the quarter's promotion calendar, price and measured
-    controls as they will be read, last year's weeks as the window a return is read over, and the
-    rung's tests."""
+    controls as they will be read, last year's weeks as the window a return is read over, the
+    rung's tests, and each channel's impressions where the world prices them."""
     history = world.history
     quarter = Quarter.after(history, box)
     return Observation(
@@ -124,6 +127,7 @@ def observation(family: int, world: World, k: int, box: tuple[float, float] = BO
         status_quo=quarter.status_quo,
         roi_window=window(history),
         lift=lift_rows(ladder.rung(history, world.seed, k)),
+        impressions=None if world.price is None else world.price.impressions(history.spend),
     )
 
 
@@ -145,6 +149,7 @@ def overlapping(family: int, world: World, held: ladder.Overlap) -> Observation:
         spend=held.history.spend,
         lift=rows,
         held=Held(held.share, planned),
+        impressions=(None if world.price is None else world.price.impressions(held.history.spend)),
     )
 
 
@@ -155,12 +160,14 @@ def truth(
     the realised one where it is another, the quarter's sales at the status quo, and each channel's
     returns on last year's spend: on the history as planned, or, where ``held``'s tests ran in the
     market, on the history as it ran them. The quarter's carryover is the same, since a test's
-    darkness is over before the kernel reaches the quarter."""
+    darkness is over before the kernel reaches the quarter. Where the world prices its
+    impressions, the cells and the returns read the spend at the world's prices (:mod:`.cpm`)."""
     quarter = Quarter.after(world.history, box)
-    expected = cells(world.history, quarter, world.expected)
+    buys = None if world.price is None else world.price.buys
+    expected = cells(world.history, quarter, world.expected, buys=buys)
     realised = hindsight = None
     if not np.array_equal(world.realised, world.expected):
-        realised = cells(world.history, quarter, world.realised)
+        realised = cells(world.history, quarter, world.realised, buys=buys)
         hindsight = oracle(realised, quarter)
     return Truth(
         quarter=quarter,
@@ -171,7 +178,7 @@ def truth(
         target=world.shadow.sales,
         scale=float(np.mean(world.history.sales)),
         returns=true_returns(
-            world.history if held is None else held.history, window(world.history)
+            world.history if held is None else held.history, window(world.history), buys
         ),
     )
 

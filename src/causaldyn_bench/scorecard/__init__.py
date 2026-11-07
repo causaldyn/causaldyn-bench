@@ -13,7 +13,8 @@ before the run starts, stopping the comparison where its verdict is plain.
 channels, once they reproduce the tool's own decomposition of the history.
 
 Family 0 is Track M v2 itself (:mod:`~causaldyn_bench.scorecard.track_m2`); family 1 lets each
-channel's effect drift (:mod:`~causaldyn_bench.scorecard.drift`); family 2 sets the spend by the
+channel's effect drift, or the price of its impressions (:mod:`~causaldyn_bench.scorecard.drift`,
+:mod:`~causaldyn_bench.scorecard.cpm`); family 2 sets the spend by the
 sentiment no arm observes, or paid shopping's alone beside a query volume every arm reads
 (:mod:`~causaldyn_bench.scorecard.confounded`); family 3 moves two
 channels' spend together (:mod:`~causaldyn_bench.scorecard.collinear`); family 4 makes every curve
