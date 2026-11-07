@@ -32,8 +32,10 @@ with each test's universe, on a geo world alone (:class:`Universes`): the KPI an
 geo in each universe a channel's tests ran in at the rung, the panel an analyst of a test holds, as
 :func:`causaldyn_bench.scorecard.ladder.geo_universes` gives it; its digest reads them too, and a
 version-4 observation gives versions 2's and 3's digests when a record fitted to those asks for
-them. A reader that knows versions up to 3 refuses a version-4 export by its version, and this
-bench reads every export a version before it wrote. **Version 1**
+them. Where the world carries a switchback test of its national channel (:mod:`.switchback`),
+version 4 holds it too (:class:`SwitchbackTest`): its design and the KPI and spend of every geo in
+the universe it ran in. A reader that knows versions up to 3 refuses a version-4 export by its
+version, and this bench reads every export a version before it wrote. **Version 1**
 is what Track M v2's budgets run exported; :func:`read` reads it as an observation of family 0 at
 the top rung, its environment the directory it was written to, and :meth:`Observation.digest`
 computes its digest by that run's rule, so a record fitted to a version-1 export is still scored
@@ -91,14 +93,30 @@ class Universes:
 
 
 @dataclass(frozen=True, eq=False)
+class SwitchbackTest:
+    """A switchback test of the national channel ``channel``: from week ``first``, numbered from 1,
+    in blocks of ``block`` weeks, the channel on in every geo in the blocks where ``on`` holds and
+    off in the others, as logged outside the test; ``sales``, ``(weeks, geos)``, and ``spend``,
+    ``(weeks, geos, channels)``, are the KPI and the spend of the universe it ran in."""
+
+    channel: str
+    first: int
+    block: int
+    on: tuple[bool, ...]
+    sales: Series
+    spend: Series
+
+
+@dataclass(frozen=True, eq=False)
 class Observation:
     """One world at one rung, as an arm reads it. Weeks are numbered from 1; ``sales`` is
     ``(weeks,)`` and ``spend`` ``(weeks, channels)``, each with a geo axis before the channels where
     ``population`` is given; the box and the status quo hold a weekly spend for each cell.
     ``held`` is given where the history holds the lift tests, and None where they ran apart.
     ``version`` is the export's; version 3 needs the tests' weekly gaps, and version 4 those and
-    each test's ``universes``, on a geo axis alone. ``impressions``, ``(weeks, channels)``, is
-    given where the world prices its impressions, national alone."""
+    each test's ``universes``, on a geo axis alone, and holds the world's ``switchback`` test
+    where it carries one. ``impressions``, ``(weeks, channels)``, is given where the world prices
+    its impressions, national alone."""
 
     family: int
     environment: str
@@ -123,6 +141,7 @@ class Observation:
     national: tuple[str, ...] = ()  # the channels bought nationally, where there is a geo axis
     impressions: Series | None = None  # each channel's, where the world prices them
     universes: Universes | None = None  # each test's universe, in version 4 alone
+    switchback: SwitchbackTest | None = None  # the national channel's, in version 4 alone
 
     def __post_init__(self) -> None:
         if self.version not in (FIRST, VERSION, SERIES, UNIVERSES):
@@ -189,6 +208,8 @@ class Observation:
             raise ValueError(f"each test's universe is given in version {UNIVERSES} and only there")
         if self.universes is not None:
             self._check_universes(self.universes)
+        if self.switchback is not None:
+            self._check_switchback(self.switchback)
         first, last = self.roi_window
         if not 1 <= first <= last <= weeks:
             raise ValueError(f"the window {self.roi_window} lies outside weeks 1 to {weeks}")
@@ -225,6 +246,47 @@ class Observation:
             and (np.asarray(universes.spend) >= 0.0).all()
         ):
             raise ValueError("a universe's sales are finite and its spend finite and at least 0")
+
+    def _check_switchback(self, test: SwitchbackTest) -> None:
+        if self.version != UNIVERSES:
+            raise ValueError(f"a switchback test is given in version {UNIVERSES} alone")
+        if test.channel not in self.national:
+            raise ValueError(f"a switchback test cuts a national channel, not {test.channel!r}")
+        weeks, geos = self.sales.shape
+        blocks = len(test.on)
+        if not (
+            test.first >= 1 and test.block >= 1 and test.first - 1 + blocks * test.block <= weeks
+        ):
+            raise ValueError(
+                f"{blocks} blocks of {test.block} weeks from week {test.first} lie outside weeks "
+                f"1 to {weeks}"
+            )
+        if not 0 < sum(test.on) < blocks:
+            raise ValueError(
+                "a switchback test turns its channel on in some blocks and off in some"
+            )
+        if np.shape(test.sales) != (weeks, geos) or np.shape(test.spend) != (
+            weeks,
+            geos,
+            len(self.channels),
+        ):
+            raise ValueError(
+                f"a switchback test's sales are {(weeks, geos)} and its spend "
+                f"{(weeks, geos, len(self.channels))}"
+            )
+        if not (
+            np.isfinite(test.sales).all()
+            and np.isfinite(test.spend).all()
+            and (np.asarray(test.spend) >= 0.0).all()
+        ):
+            raise ValueError(
+                "a switchback test's sales are finite, its spend finite and at least 0"
+            )
+        off = np.ones(weeks, dtype=bool)
+        off[test.first - 1 : test.first - 1 + blocks * test.block] = ~np.repeat(test.on, test.block)
+        off[: test.first - 1] = False
+        if np.any(np.asarray(test.spend)[off, :, self.channels.index(test.channel)] != 0.0):
+            raise ValueError("a switchback test spends nothing on its channel in its blocks off")
 
     def digest(self, version: int | None = None) -> str:
         """The hash an arm's record must echo: by ``version``'s rule, this observation's own by
@@ -307,6 +369,14 @@ def _fields(observation: Observation, version: int = VERSION) -> dict[str, np.nd
         fields["universe_channel"] = np.array(o.universes.channel, dtype=str)
         fields["universe_sales"] = np.asarray(o.universes.sales, dtype=float)
         fields["universe_spend"] = np.asarray(o.universes.spend, dtype=float)
+    if version == UNIVERSES and o.switchback is not None:
+        test = o.switchback
+        fields["switchback_channel"] = np.array(test.channel, dtype=str)
+        fields["switchback_first"] = np.array(test.first)
+        fields["switchback_block"] = np.array(test.block)
+        fields["switchback_on"] = np.array(test.on, dtype=bool)
+        fields["switchback_sales"] = np.asarray(test.sales, dtype=float)
+        fields["switchback_spend"] = np.asarray(test.spend, dtype=float)
     if o.held is not None:
         fields["held_share"] = np.array(float(o.held.share))
         fields["held_planned"] = np.asarray(o.held.planned, dtype=float)
@@ -455,6 +525,18 @@ def _second(saved: Mapping[str, np.ndarray]) -> Observation:
                 saved["universe_spend"],
             )
             if "universe_channel" in saved
+            else None
+        ),
+        switchback=(
+            SwitchbackTest(
+                str(saved["switchback_channel"]),
+                int(saved["switchback_first"]),
+                int(saved["switchback_block"]),
+                tuple(bool(b) for b in saved["switchback_on"]),
+                saved["switchback_sales"],
+                saved["switchback_spend"],
+            )
+            if "switchback_channel" in saved
             else None
         ),
     )

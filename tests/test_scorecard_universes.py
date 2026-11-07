@@ -119,7 +119,8 @@ def test_version_four_is_version_three_with_the_universes(drawn, observed, tmp_p
     paths = {v: export(o, tmp_path / str(v)) for v, o in ((2, second), (3, third), (4, observed))}
     with np.load(paths[2]) as two, np.load(paths[3]) as three, np.load(paths[4]) as four:
         assert set(three.files) - set(two.files) == {"lift_gaps"}
-        assert set(four.files) - set(three.files) == {
+        added = set(four.files) - set(three.files)
+        assert {name for name in added if not name.startswith("switchback_")} == {
             "universe_channel",
             "universe_sales",
             "universe_spend",

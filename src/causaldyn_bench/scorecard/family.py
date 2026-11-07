@@ -29,7 +29,8 @@ W = TypeVar("W")
 class Truth:
     """What a plan for one world is scored against, and what else its family states of the world:
     each channel's share of its return that lasts through a brand measure, each lever's
-    contribution, and each channel's returns with a mediator held, where the family states them."""
+    contribution, each channel's returns with a mediator held, and the lift of the switchback test
+    its worlds carry, where the family states them."""
 
     quarter: Quarter
     cells: tuple[Cell, ...]  # on the effect path the best plan is made for, the law's expected one
@@ -46,6 +47,9 @@ class Truth:
     levers: Mapping[str, float] | None = None
     # each channel's ROI and mROI on that window with the mediator the family exports held
     direct: Returns | None = None
+    # what the switchback test the family's worlds carry raised the KPI over its channel off, summed
+    # over the geos, its carry-out past the history included (:mod:`.switchback`)
+    switchback: float | None = None
 
 
 class Family(Protocol[W]):
