@@ -478,6 +478,13 @@ and the family's truth holds its lift: what the weeks on raised the KPI over TV 
 whole test, carry-out included. Its order and its noise come from further indices of the family's
 stream of tests that nothing else reads, so no world, test, quarter or truth drawn before it moves.
 
+A geo world's ladder runs each channel's tests from weeks 20, 44, 68 and 92. A caller may opt in to
+another schedule, `observe(world, k, starts=LATE_STARTS)` (`causaldyn_bench.scorecard.ladder`):
+weeks 32, 52, 72 and 92, so the first test has 31 weeks of history before it, room for a reader
+that needs 30, as a time-based regression's placebo windows do. The tests and their universes
+move with the schedule; the world, its quarter and its truth do not, and without the option every
+export is as it was. A schedule whose readings would not hold is refused.
+
 A schedule, a spend in each week of the quarter on each cell or each channel, is scored by
 `score_schedule(truth, schedule)` (`causaldyn_bench.scorecard.schedule`): its regret per euro of the
 budget against the best schedule in the same box at the same budget, carryover in and out, on the

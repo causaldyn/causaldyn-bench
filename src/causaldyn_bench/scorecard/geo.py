@@ -72,7 +72,7 @@ from causaldyn_bench.scorecard import switchback
 from causaldyn_bench.scorecard.continuation import GeoShadow, geo_shadow
 from causaldyn_bench.scorecard.family import Truth, number
 from causaldyn_bench.scorecard.geo_noise import LogNormalNoise
-from causaldyn_bench.scorecard.ladder import geo_rung, geo_universes
+from causaldyn_bench.scorecard.ladder import GEO_STARTS, geo_rung, geo_universes
 from causaldyn_bench.scorecard.observe import (
     SERIES,
     UNIVERSES,
@@ -188,7 +188,14 @@ class Geo:
             raise ValueError(f"{self.name} has no environment {environment!r}")
         return drawn(environment, seed, mix(POLICIES[environment], seed))
 
-    def observe(self, world: World, k: int, *, version: int = VERSION) -> Observation:
+    def observe(
+        self,
+        world: World,
+        k: int,
+        *,
+        version: int = VERSION,
+        starts: tuple[int, ...] = GEO_STARTS,
+    ) -> Observation:
         """All an arm reads of ``world`` at rung ``k``: each geo's KPI and spend, each geo's share
         of the population, the channels bought nationally, the quarter's budget and each cell's box
         and status quo, last year's weeks as the window a return is read over, and the rung's geo
@@ -196,10 +203,13 @@ class Geo:
         :data:`~causaldyn_bench.scorecard.observe.UNIVERSES` it holds each channel's universe at
         the rung too (:func:`~causaldyn_bench.scorecard.ladder.geo_universes`), its KPI and spend
         on the export's axes, week by geo, and the world's switchback test of its national channel
-        (:mod:`~causaldyn_bench.scorecard.switchback`), the same at every rung.
+        (:mod:`~causaldyn_bench.scorecard.switchback`), the same at every rung. The rung's tests
+        start in the weeks of ``starts``, :data:`~causaldyn_bench.scorecard.ladder.GEO_STARTS`
+        unless a caller opts in to another schedule, such as
+        :data:`~causaldyn_bench.scorecard.ladder.LATE_STARTS`.
 
         Raises:
-            ValueError: a version no export of a geo world has.
+            ValueError: a version no export of a geo world has, or a schedule the ladder refuses.
         """
         if version not in (VERSION, SERIES, UNIVERSES):
             raise ValueError(f"a geo world is exported at version {VERSION} to {UNIVERSES}")
@@ -222,7 +232,7 @@ class Geo:
             upper=quarter.upper,
             status_quo=quarter.status_quo,
             roi_window=window(history),
-            lift=geo_rung(history, number(self), world.seed, k),
+            lift=geo_rung(history, number(self), world.seed, k, starts=starts),
             population=history.shares,
             national=tuple(c.name for c in history.mix.channels if c.national),
         )
@@ -230,7 +240,7 @@ class Geo:
             return observation
         if version == SERIES:
             return dataclasses.replace(observation, version=SERIES)
-        drawn = geo_universes(history, number(self), world.seed, k)
+        drawn = geo_universes(history, number(self), world.seed, k, starts=starts)
         geos, weeks, channels = history.spend.shape
         universes = Universes(
             tuple(drawn),
