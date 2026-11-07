@@ -29,12 +29,18 @@ the demand measured with a log-normal error of sd 0.02 (CHOICE, the error):
 ``y^0`` the sales before media, ``m_tv`` television's media, ``B`` the base and ``eta = 0.5``.
 Television's media raise the demand the queries measure by ``eta`` of what they bring, and bring
 the rest directly: the sales are the drawn world's, ``y^0 + sum_c m_c``, so each channel's return is
-the world's own, and the queries confound paid shopping, whose spend reads the demand, and mediate
-television. Held as a control, they block ``eta`` of television's return: the truth states each
-channel's return with the queries held (:func:`direct`), ``1 - eta`` of television's and every other
-channel's whole. The queries' errors are drawn from the family's measurement stream over the
-history and its continuation stream over the quarter (:mod:`.seeds`), the quarter's read at the
-status quo; the other environments draw no variate of their own.
+the world's own, and the queries confound paid shopping, whose spend reads the sentiment the sales
+before media hold, and mediate television. Held as a control, they block ``eta`` of television's
+return: the truth states each channel's return with the queries held (:func:`direct`), ``1 - eta``
+of television's and every other channel's whole. The queries' errors are drawn from the family's
+measurement stream over the history and its continuation stream over the quarter (:mod:`.seeds`),
+the quarter's read at the status quo; the other environments draw no variate of their own.
+
+This is not a world whose search spend reads the measured demand, television's part of it
+included, nor one whose television multiplies the demand: paid shopping's spend reads the
+unobserved sentiment, of which the queries are a noisy measure beside television's part, and
+television adds to the sales as every channel does in Track M v2 (CHOICE: the drawn world's sales
+stay, so every channel's whole return is Track M v2's for the seed).
 """
 
 from __future__ import annotations

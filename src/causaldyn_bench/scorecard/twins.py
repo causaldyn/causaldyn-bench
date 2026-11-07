@@ -17,7 +17,11 @@ its level, which the spread of 0.05 keeps small: the conflation of a time-varyin
 curve that Dew, Padilla and Shchetkina (arXiv 2408.07678) measure. A go-dark test reads
 ``curve(x)`` in one twin and ``drift(t) x`` in the other at a spend ``x`` near the week's level, so
 the ladder's tests do not tell them apart either; a test that moves the spend both ways about the
-plan does.
+plan does. A ridge fitted to each twin's ramp scores the weeks after it alike on 89 of the block's
+100 pilot worlds, by the 95 % interval of the summed weekly difference of the log scores, where a
+perfect tie holds about 95: a ridge parts the twins on a few worlds. At a spread of 0.02 the count
+is 93; the spread stays 0.05 (CHOICE: the twins as designed, a tighter tie not bought by a world
+other than theirs).
 
 The twins run over the scorecard's 156 weeks, the ramp over three quarters of the history
 (CHOICE); :func:`history` and :func:`sales` take both lengths, and draw the spreads of television
