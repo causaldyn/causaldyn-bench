@@ -3,7 +3,7 @@ at the status quo.
 
 An arm forecasts the quarter's sales at the status quo, and is scored against these. The world's
 processes run on from the history's last week as :mod:`causaldyn_bench.endogenous_mmm` runs them:
-the seasonality and the promotions' calendar by the week; product quality, the price position and
+the seasonality and the generator's promotions by the week; product quality, the price position and
 the unobserved sentiment as the same AR(1) processes, each from its value at the history's end; the
 baseline's noise; and the measurement layer, the promotion indicator read with its recall and false
 positives and the price read with its autocorrelated error. Media's effect is each channel's at the
@@ -44,7 +44,6 @@ from causaldyn_bench.endogenous_mmm import (
     MediaMixWorld,
     Series,
     _ar1,
-    _calendar,
 )
 from causaldyn_bench.mmm_decision import PLANNED, Quarter
 from causaldyn_bench.scorecard import truth
@@ -96,7 +95,7 @@ def shadow(
         + noise
     )
     baseline = np.maximum(baseline, 0.5 * base)
-    discount, multiplier = _calendar(week)
+    discount, multiplier = generator.calendar(week)
     uplift = np.where(
         discount > 0.0,
         np.clip(np.maximum(1.0 - discount, 0.5) ** (ELASTICITY * multiplier), 0.8, 3.0),

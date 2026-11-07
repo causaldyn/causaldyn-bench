@@ -376,6 +376,11 @@ class EndogenousMediaMix:
         if self.curve not in CURVES:
             raise ValueError(f"the curve {self.curve!r} is not one of {sorted(CURVES)}")
 
+    def calendar(self, week: NDArray[np.int64]) -> tuple[Series, Series]:
+        """Each week's discount and elasticity multiplier: his promotions' calendar (Table I) here,
+        from the week of its year; a generator whose promotions fall otherwise has its own."""
+        return _calendar(week)
+
     def simulate(self, seed: int = 0) -> MediaMixWorld:
         rng = np.random.default_rng(seed)
         weeks = self.weeks
@@ -394,7 +399,7 @@ class EndogenousMediaMix:
             + noise
         )
         baseline = np.maximum(baseline, 0.5 * self.base)
-        discount, multiplier = _calendar(week)
+        discount, multiplier = self.calendar(week)
         uplift = np.where(
             discount > 0.0,
             np.clip(np.maximum(1.0 - discount, 0.5) ** (ELASTICITY * multiplier), 0.8, 3.0),
@@ -403,7 +408,9 @@ class EndogenousMediaMix:
         promotion = baseline * (uplift - 1.0)
         premedia = baseline + promotion
 
-        ahead = np.sum([_calendar(week + lead)[0] > 0.0 for lead in (1, 2, 3)], axis=0, dtype=float)
+        ahead = np.sum(
+            [self.calendar(week + lead)[0] > 0.0 for lead in (1, 2, 3)], axis=0, dtype=float
+        )
         budget = _budget(premedia) if self.budget_feedback else np.ones(weeks)
         channels = len(self.channels)
         plan_noise = rng.normal(0.0, 0.1, (weeks, channels))

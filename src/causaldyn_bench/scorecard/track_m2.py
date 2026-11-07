@@ -19,7 +19,8 @@ a history whose effect holds still.
 from __future__ import annotations
 
 import dataclasses
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 from types import MappingProxyType
 
 import numpy as np
@@ -41,7 +42,9 @@ from causaldyn_bench.scorecard.truth import cells, oracle
 class World:
     """A world built on Track M v2's, as a family draws it: the history an arm reads, the quarter
     after it at the status quo, and each channel's effect over the quarter and the kernel's tail,
-    ``(channels, 13 + L - 1)``, as the best plan expects it and as the quarter realises it."""
+    ``(channels, 13 + L - 1)``, as the best plan expects it and as the quarter realises it.
+    ``measured`` holds each control a family measures beyond the measurement layer's, over the
+    history and over the quarter as it will be read: none on Track M v2."""
 
     environment: str
     seed: int
@@ -50,6 +53,7 @@ class World:
     shadow: Shadow
     expected: Series
     realised: Series
+    measured: Mapping[str, tuple[Series, Series]] = field(default_factory=dict)
 
 
 def still(history: MediaMixWorld) -> Series:
@@ -88,9 +92,10 @@ def window(history: Market) -> tuple[int, int]:
 
 def observation(family: int, world: World, k: int, box: tuple[float, float] = BOX) -> Observation:
     """All an arm reads of ``world`` at rung ``k``: the history as the measurement layer reads it,
-    the quarter's budget, box and status quo, each channel's box ``box`` times its mean, the
-    quarter's promotion calendar and price as they will be read, last year's weeks as the window a
-    return is read over, and the rung's tests."""
+    and each control the family measures beside it, the quarter's budget, box and status quo, each
+    channel's box ``box`` times its mean, the quarter's promotion calendar, price and measured
+    controls as they will be read, last year's weeks as the window a return is read over, and the
+    rung's tests."""
     history = world.history
     quarter = Quarter.after(history, box)
     return Observation(
@@ -104,10 +109,12 @@ def observation(family: int, world: World, k: int, box: tuple[float, float] = BO
         controls={
             "promotion": history.observed_promotion.astype(float),
             "price": history.observed_price,
+            **{name: series for name, (series, _) in world.measured.items()},
         },
         future_controls={
             "promotion": world.shadow.observed_promotion.astype(float),
             "price": world.shadow.observed_price,
+            **{name: series for name, (_, series) in world.measured.items()},
         },
         kernel_length=history.kernel_length,
         planned=PLANNED,

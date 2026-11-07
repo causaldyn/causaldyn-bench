@@ -15,7 +15,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Protocol, TypeVar
 
-from causaldyn_bench.endogenous_mmm import Series
+from causaldyn_bench.endogenous_mmm import Series, Vector
 from causaldyn_bench.mmm_decision import Plan, Quarter
 from causaldyn_bench.scorecard.observe import Observation
 from causaldyn_bench.scorecard.returns import Returns
@@ -27,7 +27,9 @@ W = TypeVar("W")
 
 @dataclass(frozen=True, eq=False)
 class Truth:
-    """What a plan for one world is scored against."""
+    """What a plan for one world is scored against, and what else its family states of the world:
+    each channel's share of its return that lasts through a brand measure, each lever's
+    contribution, and each channel's returns with a mediator held, where the family states them."""
 
     quarter: Quarter
     cells: tuple[Cell, ...]  # on the effect path the best plan is made for, the law's expected one
@@ -37,6 +39,13 @@ class Truth:
     target: Series  # the quarter's sales at the status quo, an arm's forecast's target
     scale: float  # mean weekly sales over the history, the unit a forecast's score is read in
     returns: Returns  # each channel's ROI and mROI on the window an export names
+    # each channel's share of its return that runs through the brand measure the family exports
+    long_term: Vector | None = None
+    # each lever's contribution over the window the returns are read on, against the level the
+    # family states it at
+    levers: Mapping[str, float] | None = None
+    # each channel's ROI and mROI on that window with the mediator the family exports held
+    direct: Returns | None = None
 
 
 class Family(Protocol[W]):
