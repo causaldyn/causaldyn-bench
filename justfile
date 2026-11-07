@@ -224,6 +224,15 @@ _track-m2-budgets work pilot shards:
     for environment in drawn reference; do for k in $(seq 0 $(({{shards}} - 1))); do OMP_NUM_THREADS=1 uv run --no-project --python 3.12 --with-requirements scripts/pymc_marketing_arm.txt python -u scripts/pymc_marketing_arm.py --worlds {{work}}/$environment --out {{work}}/$environment/pymc --shard $k/{{shards}} & done; wait; done
     JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.budget_regret score --work {{work}} {{pilot}} --out results
 
+# PyMC-Marketing's arm at the version scripts/pymc_marketing_arm.txt pins, on the scorecard's
+# version-2 exports of every pilot world of families 0, 13, 8 and 10 at rung 4 ->
+# results/pymc_marketing_pilot.{md,json}: the lift rows each fit took and refused, and each family's
+# report. One fit process at a time, one thread a process. At 64-bit, as the scorecard runs.
+pymc-marketing-pilot work="outputs/pymc_marketing_pilot":
+    JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.scorecard.pymc_marketing_pilot export --work {{work}}
+    for directory in {{work}}/family-*/*/k4; do OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 uv run --no-project --python 3.12 --with-requirements scripts/pymc_marketing_arm.txt python -u scripts/pymc_marketing_arm.py --worlds $directory --out $directory/pymc-marketing; done
+    JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.scorecard.pymc_marketing_pilot score --work {{work}}
+
 # Track M v2, families -> results/track_m2_families.{md,json}; `-pilot` runs the seeds the design
 # was set on into results/track_m2_families_pilot.{md,json}. Every world's channels carry one of six
 # curve families; each channel's tests are fitted under six candidate families, and the family AIC
