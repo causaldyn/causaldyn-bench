@@ -27,7 +27,13 @@ rung, and its digest reads every array the export holds, so nothing an arm reads
 tool that reads a test's carryover from its shape rather than its sum; its digest reads the gaps
 too. An observation is exported at its ``version``, so a run asks for the gaps by observing at
 :data:`SERIES`; every number of version 2 is the same in version 3, and a version-3 observation
-gives version 2's digest when a record fitted to version 2 asks for it. **Version 1**
+gives version 2's digest when a record fitted to version 2 asks for it. **Version 4** is version 3
+with each test's universe, on a geo world alone (:class:`Universes`): the KPI and the spend of every
+geo in each universe a channel's tests ran in at the rung, the panel an analyst of a test holds, as
+:func:`causaldyn_bench.scorecard.ladder.geo_universes` gives it; its digest reads them too, and a
+version-4 observation gives versions 2's and 3's digests when a record fitted to those asks for
+them. A reader that knows versions up to 3 refuses a version-4 export by its version, and this
+bench reads every export a version before it wrote. **Version 1**
 is what Track M v2's budgets run exported; :func:`read` reads it as an observation of family 0 at
 the top rung, its environment the directory it was written to, and :meth:`Observation.digest`
 computes its digest by that run's rule, so a record fitted to a version-1 export is still scored
@@ -57,6 +63,7 @@ from causaldyn_bench.lift_calibration import COOLDOWN, STARTS, TEST
 VERSION = 2
 FIRST = 1  # the version Track M v2's budgets run exported, read with family 0 at the top rung
 SERIES = 3  # version 2 with each test's gap week by week over its readout
+UNIVERSES = 4  # version 3 with each geo test's universe
 LEGACY_CONTROLS = ("promotion", "price")  # the controls version 1 exported, under these names
 
 
@@ -72,13 +79,26 @@ class Held:
 
 
 @dataclass(frozen=True, eq=False)
+class Universes:
+    """Each channel's universe at a geo rung, the world its tests ran in: ``channel``, the channels
+    the rung tests, in the channels' order; ``sales``, ``(channels tested, weeks, geos)``, each
+    universe's KPI; and ``spend``, ``(channels tested, weeks, geos, channels)``, its spend, the
+    history's with the channel dark in each of its tests' geos and weeks."""
+
+    channel: tuple[str, ...]
+    sales: Series
+    spend: Series
+
+
+@dataclass(frozen=True, eq=False)
 class Observation:
     """One world at one rung, as an arm reads it. Weeks are numbered from 1; ``sales`` is
     ``(weeks,)`` and ``spend`` ``(weeks, channels)``, each with a geo axis before the channels where
     ``population`` is given; the box and the status quo hold a weekly spend for each cell.
     ``held`` is given where the history holds the lift tests, and None where they ran apart.
-    ``version`` is the export's; version 3 needs the tests' weekly gaps. ``impressions``,
-    ``(weeks, channels)``, is given where the world prices its impressions, national alone."""
+    ``version`` is the export's; version 3 needs the tests' weekly gaps, and version 4 those and
+    each test's ``universes``, on a geo axis alone. ``impressions``, ``(weeks, channels)``, is
+    given where the world prices its impressions, national alone."""
 
     family: int
     environment: str
@@ -102,15 +122,18 @@ class Observation:
     version: int = VERSION
     national: tuple[str, ...] = ()  # the channels bought nationally, where there is a geo axis
     impressions: Series | None = None  # each channel's, where the world prices them
+    universes: Universes | None = None  # each test's universe, in version 4 alone
 
     def __post_init__(self) -> None:
-        if self.version not in (FIRST, VERSION, SERIES):
+        if self.version not in (FIRST, VERSION, SERIES, UNIVERSES):
             raise ValueError(f"no export has version {self.version}")
-        if self.version == SERIES:
+        if self.version in (SERIES, UNIVERSES):
             gaps = self.lift.gaps
             rows = (len(self.lift.channel), TEST + COOLDOWN)
             if gaps is None or np.shape(gaps) != rows or not np.isfinite(gaps).all():
-                raise ValueError(f"version {SERIES} holds each test's weekly gaps, finite, {rows}")
+                raise ValueError(
+                    f"version {self.version} holds each test's weekly gaps, finite, {rows}"
+                )
         if (self.future_controls is None) != (self.version == FIRST):
             raise ValueError(
                 "the quarter's controls are given in version 2 and later, and only there"
@@ -162,6 +185,10 @@ class Observation:
             raise ValueError(
                 f"impressions are a national world's, {self.spend.shape}, finite and at least 0"
             )
+        if (self.universes is None) != (self.version != UNIVERSES):
+            raise ValueError(f"each test's universe is given in version {UNIVERSES} and only there")
+        if self.universes is not None:
+            self._check_universes(self.universes)
         first, last = self.roi_window
         if not 1 <= first <= last <= weeks:
             raise ValueError(f"the window {self.roi_window} lies outside weeks 1 to {weeks}")
@@ -175,12 +202,37 @@ class Observation:
             if not (np.isfinite(held.planned).all() and (np.asarray(held.planned) >= 0.0).all()):
                 raise ValueError("the planned spend over the dark weeks is finite and at least 0")
 
+    def _check_universes(self, universes: Universes) -> None:
+        if self.population is None:
+            raise ValueError("a test's universe is exported on a geo axis alone")
+        tested = set(self.lift.channel)
+        channels = tuple(c for c in self.channels if c in tested)
+        if universes.channel != channels:
+            raise ValueError(
+                f"the universes are the tested channels' {channels}, not {universes.channel}"
+            )
+        weeks, geos = self.sales.shape
+        if np.shape(universes.sales) != (len(channels), weeks, geos) or np.shape(
+            universes.spend
+        ) != (len(channels), weeks, geos, len(self.channels)):
+            raise ValueError(
+                f"the universes' sales are {(len(channels), weeks, geos)} and their spend "
+                f"{(len(channels), weeks, geos, len(self.channels))}"
+            )
+        if not (
+            np.isfinite(universes.sales).all()
+            and np.isfinite(universes.spend).all()
+            and (np.asarray(universes.spend) >= 0.0).all()
+        ):
+            raise ValueError("a universe's sales are finite and its spend finite and at least 0")
+
     def digest(self, version: int | None = None) -> str:
         """The hash an arm's record must echo: by ``version``'s rule, this observation's own by
         default. Version 1's reads Track M v2's national export alone; version 3's needs the
-        tests' weekly gaps, and version 2's is read off a version-3 observation as well."""
+        tests' weekly gaps, and version 4's their universes; an earlier version's is read off a
+        later observation as well."""
         version = self.version if version is None else version
-        if version in (VERSION, SERIES):
+        if version in (VERSION, SERIES, UNIVERSES):
             return _hash(_fields(self, version))
         if version == FIRST:
             return _first_digest(self)
@@ -193,13 +245,17 @@ class Observation:
 
 
 def _fields(observation: Observation, version: int = VERSION) -> dict[str, np.ndarray]:
-    """Every array an export of ``version``, 2 or 3, holds but its digest."""
+    """Every array an export of ``version``, 2 to 4, holds but its digest."""
     o = observation
     if o.future_controls is None:
         raise ValueError("a version-1 observation is read, never exported")
-    if version == SERIES and o.lift.gaps is None:
+    if version in (SERIES, UNIVERSES) and o.lift.gaps is None:
         raise ValueError(
-            f"a version-{SERIES} export holds the tests' weekly gaps, and these have none"
+            f"a version-{version} export holds the tests' weekly gaps, and these have none"
+        )
+    if version == UNIVERSES and o.universes is None:
+        raise ValueError(
+            f"a version-{UNIVERSES} export holds each test's universe, and these have none"
         )
     names = tuple(o.controls)
     weeks = o.sales.shape[0]
@@ -245,8 +301,12 @@ def _fields(observation: Observation, version: int = VERSION) -> dict[str, np.nd
         for row, geos in enumerate(o.lift.geos or ()):
             taken[row, list(geos)] = True
         fields["lift_geos"] = taken
-    if version == SERIES:
+    if version in (SERIES, UNIVERSES):
         fields["lift_gaps"] = np.asarray(o.lift.gaps, dtype=float).reshape(-1, TEST + COOLDOWN)
+    if version == UNIVERSES and o.universes is not None:
+        fields["universe_channel"] = np.array(o.universes.channel, dtype=str)
+        fields["universe_sales"] = np.asarray(o.universes.sales, dtype=float)
+        fields["universe_spend"] = np.asarray(o.universes.spend, dtype=float)
     if o.held is not None:
         fields["held_share"] = np.array(float(o.held.share))
         fields["held_planned"] = np.asarray(o.held.planned, dtype=float)
@@ -322,7 +382,7 @@ def export(observation: Observation, directory: Path) -> Path:
 
 
 def read(path: Path) -> Observation:
-    """The observation an export holds, of either version.
+    """The observation an export holds, of any version this bench wrote.
 
     Raises:
         RuntimeError: the export's digest is not that of what it holds.
@@ -358,8 +418,8 @@ def _lift(saved: Mapping[str, np.ndarray]) -> LiftRows:
 
 def _second(saved: Mapping[str, np.ndarray]) -> Observation:
     version = int(saved["version"])
-    if version not in (VERSION, SERIES):
-        raise ValueError(f"this bench reads exports of versions {FIRST} to {SERIES} alone")
+    if version not in (VERSION, SERIES, UNIVERSES):
+        raise ValueError(f"this bench reads exports of versions {FIRST} to {UNIVERSES} alone")
     names = tuple(str(name) for name in saved["control_names"])
     return Observation(
         family=int(saved["family"]),
@@ -388,6 +448,15 @@ def _second(saved: Mapping[str, np.ndarray]) -> Observation:
         national=tuple(str(c) for c in saved["national"]) if "national" in saved else (),
         version=version,
         impressions=saved.get("impressions"),
+        universes=(
+            Universes(
+                tuple(str(c) for c in saved["universe_channel"]),
+                saved["universe_sales"],
+                saved["universe_spend"],
+            )
+            if "universe_channel" in saved
+            else None
+        ),
     )
 
 

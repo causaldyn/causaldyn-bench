@@ -465,6 +465,13 @@ it as the files a tool calibrates on: PyMC-Marketing's lift table with each test
 of several geos as experiments' records, and the dark weeks and the cooldown in a sidecar with the
 export's digest (`causaldyn_bench.scorecard.lift_inputs`).
 
+A world of the geo families, 8 to 10, exported at version 4 (`observe(world, k,
+version=UNIVERSES)`, `causaldyn_bench.scorecard.observe`) also holds each channel's universe at the
+rung: the KPI and the spend of every geo in the world that channel's tests ran in, so a reader of
+another method reads each test on the panel it ran in. Each test read again on its universe by the
+ladder's own reading is the export's row to the last bit. Exports at versions 2 and 3 are as they
+were, and a version-4 export gives their digests.
+
 `python -m causaldyn_bench.scorecard.variance` measures what the design removes of a comparison's
 variance (`causaldyn_bench.scorecard.variance`): pairing the arms on the same worlds (common random
 numbers) against an unpaired comparison, and control variates on the four covariates every world

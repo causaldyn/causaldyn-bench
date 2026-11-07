@@ -32,8 +32,9 @@ of the 104, 24 weeks apart, the last one's readout closing in week 103. Each cha
 a universe of their own: the world's base and spend, the channel dark in the tested geos and weeks,
 and fresh noise of the world's size and law in every geo and week
 (:func:`~causaldyn_bench.scorecard.geo_noise.kpi_noise`), drawn from the family's stream
-``(100 + f, 2, seed, c + 1)`` for the ``c``-th channel. The history holds none of it. A test's
-carryover dies out before the next one's readout opens, as on Track M v2, so the rungs nest under
+``(100 + f, 2, seed, c + 1)`` for the ``c``-th channel. The history holds none of it;
+:func:`geo_universes` gives each channel's universe as its tests ran in it. A test's carryover dies
+out before the next one's readout opens, as on Track M v2, so the rungs nest under
 common random numbers here too.
 
 The reading is a difference-in-differences whose control is scaled by the slope of the two groups'
@@ -281,6 +282,46 @@ def placebo_error(kpi: Series, treated: tuple[int, ...], first: int, length: int
     return float(np.sqrt(np.mean(readings**2) * nu / (nu - 2.0)))
 
 
+def _universe(
+    world: GeoMediaWorld, family: int, seed: int, c: int, starts: tuple[int, ...]
+) -> tuple[Series, Series, Series]:
+    """The universe the ``c``-th channel's tests from weeks ``starts`` run in: its spend, ``(geos,
+    weeks, channels)``, the world's with the channel dark in each test's geos and weeks, and its
+    KPI's noise and its KPI, each ``(geos, weeks)``; see the module."""
+    geos, weeks = world.mix.geos, world.spend.shape[1]
+    shocks = rng(family, Role.TESTS, seed, c + 1).standard_normal((geos, weeks))
+    dark = world.spend.copy()
+    for start in starts:
+        dark[list(dark_geos(geos, GEO_STARTS.index(start))), start - 1 : start - 1 + TEST, c] = 0.0
+    with jax.enable_x64(True):
+        level = world.base + np.asarray(world.lift(dark), dtype=float)
+    noise = kpi_noise(world, level, shocks)
+    return dark, noise, level + noise
+
+
+def geo_universes(
+    world: GeoMediaWorld, family: int, seed: int, k: int
+) -> dict[str, tuple[Series, Series]]:
+    """Each channel's universe at rung ``k`` of ``world``, which family ``family`` drew from
+    ``seed``, as :func:`geo_rung` runs its tests there, by the channel's name: its KPI, ``(geos,
+    weeks)``, and its spend, ``(geos, weeks, channels)``; none at rung 0, which runs no test. Each
+    is what an analyst of the channel's tests holds: every geo's KPI and spend in the universe.
+
+    Raises:
+        ValueError: a rung off the ladder.
+    """
+    if k not in RUNGS:
+        raise ValueError(f"a rung holds 0 to {len(GEO_STARTS)} tests a channel, not {k}")
+    starts = GEO_STARTS[len(GEO_STARTS) - k :]
+    if not starts:
+        return {}
+    out = {}
+    for c, channel in enumerate(world.mix.channels):
+        dark, _, kpi = _universe(world, family, seed, c, starts)
+        out[channel.name] = (kpi, dark)
+    return out
+
+
 def geo_rung(world: GeoMediaWorld, family: int, seed: int, k: int) -> LiftRows:
     """Rung ``k``'s geo tests on ``world``, which family ``family`` drew from ``seed``: each
     channel's latest ``k`` of :data:`GEO_STARTS`, read by difference-in-differences; see the
@@ -309,16 +350,7 @@ def geo_rung(world: GeoMediaWorld, family: int, seed: int, k: int) -> LiftRows:
     with jax.enable_x64(True):
         logged = world.base + np.asarray(world.lift(world.spend), dtype=float)
     for c, channel in enumerate(world.mix.channels):
-        shocks = rng(family, Role.TESTS, seed, c + 1).standard_normal((geos, weeks))
-        dark = world.spend.copy()
-        for start in starts:
-            dark[
-                list(dark_geos(geos, GEO_STARTS.index(start))), start - 1 : start - 1 + TEST, c
-            ] = 0.0
-        with jax.enable_x64(True):
-            level = world.base + np.asarray(world.lift(dark), dtype=float)
-        noise = kpi_noise(world, level, shocks)
-        kpi = level + noise
+        _, noise, kpi = _universe(world, family, seed, c, starts)
         for start in starts:
             treated = dark_geos(geos, GEO_STARTS.index(start))
             control = [g for g in range(geos) if g not in treated]
