@@ -14,7 +14,8 @@ channels, once they reproduce the tool's own decomposition of the history.
 
 Family 0 is Track M v2 itself (:mod:`~causaldyn_bench.scorecard.track_m2`); family 1 lets each
 channel's effect drift (:mod:`~causaldyn_bench.scorecard.drift`); family 2 sets the spend by the
-sentiment no arm observes (:mod:`~causaldyn_bench.scorecard.confounded`); family 3 moves two
+sentiment no arm observes, or paid shopping's alone beside a query volume every arm reads
+(:mod:`~causaldyn_bench.scorecard.confounded`); family 3 moves two
 channels' spend together (:mod:`~causaldyn_bench.scorecard.collinear`); family 4 makes every curve
 S-shaped (:mod:`~causaldyn_bench.scorecard.s_curves`); family 5 sets the spend by last week's sales
 (:mod:`~causaldyn_bench.scorecard.performance`); family 6 changes every curve outside the range the
@@ -31,5 +32,12 @@ in PyMC-Marketing's default form at its default adstock and saturation priors
 (:mod:`~causaldyn_bench.scorecard.pymc_marketing`); family 14 is Robyn's home ground, its media in
 Robyn's own form (:mod:`~causaldyn_bench.scorecard.robyn`); family 15 is
 siMMMulator's own worlds, Meta's simulator run as its documentation's demo
-(:mod:`~causaldyn_bench.scorecard.simmmulator`).
+(:mod:`~causaldyn_bench.scorecard.simmmulator`); family 17 is a pair of twins one history cannot
+tell apart, a drifting line and a fixed S-curve, whose best plans differ
+(:mod:`~causaldyn_bench.scorecard.twins`); family 18 exports a brand measure through which nothing
+lasts in sales (:mod:`~causaldyn_bench.scorecard.long_term`); family 19 holds one channel's spend
+flat (:mod:`~causaldyn_bench.scorecard.flat`); and family 20 sets the promotions by television's
+bursts, with the price a lever (:mod:`~causaldyn_bench.scorecard.promotions`). Families 11 and 16
+draw no worlds. :mod:`~causaldyn_bench.scorecard.lift_inputs` writes a world's lift tests as the
+files a tool calibrates on.
 """

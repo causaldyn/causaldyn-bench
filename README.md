@@ -419,6 +419,42 @@ the scoring refuses those records rather than score them on other worlds. `just 
 extras, `cuda13`, `cuda12`, `cuda13-local`, `cuda12-local`, `rocm7-local`, `tpu` and `oneapi`, are
 the library's, which are JAX's. Python 3.11–3.15, the free-threaded 3.14t and 3.15t included.
 
+### Scorecard families
+
+The scorecard (`causaldyn_bench.scorecard`) scores every arm on families of worlds whose truth is
+known. Each family draws its worlds from seed blocks and streams of its own
+(`causaldyn_bench.scorecard.seeds`), states what an arm reads, and holds the truth an arm's plan and
+reading are scored against.
+
+| family | module | what it stresses | environments | truth beyond the best plan and the returns |
+|---|---|---|---|---|
+| 0 | `track_m2` | Track M v2 itself | drawn, reference | |
+| 1 | `drift` | each channel's effect drifts | walk, trend, step, season, revert, static | |
+| 2 | `confounded` | spend follows a sentiment no arm observes; in search-demand only paid shopping's does, and every arm reads a query volume that television raises | kappa-0.5, kappa-1, kappa-2, search-demand | search-demand: each channel's return with the queries held |
+| 3 | `collinear` | two channels' spend moves together | r-0.9, r-0.97, r-0.99 | |
+| 4 | `s_curves` | every curve is S-shaped | hill-2, weibull-2, logistic-4 | |
+| 5 | `performance` | spend follows last week's sales | rho-0, rho-0.3, rho-0.6 | |
+| 6 | `outside` | every curve changes outside the range the history shows | cliff, saturation, both | |
+| 7 | `short` | an arm reads only the last weeks of the history | L-52, L-78, L-104 | |
+| 8 | `geo` | ten geos, planned and tested geo by geo | policy-0, policy-0.5 | |
+| 9 | `spillover` | family 8, each geo's media lifting its neighbours | spillover-0.2, spillover-0.5 | |
+| 10 | `few_geos` | family 8 at three, eight and fifty geos | geos-3, geos-8, geos-50 | |
+| 11 | | withdrawn: no world is drawn from its block | | |
+| 12 | `meridian` | Meridian's home ground | priors | |
+| 13 | `pymc_marketing` | PyMC-Marketing's home ground | priors | |
+| 14 | `robyn` | Robyn's home ground | genre | |
+| 15 | `simmmulator` | siMMMulator's own worlds | demo | |
+| 16 | | reserved: no world is drawn from its block | | |
+| 17 | `twins` | a line whose slope drifts and a fixed S-curve over one history: a ridge's held-out score and a go-dark test read them alike, and each twin's best plan costs the other more than 0.05 a euro | curve, line | |
+| 18 | `long_term` | a brand measure every arm reads, through which nothing lasts in sales | unread, unbuilt | each channel's long-term share, 0 |
+| 19 | `flat` | one channel's spend never moves | pla, meta, tv | |
+| 20 | `promotions` | promotions follow television's bursts; the price is a lever | independent, tv-0.5, tv-0.8 | the price's contribution against a stated level |
+
+`python -m causaldyn_bench.scorecard.lift_inputs DIRECTORY` writes each export's lift tests beside
+it as the files a tool calibrates on: PyMC-Marketing's lift table with each test's date, the tests
+of several geos as experiments' records, and the dark weeks and the cooldown in a sidecar with the
+export's digest (`causaldyn_bench.scorecard.lift_inputs`).
+
 ### Pre-registration
 
 A scored run is pre-registered: its design, sample and reading are fixed in a file before its first
