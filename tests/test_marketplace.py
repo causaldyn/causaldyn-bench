@@ -89,7 +89,10 @@ ASCENT_ENDS = frozenset(
 # The versions the runs were recorded under, on x86 without AVX-512. Others compile and solve the
 # ascent otherwise too: under version 1 the Python 3.11 leg, on jax 0.10.2, numpy 2.4.6 and scipy
 # 1.17.1, ended market 0's float32 oracle ascent at 2.4241 of lift against the committed 2.4268. A
-# rerun under other versions reads them again.
+# rerun under other versions reads them again. So does a rerun beside another release of the
+# library than the one a run names (`chc`): 1.2.0's tilted ascent also starts from the fitted
+# game's optimum, which moved float32 market 0's equilibrium-CHC regret from the committed 0.1015
+# to 0.1020.
 RECORDED_UNDER = {"jax": "0.11.2", "jaxlib": "0.11.2", "numpy": "2.5.4", "scipy": "1.18.1"}
 
 
@@ -97,10 +100,12 @@ def _x64() -> bool:
     return bool(jnp.zeros(()).dtype == jnp.float64)
 
 
-def _other_versions() -> str | None:
-    """Why the versions here are not the ones the committed runs were recorded under, or None."""
-    running = {name: importlib.metadata.version(name) for name in RECORDED_UNDER}
-    if running == RECORDED_UNDER:
+def _other_versions(chc: str) -> str | None:
+    """Why the versions here are not the ones the committed runs were recorded under, beside the
+    library's release ``chc``, or None."""
+    recorded = RECORDED_UNDER | {"causal-hybrid-control": chc}
+    running = {name: importlib.metadata.version(name) for name in recorded}
+    if running == recorded:
         return None
     return f"{running} are not the versions the committed runs were recorded under"
 
@@ -236,11 +241,12 @@ def test_the_ascents_end_where_the_committed_run_s_machine_class_ends_them(
     lift and regret read as committed too, and the leaderboard's Track H rows, measured in float32,
     are market 0's regrets. Elsewhere the regrets' order and bounds hold (above), not their
     digits."""
-    for reason in (other_kernels, _other_versions()):
+    x64 = _x64()
+    committed = _committed(x64)
+    for reason in (other_kernels, _other_versions(committed["chc"])):
         if reason is not None:
             pytest.skip(reason)
-    x64 = _x64()
-    markets = {m["seed"]: m["report"] for m in _committed(x64)["markets"]}
+    markets = {m["seed"]: m["report"] for m in committed["markets"]}
     for seed in SEEDS:
         assert reports[seed] == pytest.approx(markets[seed], rel=0.0, abs=TO_THE_QUOTED_DIGIT)
     if not x64:
