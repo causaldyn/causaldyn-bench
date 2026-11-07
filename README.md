@@ -449,7 +449,7 @@ reading are scored against.
 | 18 | `long_term` | a brand measure every arm reads, through which nothing lasts in sales | unread, unbuilt | each channel's long-term share, 0 |
 | 19 | `flat` | one channel's spend never moves | flat-pla, flat-meta, flat-tv | |
 | 20 | `promotions` | promotions follow television's bursts; the price is a lever | independent, tv-0.5, tv-0.8 | the price's contribution against a stated level |
-| 21 | `mmm_framework` | mmm-framework 1.5.0's own two data sets, read from its files and drawn from no seed: a rival's worlds, written to test its own model | national, geo | each channel's contribution and ROAS as the tool's truth files state them, and no curve: an arm's reading is scored, not a plan |
+| 21 | `mmm_framework` | mmm-framework 1.5.0's own worlds, its two shipped data sets and 26 its generator drew once, read from files and drawn from no seed of the bench's: a rival's worlds, written to test its own model | national, geo; the generator's 26 by name | each channel's contribution and ROAS as the tool's truth files state them, and no curve: an arm's reading is scored, not a plan |
 
 Family 21 holds mmm-framework's two shipped data sets unchanged, with their Apache-2.0 notice
 (`src/causaldyn_bench/scorecard/mmm_framework_worlds/NOTICE`), and reads a file only by its
@@ -459,6 +459,17 @@ the tool's own fit as its README's example fits a model (`scripts/mmm_framework_
 `results/mmm_framework_fits/`), each channel's contribution and ROAS against the stated ones. On the
 national set the stated ROAS is not read on the file's spend: the spend it is read on is 0.80 to
 0.90 of the file's, by channel, so the contribution is the reading that needs no denominator.
+
+The tool's other worlds come from its generator, which the bench ran once as a black box, offline
+and in an environment of its own, by the call its docstrings document (`generate_mff(name)` at each
+world's default seed and length; `scripts/mmm_framework_markets.py`). The files it wrote are kept
+unchanged with their notice and a manifest of their SHA-256s
+(`src/causaldyn_bench/scorecard/mmm_framework_markets/`, 1.68 MB). The tool's pages count sixteen
+stress worlds but none of its wheel's documents names them, so the family holds every world of the
+generator's registry it can read, 26; `aurora_kitchen_sink`, which the generator refuses to draw
+outside the tool's repository, and `geo_product`, whose file fills the product dimension, are not
+read. `python -m causaldyn_bench.scorecard.mmm_framework --markets` writes their pilot,
+`results/mmm_framework_markets.{md,json}`: the bench's arm and the tool's own fit on every one.
 
 `python -m causaldyn_bench.scorecard.lift_inputs DIRECTORY` writes each export's lift tests beside
 it as the files a tool calibrates on: PyMC-Marketing's lift table with each test's date, the tests

@@ -1,0 +1,127 @@
+{
+ "tool": "mmm-framework",
+ "version": "1.5.0",
+ "versions": {
+  "python": "3.12.14",
+  "mmm-framework": "1.5.0",
+  "pymc": "6.4.0",
+  "pytensor": "3.3.7",
+  "numpyro": "0.22.0",
+  "jax": "0.12.0.1",
+  "numpy": "2.5.4",
+  "pandas": "3.1.1"
+ },
+ "file": "seasonality_misspec_mff.csv",
+ "settings": {
+  "kpi": "Sales",
+  "media": [
+   "TV",
+   "Search",
+   "Social",
+   "Display"
+  ],
+  "controls": [
+   "Price"
+  ],
+  "geo": false,
+  "chains": 4,
+  "draws": 2000,
+  "tune": 1000,
+  "seed": 42,
+  "backend": "numpyro",
+  "trend": "LINEAR",
+  "trend_from": "mmm_framework"
+ },
+ "fit_result_type": "MMMResults",
+ "fit_warnings": {
+  "UserWarning: `init='adapt_diag'` is ignored by `nuts_sampler='numpyro'`; the external sampler uses its own initialization.": 1,
+  "RuntimeWarning: invalid value encountered in scalar divide": 938
+ },
+ "contributions_type": "ContributionResults",
+ "roi": {
+  "kind": "DataFrame",
+  "index": [
+   "0",
+   "1",
+   "2",
+   "3"
+  ],
+  "columns": [
+   "Channel",
+   "Total Spend",
+   "Total Contribution",
+   "Contribution %",
+   "ROI",
+   "Metric",
+   "Value Units",
+   "Divisor Units",
+   "Reference",
+   "Is Monetary",
+   "Measurement Unit",
+   "Contribution HDI Low",
+   "Contribution HDI High"
+  ],
+  "values": [
+   [
+    "TV",
+    9590.876694526414,
+    6907.113230852406,
+    44.1373089164637,
+    0.7201753761253491,
+    "ROI",
+    "ROI",
+    "$",
+    1.0,
+    true,
+    "spend",
+    2860.8522811123285,
+    12201.183393082076
+   ],
+   [
+    "Search",
+    5547.119833400107,
+    4759.940526643281,
+    30.416609432436093,
+    0.8580922477972998,
+    "ROI",
+    "ROI",
+    "$",
+    1.0,
+    true,
+    "spend",
+    1798.6848388933704,
+    8669.014998643632
+   ],
+   [
+    "Social",
+    6891.6378619549305,
+    2525.4764926986527,
+    16.13810754131093,
+    0.366455194437953,
+    "ROI",
+    "ROI",
+    "$",
+    1.0,
+    true,
+    "spend",
+    315.61720442476417,
+    5509.364342396076
+   ],
+   [
+    "Display",
+    3837.770796023068,
+    1456.61873604115,
+    9.307974109789273,
+    0.3795481318349149,
+    "ROI",
+    "ROI",
+    "$",
+    1.0,
+    true,
+    "spend",
+    -745.8996108668232,
+    4867.033347753811
+   ]
+  ]
+ }
+}

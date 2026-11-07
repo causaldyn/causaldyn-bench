@@ -1,0 +1,183 @@
+{
+ "tool": "mmm-framework",
+ "version": "1.5.0",
+ "versions": {
+  "python": "3.12.14",
+  "mmm-framework": "1.5.0",
+  "pymc": "6.4.0",
+  "pytensor": "3.3.7",
+  "numpyro": "0.22.0",
+  "jax": "0.12.0.1",
+  "numpy": "2.5.4",
+  "pandas": "3.1.1"
+ },
+ "file": "realistic_mff.csv",
+ "settings": {
+  "kpi": "Sales",
+  "media": [
+   "TV",
+   "Search",
+   "Social",
+   "Display",
+   "Video",
+   "Radio",
+   "Print"
+  ],
+  "controls": [
+   "category_demand",
+   "distribution",
+   "price",
+   "competitor_promo",
+   "weather",
+   "holiday"
+  ],
+  "geo": false,
+  "chains": 4,
+  "draws": 2000,
+  "tune": 1000,
+  "seed": 42,
+  "backend": "numpyro",
+  "trend": "LINEAR",
+  "trend_from": "mmm_framework"
+ },
+ "fit_result_type": "MMMResults",
+ "fit_warnings": {
+  "UserWarning: `init='adapt_diag'` is ignored by `nuts_sampler='numpyro'`; the external sampler uses its own initialization.": 1,
+  "RuntimeWarning: invalid value encountered in scalar divide": 938
+ },
+ "contributions_type": "ContributionResults",
+ "roi": {
+  "kind": "DataFrame",
+  "index": [
+   "0",
+   "1",
+   "2",
+   "3",
+   "4",
+   "5",
+   "6"
+  ],
+  "columns": [
+   "Channel",
+   "Total Spend",
+   "Total Contribution",
+   "Contribution %",
+   "ROI",
+   "Metric",
+   "Value Units",
+   "Divisor Units",
+   "Reference",
+   "Is Monetary",
+   "Measurement Unit",
+   "Contribution HDI Low",
+   "Contribution HDI High"
+  ],
+  "values": [
+   [
+    "TV",
+    11269.03302798884,
+    5143.191074285804,
+    15.191976927400205,
+    0.45640039047819686,
+    "ROI",
+    "ROI",
+    "$",
+    1.0,
+    true,
+    "spend",
+    3235.868819564207,
+    7467.9698655648035
+   ],
+   [
+    "Search",
+    7830.341599003316,
+    5919.163343807614,
+    17.48404670365574,
+    0.7559265798264834,
+    "ROI",
+    "ROI",
+    "$",
+    1.0,
+    true,
+    "spend",
+    2704.9427492718814,
+    10652.032652909942
+   ],
+   [
+    "Social",
+    6186.4531397153505,
+    5554.349184047405,
+    16.406457281482542,
+    0.8978244979162601,
+    "ROI",
+    "ROI",
+    "$",
+    1.0,
+    true,
+    "spend",
+    2435.3763760936918,
+    10879.828365421172
+   ],
+   [
+    "Display",
+    5039.5458419362185,
+    3934.2722642741473,
+    11.62106804932639,
+    0.7806799238803195,
+    "ROI",
+    "ROI",
+    "$",
+    1.0,
+    true,
+    "spend",
+    1040.2333575838961,
+    8906.456203472417
+   ],
+   [
+    "Video",
+    4289.138467776287,
+    6592.369076177932,
+    19.472564300191586,
+    1.5369914321268716,
+    "ROI",
+    "ROI",
+    "$",
+    1.0,
+    true,
+    "spend",
+    3817.489589361062,
+    11279.413143514299
+   ],
+   [
+    "Radio",
+    3232.3611864709555,
+    3377.443769211598,
+    9.976305969262327,
+    1.0448843969999038,
+    "ROI",
+    "ROI",
+    "$",
+    1.0,
+    true,
+    "spend",
+    338.72364019897446,
+    8899.468080661003
+   ],
+   [
+    "Print",
+    2080.6419520208897,
+    3333.864299217122,
+    9.847580768681219,
+    1.6023248478571723,
+    "ROI",
+    "ROI",
+    "$",
+    1.0,
+    true,
+    "spend",
+    227.97484823560148,
+    8960.099228769153
+   ]
+  ]
+ }
+}

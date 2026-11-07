@@ -55,4 +55,4 @@ geo: 4 chains of 1000 tuning and 2000 kept draws, seed 42.
 - equal split: a plan, and the truth states no curve to score a plan on.
 - CHC: reads each channel from its lift tests, and the files hold none.
 - myopic: reads each channel from its lift tests, and the files hold none.
-- The tool's sixteen stress-test worlds are drawn by its generator, not shipped as files, and are not read here.
+- The worlds the tool's generator draws are read apart: `results/mmm_framework_markets.md`.

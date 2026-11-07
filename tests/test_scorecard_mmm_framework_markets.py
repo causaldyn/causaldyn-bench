@@ -2,7 +2,8 @@
 of a manifest whose own digest the bench holds, beside their licence; the truth reader returns what
 each key states, and the stated ROAS is the stated contribution over the file's spend or, where the
 tool plants recording errors in that spend, over the true spend its key's notes state; a swapped
-key moves what a reading is scored against."""
+key moves what a reading is scored against; and the committed pilot has a cell of the bench's arm
+and one of the tool's own fit on every world."""
 
 import hashlib
 import json
@@ -17,12 +18,15 @@ from causaldyn_bench.scorecard.mmm_framework import (
     MANIFEST_SHA256,
     MARKETS,
     MMM_FRAMEWORK,
+    NO_CELL,
     UNREAD_MARKETS,
     WHEEL_SHA256,
     MffWorld,
     MmmFramework,
     Reading,
     denominator,
+    main,
+    markets_markdown,
     read_market,
     read_truth,
     score,
@@ -30,6 +34,7 @@ from causaldyn_bench.scorecard.mmm_framework import (
 
 FAMILY = MmmFramework()
 ROOT = Path(__file__).resolve().parent.parent
+PILOT = ROOT / "results" / "mmm_framework_markets"
 MISRECORDED = ("spend_outliers", "mixed_data_errors")  # the tool's planted recording errors
 PANELS = ("geo_clean", "geo_heterogeneous")
 
@@ -191,3 +196,25 @@ def test_a_file_or_manifest_not_the_recorded_one_is_not_read(tmp_path):
     for name in UNREAD_MARKETS:
         with pytest.raises(ValueError, match=f"hold no '{name}'"):
             read_market(FAMILY.markets, name)
+
+
+def test_the_committed_pilot_is_what_the_command_writes(tmp_path):
+    """The bench's arm read again on every generated world, and the tool's committed records read
+    again, give the committed pilot: the arm's numbers within 1e-6 of them, as its channels are
+    JAX's at either precision, the report and the tool's numbers exactly; each world has a cell of
+    both."""
+    committed = json.loads(PILOT.with_suffix(".json").read_text())
+    main(["--markets", "--out", str(tmp_path / "markets")])
+    fresh = json.loads((tmp_path / "markets.json").read_text())
+    assert fresh["no_cell"] == committed["no_cell"] == dict(NO_CELL)
+    assert fresh["generator"] == committed["generator"]
+    assert fresh["generator"]["manifest_sha256"] == MANIFEST_SHA256
+    assert fresh["tool"] == committed["tool"] and tuple(fresh["tool"]) == MARKETS
+    assert [w["environment"] for w in fresh["worlds"]] == list(MARKETS)
+    for new, old in zip(fresh["worlds"], committed["worlds"], strict=True):
+        assert [a["arm"] for a in new["arms"]] == ["observational", "mmm-framework"]
+        for a, b in zip(new["arms"], old["arms"], strict=True):
+            for field in ("contribution", "roas"):
+                np.testing.assert_allclose(a[field], b[field], rtol=1e-6, atol=0)
+    if fresh["x64"]:
+        assert markets_markdown(fresh) == PILOT.with_suffix(".md").read_text()
