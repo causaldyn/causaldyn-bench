@@ -449,6 +449,7 @@ reading are scored against.
 | 18 | `long_term` | a brand measure every arm reads, through which nothing lasts in sales | unread, unbuilt | each channel's long-term share, 0 |
 | 19 | `flat` | one channel's spend never moves | flat-pla, flat-meta, flat-tv | |
 | 20 | `promotions` | promotions follow television's bursts; the price is a lever | independent, tv-0.5, tv-0.8 | the price's contribution against a stated level |
+| 21 | `mmm_framework` | mmm-framework 1.5.0's own two data sets, read from its files and drawn from no seed: a rival's worlds, written to test its own model | national, geo | each channel's contribution and ROAS as the tool's truth files state them, and no curve: an arm's reading is scored, not a plan |
 
 `python -m causaldyn_bench.scorecard.lift_inputs DIRECTORY` writes each export's lift tests beside
 it as the files a tool calibrates on: PyMC-Marketing's lift table with each test's date, the tests
