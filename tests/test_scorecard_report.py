@@ -16,11 +16,14 @@ from causaldyn_bench.scorecard.confounded import CONFOUNDED
 from causaldyn_bench.scorecard.drift import DRIFT
 from causaldyn_bench.scorecard.family import number
 from causaldyn_bench.scorecard.few_geos import FEW_GEOS
+from causaldyn_bench.scorecard.flat import FLAT
 from causaldyn_bench.scorecard.geo import GEO
+from causaldyn_bench.scorecard.long_term import LONG_TERM
 from causaldyn_bench.scorecard.meridian import MERIDIAN
 from causaldyn_bench.scorecard.outside import OUTSIDE
 from causaldyn_bench.scorecard.performance import PERFORMANCE
 from causaldyn_bench.scorecard.preregistration import Stamp, verify
+from causaldyn_bench.scorecard.promotions import PROMOTIONS
 from causaldyn_bench.scorecard.pymc_marketing import PYMC_MARKETING
 from causaldyn_bench.scorecard.report import markdown, report, shares
 from causaldyn_bench.scorecard.robyn import ROBYN
@@ -30,6 +33,7 @@ from causaldyn_bench.scorecard.short import SHORT
 from causaldyn_bench.scorecard.simmmulator import Simmmulator
 from causaldyn_bench.scorecard.spillover import SPILLOVER
 from causaldyn_bench.scorecard.track_m2 import TRACK_M2
+from causaldyn_bench.scorecard.twins import TWINS
 
 ROOT = Path(__file__).resolve().parents[1]
 FAMILIES = {
@@ -47,6 +51,10 @@ FAMILIES = {
     12: MERIDIAN,
     13: PYMC_MARKETING,
     14: ROBYN,
+    17: TWINS,
+    18: LONG_TERM,
+    19: FLAT,
+    20: PROMOTIONS,
 }
 CHANNELS = ("pla", "meta", "tv")
 SPEND = {"pla": 100.0, "meta": 300.0, "tv": 600.0}
