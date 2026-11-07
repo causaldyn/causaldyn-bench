@@ -265,12 +265,14 @@ class Geo:
 
     def truth(self, world: World) -> Truth:
         """The best plan over the world's cells, the market's quarter at the status quo, each
-        channel's returns on last year's spend, and the lift of the world's switchback test
-        (:func:`~causaldyn_bench.scorecard.switchback.lift`); the effect holds still, so there is
+        channel's returns on last year's spend, and the lift of the world's switchback test, in all
+        and a week on (:func:`~causaldyn_bench.scorecard.switchback.lift` and
+        :func:`~causaldyn_bench.scorecard.switchback.steady`); the effect holds still, so there is
         one path."""
         history = world.history
         quarter = geo_quarter(history)
         cells = geo_cells(history, quarter)
+        test = switchback.design(history, number(self), world.seed)
         return Truth(
             quarter=quarter,
             cells=cells,
@@ -280,9 +282,8 @@ class Geo:
             target=world.shadow.sales.sum(axis=1),
             scale=float(np.mean(history.kpi.sum(axis=0))),
             returns=true_geo_returns(history, window(history)),
-            switchback=switchback.lift(
-                history, switchback.design(history, number(self), world.seed)
-            ),
+            switchback=switchback.lift(history, test),
+            switchback_steady=switchback.steady(history, test),
         )
 
 

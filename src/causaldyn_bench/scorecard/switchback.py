@@ -25,9 +25,22 @@ channel off in every week of the test, from the test's first week through the ke
 after it, nothing spent past the history. It holds the carry-out of the last blocks on past the
 history, which a reader of a week on's steady state times the weeks on counts too.
 
+**The steady truth** (:func:`steady`) is the lift a week on gains as a reader with a washout of
+half a block reads it: the mean, over the weeks on that such a reading keeps
+(:meth:`Design.kept`), of what the test's spend raised the KPI that week over the channel off
+through the test, summed over the geos. A week whose kernel's lags all fall in weeks on holds the
+channel's whole steady-state lift; the kernel is a block long, longer than the washout, so the
+first weeks kept after a switch miss the lags that fall in the block before and sit below it. A
+kept week off still carries the lift of those lags, so a reading of the mean KPI over the kept
+weeks on less the mean over the kept weeks off reads this less their mean, beside its noise and
+what the rest of the KPI differs by between those weeks. That difference's mean over the
+arrangements is nought: an arrangement and its complement switch in the same blocks and keep the
+same weeks.
+
 An export of version 4 (:mod:`.observe`) carries the test: its design and its universe
 (:class:`~causaldyn_bench.scorecard.observe.SwitchbackTest`); a geo family's truth carries its lift
-(:attr:`~causaldyn_bench.scorecard.family.Truth.switchback`).
+and its steady truth (:attr:`~causaldyn_bench.scorecard.family.Truth.switchback` and
+:attr:`~causaldyn_bench.scorecard.family.Truth.switchback_steady`).
 """
 
 from __future__ import annotations
@@ -66,6 +79,26 @@ class Design:
             self.on, self.block
         )
         return state
+
+    def kept(self, weeks: int, washout: int) -> np.ndarray:
+        """``(weeks,)``: whether a reading with a washout of ``washout`` weeks reads each week of a
+        history of ``weeks``: every week of the test but the first ``washout`` of its first block,
+        whose state before it the reading does not know, and of every block after a switch; a
+        block in the state of the one before it is read whole, and no week outside the test is.
+
+        Raises:
+            ValueError: a washout below 0, or one that leaves nothing of a block.
+        """
+        if not 0 <= washout < self.block:
+            raise ValueError(f"a washout is 0 to {self.block - 1} weeks of a block, not {washout}")
+        on = np.array(self.on)
+        switched = np.ones(on.size, dtype=bool)
+        switched[1:] = on[1:] != on[:-1]
+        read = np.ones((on.size, self.block), dtype=bool)
+        read[:, :washout] = ~switched[:, None]
+        kept = np.zeros(weeks, dtype=bool)
+        kept[self.first - 1 : self.first - 1 + on.size * self.block] = read.ravel()
+        return kept
 
 
 def design(world: GeoMediaWorld, family: int, seed: int) -> Design:
@@ -115,6 +148,26 @@ def lift(world: GeoMediaWorld, test: Design) -> float:
     Raises:
         ValueError: the world's lifts drift, whose path past the history is a forecast.
     """
+    return float(_gained(world, test).sum())
+
+
+def steady(world: GeoMediaWorld, test: Design) -> float:
+    """The lift a week on of ``test`` gains as a reader with a washout of ``test.block // 2``
+    reads it: the mean, over the weeks on :meth:`Design.kept` keeps at that washout, of what the
+    test's spend raised the KPI that week over its channel off through the test, summed over the
+    geos; see the module.
+
+    Raises:
+        ValueError: the world's lifts drift.
+    """
+    weeks = world.spend.shape[1]
+    read = test.state(weeks) & test.kept(weeks, test.block // 2)
+    return float(_gained(world, test)[:, :weeks].sum(axis=0)[read].mean())
+
+
+def _gained(world: GeoMediaWorld, test: Design) -> Series:
+    """``(geos, weeks + length - 1)``: what ``test``'s spend raised each geo's KPI each week over
+    its channel off from the test's first week, through the kernel's last week after the history."""
     if world.mix.drift > 0.0:
         raise ValueError("a geo world whose lifts drift has no lift past its history here")
     geos, _, channels = world.spend.shape
@@ -124,7 +177,4 @@ def lift(world: GeoMediaWorld, test: Design) -> float:
     on, off = (np.concatenate([spend, after], axis=1) for spend in (tested(world, test), off))
     longer = dataclasses.replace(world, spend=on, drift=np.ones(on.shape[1:]))
     with jax.enable_x64(True):
-        gained = np.asarray(longer.lift(on), dtype=float) - np.asarray(
-            longer.lift(off), dtype=float
-        )
-    return float(gained.sum())
+        return np.asarray(longer.lift(on), dtype=float) - np.asarray(longer.lift(off), dtype=float)

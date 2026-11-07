@@ -475,7 +475,9 @@ TV, the channel bought nationally (`causaldyn_bench.scorecard.switchback`): TV o
 six of the history's last twelve blocks of eight weeks, their order drawn uniformly. The version-4
 export holds its design and the KPI and spend of the universe it ran in, the same at every rung,
 and the family's truth holds its lift: what the weeks on raised the KPI over TV off through the
-whole test, carry-out included. Its order and its noise come from further indices of the family's
+whole test, carry-out included. It also holds the lift a week on as a reader with a washout of half
+a block reads it: the mean of that lift over the weeks on such a reading keeps, every week of a
+block on but the first four of the first block and of a block after a switch. Its order and its noise come from further indices of the family's
 stream of tests that nothing else reads, so no world, test, quarter or truth drawn before it moves.
 
 A geo world's ladder runs each channel's tests from weeks 20, 44, 68 and 92. A caller may opt in to

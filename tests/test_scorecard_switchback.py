@@ -3,8 +3,9 @@ history's last twelve blocks of the kernel's length, the blocks' order and the u
 from a further index of the family's stream of tests; its universe the world's base and its spend
 with the channel off in those blocks; its truth the lift chc's world makes over the channel off
 through the test, carry-out past the history included, which the national cell's own formula gives
-too; a version-4 export carries it at every rung and reads it back, and a malformed one is refused;
-and no world, test, quarter or truth the families drew before it moves."""
+too; its steady truth the mean of that lift over the weeks on a washout of half a block keeps; a
+version-4 export carries it at every rung and reads it back, and a malformed one is refused; and no
+world, test, quarter or truth the families drew before it moves."""
 
 import dataclasses
 
@@ -110,6 +111,56 @@ def test_the_truth_is_the_national_cells_lift_over_the_test_and_its_carry_out(dr
     assert (carried > 0.0) == test.on[-1] and (carried == 0.0) == (not test.on[-1])
 
 
+def test_the_steady_truth_is_the_mean_lift_over_the_weeks_on_a_washout_of_half_a_block_keeps(
+    drawn,
+):
+    """The weeks kept, drawn block by block: the whole of a block in the state of the one before
+    it, all but the first four weeks of the first block and of a block after a switch. The truth is
+    the mean over the kept weeks on of the national cell's lift at the test's spend less with the
+    channel off through the test; a kept week of a block that follows a block on holds the
+    channel's whole steady-state lift, as does the last of a block after a switch, whose lags all
+    fall in its block; the weeks kept before it miss the block before's and hold less; and a kept
+    week off holds no less than nought."""
+    family, world = drawn
+    history = world.history
+    test = switchback.design(history, number(family), world.seed)
+    washout = test.block // 2
+    kept, switched = np.zeros(104, dtype=bool), np.zeros(104, dtype=bool)
+    for b, on in enumerate(test.on):
+        start = test.first - 1 + b * test.block
+        after = b == 0 or on != test.on[b - 1]
+        kept[start + (washout if after else 0) : start + test.block] = True
+        switched[start : start + test.block] = after
+    np.testing.assert_array_equal(test.kept(104, washout), kept)
+    np.testing.assert_array_equal(test.kept(104, 0), np.arange(104) >= test.first - 1)
+    for wrong in (-1, test.block):
+        with pytest.raises(ValueError, match="washout"):
+            test.kept(104, wrong)
+    channel = history.mix.channels[test.channel]
+    curve, lam = geo_curve(channel.curve, float(history.population.sum()))
+    kernel = geo_kernel(channel.retention, history.mix.length)
+    size = float(history.population @ history.effect[:, test.channel])
+    summed = history.spend[:, :, test.channel].sum(axis=0)
+
+    def lifted(spend: np.ndarray) -> np.ndarray:
+        return size * curve.value(np.convolve(spend, kernel)[:104], lam)
+
+    state = test.state(104)
+    off = np.concatenate([summed[: test.first - 1], np.zeros(104 - test.first + 1)])
+    gained = lifted(np.where(state, summed, 0.0)) - lifted(off)
+    whole = lifted(summed) - lifted(np.zeros(104))
+    on = kept & state
+    truth = family.truth(world)
+    assert truth.switchback_steady == switchback.steady(history, test)
+    assert truth.switchback_steady == pytest.approx(float(gained[on].mean()), rel=1e-11, abs=0.0)
+    last = (np.arange(104) - (test.first - 1)) % test.block == test.block - 1
+    short = on & switched & ~last
+    assert short.any() and (on & ~short).any()
+    np.testing.assert_allclose(gained[on & ~short], whole[on & ~short], rtol=1e-11, atol=0.0)
+    assert np.all(gained[short] < whole[short])
+    assert np.all(gained[kept & ~state] >= 0.0)
+
+
 def test_a_version_four_export_carries_the_switchback_at_every_rung_and_reads_it_back(
     drawn, tmp_path
 ):
@@ -139,6 +190,12 @@ def test_a_version_four_export_carries_the_switchback_at_every_rung_and_reads_it
     assert back.switchback is not None and back.digest() == top.digest()
     for name in ("channel", "first", "block", "on", "sales", "spend"):
         np.testing.assert_array_equal(getattr(back.switchback, name), getattr(top.switchback, name))
+    held = back.switchback
+    rebuilt = switchback.Design(
+        back.channels.index(held.channel), int(held.first), int(held.block), tuple(held.on)
+    )
+    assert rebuilt == test
+    assert switchback.steady(world.history, rebuilt) == switchback.steady(world.history, test)
     nudged = top.switchback.sales.copy()
     nudged[60, 0] *= 1.0 + 1e-12
     moved = dataclasses.replace(top, switchback=dataclasses.replace(top.switchback, sales=nudged))
