@@ -1,0 +1,78 @@
+/* Family 17's twins in closed form (src/causaldyn_bench/scorecard/twins.py), each check printing
+   PASS or FAIL:
+   1. the Hill of slope 3's greatest concavity in its half-saturations, the largest -f'' of
+      f(z) = z^3 / (1 + z^3) over z > 0: at u = z^3 = (8 + 3 sqrt 6) / 10 it is
+      6 u^(1/3) (2 u - 1) / (1 + u)^3 = 0.879475680097885, the module's BEND, which the oracle's
+      bound needs to be no less than any -f'';
+   2. a line of slope e beside 252 tanh(x / 50): search's best spend, where its slope
+      5.04 sech(x / 50)^2 meets e, is 50 acosh(sqrt(5.04 / e)), the point
+      tests/test_scorecard_truth.py holds the oracle to;
+   3. the twins' quarter at 150 a week, television within 50 to 140: its best spend in the line's
+      twin, at the slope the history leaves, e = 350 f(100 / 60) / 100, and in the curve's, where
+      350 f'(x / 60) / 60 meets search's slope at 150 - x; and the share of a euro each twin's best
+      plan leaves in the other twin, both above 0.05.
+   Run: timeout 300 maxima --very-quiet -Q -b scripts/twin_hill_bend.mac </dev/null, then grep the
+   output for FAIL and Lisp error: an error does not set the exit code. */
+ratprint : false$
+fpprec : 30$
+report(name, ok) := print(if ok then "PASS" else "FAIL", name)$
+
+f(z) := z^3 / (1 + z^3)$
+g : ratsimp(-diff(f(z), z, 2))$
+
+/* 1. the stationary points of -f'' are the roots in u = z^3 of 10 u^2 - 16 u + 1 */
+quotient : ratsimp(num(ratsimp(diff(g, z))) / (10 * z^6 - 16 * z^3 + 1))$
+report("-f''' vanishes where 10 u^2 - 16 u + 1 does", constantp(quotient) and quotient # 0)$
+high : (8 + 3 * sqrt(6)) / 10$
+low : (8 - 3 * sqrt(6)) / 10$
+report("both roots solve it", is(ratsimp(expand(10 * high^2 - 16 * high + 1)) = 0)
+                              and is(ratsimp(expand(10 * low^2 - 16 * low + 1)) = 0))$
+bend : subst(z = high^(1/3), g)$
+module : 6 * high^(1/3) * (2 * high - 1) / (1 + high)^3$
+report("the module's form is -f'' there", is(abs(bfloat(bend - module)) < 1b-28))$
+print("  bend", bfloat(bend))$
+report("bend = 0.879475680097885 to 1e-15", is(abs(bfloat(bend) - 0.879475680097885b0) < 1b-15))$
+report("-f'' < 0 at the other root, a minimum", is(bfloat(subst(z = low^(1/3), g)) < 0))$
+report("-f'' -> 0 at 0 and at infinity", is(subst(z = 0, g) = 0) and is(limit(g, z, inf) = 0))$
+gf(x) := float(6 * x * (2 * x^3 - 1) / (1 + x^3)^3)$
+report("-f'' = 6 z (2 z^3 - 1) / (1 + z^3)^3", is(ratsimp(g - 6 * z * (2 * z^3 - 1) / (1 + z^3)^3) = 0))$
+grid : 0.0$
+for k : 1 thru 20000 do grid : max(grid, gf(k / 1000.0))$
+print("  largest -f'' on a grid of 0.001 over (0, 20]", grid)$
+report("no grid point exceeds the bend", is(grid <= float(bend)))$
+
+/* 2. search's best spend beside a line of slope e */
+paid(e) := 50 * acosh(sqrt((504 / 100) / e))$
+dsearch(x) := (504 / 100) / cosh(x / 50)^2$
+worst : 0$
+for e in [1, 2, 288 / 100, 4, 5] do worst : max(worst, abs(bfloat(dsearch(paid(e)) - e)))$
+report("search's slope at 50 acosh(sqrt(5.04 / e)) is e", is(worst < 1b-25))$
+print("  at e = 2.88 search spends", bfloat(paid(288 / 100)))$
+report("the line's slope 252 tanh(x / 50) differentiates to 5.04 sech(x / 50)^2",
+       is(trigsimp(diff(252 * tanh(x / 50), x) - dsearch(x)) = 0))$
+
+/* 3. the twins' best plans and what each leaves in the other */
+e : 350 * f(100 / 60) / 100$
+report("the slope the history leaves is 875 / 304", is(e = 875 / 304))$
+line_tv : bfloat(150 - paid(e))$
+df : diff(f(z), z)$
+dcurve(x) := 350 * subst(z = x / 60, df) / 60$
+curve_tv : find_root(float(dcurve(x) - dsearch(150 - x)), x, 80.0, 105.0)$
+print("  television a week: line's twin", line_tv, " curve's twin", curve_tv)$
+report("the line's twin spends 110.81", is(abs(line_tv - 110.807b0) < 1b-3))$
+report("the curve's twin spends 94.69", is(abs(curve_tv - 94.693) < 1e-3))$
+wline(x) := float(e * x + 252 * tanh((150 - x) / 50))$
+wcurve(x) := float(350 * f(x / 60) + 252 * tanh((150 - x) / 50))$
+top_curve : wcurve(curve_tv)$
+top_line : wline(float(line_tv))$
+for k : 0 thru 9000 do block([x : 50 + k / 100.0],
+  top_curve : max(top_curve, wcurve(x)),
+  top_line : max(top_line, wline(x)))$
+report("each twin's root is its best on a grid of 0.01 over [50, 140]",
+       is(top_curve - wcurve(curve_tv) < 1e-9) and is(top_line - wline(float(line_tv)) < 1e-9))$
+in_curve : (wcurve(curve_tv) - wcurve(float(line_tv))) / 150$
+in_line : (wline(float(line_tv)) - wline(curve_tv)) / 150$
+print("  a euro's share left: in the curve's twin", in_curve, " in the line's", in_line)$
+report("the line's plan leaves 0.095 in the curve's twin", is(abs(in_curve - 0.0948) < 5e-4))$
+report("the curve's plan leaves 0.061 in the line's twin", is(abs(in_line - 0.0609) < 5e-4))$
+report("both above 0.05", is(min(in_curve, in_line) > 0.05))$

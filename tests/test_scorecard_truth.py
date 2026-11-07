@@ -465,9 +465,8 @@ def test_a_line_beside_a_concave_cell_takes_what_the_budget_leaves():
     best plan spends the tanh cell where its slope meets the line's and the line the rest. The
     price's bisection cannot find it, since the line's spend jumps from one end of its box to the
     other at its slope; the line's ``e`` against ``252 tanh(x / 50)`` puts that point at
-    ``50 acosh(sqrt(5.04 / e))``, where its slope ``5.04 sech(x / 50)^2`` meets ``e``. The bound
-    closes the worth's gap, so the spend is held to it within a millionth, where a worth within the
-    gap allows."""
+    ``50 acosh(sqrt(5.04 / e))`` (Maxima, scripts/twin_hill_bend.mac). The bound closes the worth's
+    gap, so the spend is held to it within a millionth, where a worth within the gap allows."""
     weeks, slope = 13, 2.88
     line = Curve(
         lambda a, scale: np.asarray(a, dtype=float),
