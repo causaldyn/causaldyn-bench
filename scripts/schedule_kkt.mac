@@ -1,0 +1,44 @@
+/* The best schedule of cells without carryover on the exponential curve, whose effect moves from
+   week to week: the closed form tests/test_scorecard_schedule.py holds the bench's oracle to.
+
+   Worth: sum_s e_s (1 - exp(-k_s w_s)), each spend w_s at its cell's rate k_s, the spends summing
+   to B. Where no spend meets an end of its box, the KKT conditions are e_s k_s exp(-k_s w_s) = mu,
+   so w_s = log(e_s k_s / mu) / k_s and, summing,
+   log mu = (sum_s log(e_s k_s) / k_s - B) / sum_s 1 / k_s. */
+
+ratprint: false$
+display2d: false$
+fails: 0$
+check(name, value) := if is(equal(value, 0)) then print("PASS", name)
+    else (fails: fails + 1, print("FAIL", name, value))$
+near(name, value, tolerance) := if is(abs(value) < tolerance) then print("PASS", name)
+    else (fails: fails + 1, print("FAIL", name, value))$
+
+/* the stationary point: each spend's slope meets mu */
+w(e, k, mu) := log(e * k / mu) / k$
+slope(e, k, x) := e * k * exp(-k * x)$
+check("slope meets mu", radcan(slope(e, k, w(e, k, mu)) - mu))$
+
+/* the price that spends B over three spends at rates of their own */
+n: 3$
+es: [e1, e2, e3]$
+ks: [k1, k2, k3]$
+logmu: (sum(log(es[i] * ks[i]) / ks[i], i, 1, n) - B) / sum(1 / ks[i], i, 1, n)$
+spent: sum(w(es[i], ks[i], exp(logmu)), i, 1, n)$
+check("spends the budget", radcan(spent - B))$
+
+/* the worth is concave: its Hessian in the spends is diagonal and negative */
+worth: sum(es[i] * (1 - exp(-ks[i] * x[i])), i, 1, n)$
+check("diagonal", diff(worth, x[1], 1, x[2], 1))$
+check("negative curvature", radcan(diff(worth, x[1], 2) + es[1] * k1^2 * exp(-k1 * x[1])))$
+
+/* a numeric instance: each spend's slope is the same price and the spends sum to B */
+fpprec: 40$
+inst: [e1 = 2, e2 = 3, e3 = 5, k1 = 1/2, k2 = 4/5, k3 = 1/2, B = 12]$
+ws: makelist(bfloat(subst(inst, w(es[i], ks[i], exp(logmu)))), i, 1, n)$
+near("instance spends B", bfloat(lsum(x, x, ws)) - 12b0, 1b-35)$
+prices: makelist(bfloat(subst(inst, slope(es[i], ks[i], ws[i]))), i, 1, n)$
+near("instance meets one price", lmax(prices) - lmin(prices), 1b-35)$
+print("spends", ws)$
+
+if fails = 0 then print("ALL PASS") else print("FAILURES", fails)$

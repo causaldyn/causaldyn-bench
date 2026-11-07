@@ -74,18 +74,25 @@ ROUNDING = 64.0 * float(np.finfo(float).eps)  # a sampled worth's rounding, of t
 @dataclass(frozen=True, eq=False)
 class Cell:
     """One cell over the quarter and the kernel's tail: its adstock ``carry + weekly * reach``, its
-    curve at its ``scale`` (his ``lambda``), and the effect each of those weeks carries."""
+    curve at its ``scale`` (his ``lambda``), and the effect each of those weeks carries. ``unit``,
+    where given, ``(weeks, 13)``, is the adstock in each of those weeks of a unit spent in each week
+    of the quarter alone, its rows summing to ``reach``: what a schedule, a spend each week, is
+    scored on (:mod:`.schedule`)."""
 
     carry: Series
     reach: Series
     curve: Curve
     scale: float
     effect: Series
+    unit: Series | None = None
 
     def __post_init__(self) -> None:
         shapes = {np.shape(self.carry), np.shape(self.reach), np.shape(self.effect)}
         if len(shapes) != 1 or len(next(iter(shapes))) != 1:
             raise ValueError(f"carry, reach and effect are paths over the same weeks, not {shapes}")
+        weeks = (*np.shape(self.carry), PLANNED)
+        if self.unit is not None and np.shape(self.unit) != weeks:
+            raise ValueError(f"a unit's reach week by week is {weeks}, not {np.shape(self.unit)}")
 
     @property
     def concave(self) -> bool:
@@ -164,29 +171,36 @@ def cells(
     out = []
     for c, lam in enumerate(world.saturation):
         column = None if bought is None else bought[:, c]
-        carry, reach = _adstocks(quarter.history[:, c], world.kernel(c), column)
-        out.append(Cell(carry, reach, curves[c], lam, paths[c]))
+        carry, reach, unit = _adstocks(quarter.history[:, c], world.kernel(c), column)
+        out.append(Cell(carry, reach, curves[c], lam, paths[c], unit))
     return tuple(out)
 
 
-def _adstocks(history: Series, kernel: Series, buys: Series | None = None) -> tuple[Series, Series]:
+def _adstocks(
+    history: Series, kernel: Series, buys: Series | None = None
+) -> tuple[Series, Series, Series]:
     """A cell's adstock over the quarter and the kernel's tail as ``carry + weekly * reach``: the
     carryover of ``history``, its weekly spend before the quarter, through ``kernel``, its weights
     from lag 0, and the reach of one unit a week over the quarter, nothing spent after it; each
-    week's spend times ``buys`` in that week, where it is given."""
+    week's spend times ``buys`` in that week, where it is given. Beside them the reach of a unit in
+    each quarter week alone, ``(weeks, 13)``, the cell's ``unit``."""
     length = kernel.size
     weeks = history.size
     # the week each of the horizon's weeks reads at each lag of the kernel, numbered from 0
     source = weeks + np.arange(PLANNED + length - 1)[:, None] - np.arange(length)[None, :]
     before = source < weeks
     during = (source >= weeks) & (source < weeks + PLANNED)
+    single = np.zeros((source.shape[0], PLANNED))
+    rows, lags = np.nonzero(during)
+    single[rows, source[rows, lags] - weeks] = kernel[lags]
     if buys is not None:
         history = history * buys[:weeks]
+        single = single * buys[weeks : weeks + PLANNED]
     spent = np.where(before, history[np.minimum(source, weeks - 1)], 0.0)
     if buys is None:
-        return spent @ kernel, during @ kernel
+        return spent @ kernel, during @ kernel, single
     unit = np.where(during, buys[np.minimum(source, weeks + PLANNED - 1)], 0.0)
-    return spent @ kernel, unit @ kernel
+    return spent @ kernel, unit @ kernel, single
 
 
 def geo_curve(saturation: Saturation, people: float) -> tuple[Curve, float]:
@@ -350,9 +364,11 @@ def geo_cells(world: GeoMediaWorld, quarter: Quarter) -> tuple[Cell, ...]:
     out = []
     for i, part in enumerate(parts):
         channel = mix.channels[part.channel]
-        carry, reach = _adstocks(quarter.history[:, i], geo_kernel(channel.retention, mix.length))
+        carry, reach, unit = _adstocks(
+            quarter.history[:, i], geo_kernel(channel.retention, mix.length)
+        )
         curve, lam = geo_curve(channel.curve, part.people)
-        out.append(Cell(carry, reach, curve, lam, np.full(horizon, part.effect)))
+        out.append(Cell(carry, reach, curve, lam, np.full(horizon, part.effect), unit))
     return tuple(out)
 
 

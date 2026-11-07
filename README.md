@@ -478,6 +478,16 @@ and the family's truth holds its lift: what the weeks on raised the KPI over TV 
 whole test, carry-out included. Its order and its noise come from further indices of the family's
 stream of tests that nothing else reads, so no world, test, quarter or truth drawn before it moves.
 
+A schedule, a spend in each week of the quarter on each cell or each channel, is scored by
+`score_schedule(truth, schedule)` (`causaldyn_bench.scorecard.schedule`): its regret per euro of the
+budget against the best schedule in the same box at the same budget, carryover in and out, on the
+expected path and, where the quarter realised another, on the realised one against the best
+schedule in hindsight. It also gives the best schedule's worth over the best plan's per euro, the
+most a schedule gains over holding a rate. The best schedule is solved on cells that are concave and
+not a line, and is kept only where its Frank-Wolfe gap certifies it to 1e-10 a euro; its closed form
+where nothing carries is checked in Maxima (`scripts/schedule_kkt.mac`). The twins' and siMMMulator's
+cells state no reach week by week, so their schedules are refused.
+
 `python -m causaldyn_bench.scorecard.variance` measures what the design removes of a comparison's
 variance (`causaldyn_bench.scorecard.variance`): pairing the arms on the same worlds (common random
 numbers) against an unpaired comparison, and control variates on the four covariates every world
