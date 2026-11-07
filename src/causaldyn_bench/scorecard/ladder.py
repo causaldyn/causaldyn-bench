@@ -32,9 +32,15 @@ of the 104, 24 weeks apart, the last one's readout closing in week 103. Each cha
 a universe of their own: the world's base and spend, the channel dark in the tested geos and weeks,
 and fresh noise of the world's size and law in every geo and week
 (:func:`~causaldyn_bench.scorecard.geo_noise.kpi_noise`), drawn from the family's stream
-``(100 + f, 2, seed, c + 1)`` for the ``c``-th channel. The history holds none of it. A test's
-carryover dies out before the next one's readout opens, as on Track M v2, so the rungs nest under
-common random numbers here too.
+``(100 + f, 2, seed, c + 1)`` for the ``c``-th channel. The history holds none of it;
+:func:`geo_universes` gives each channel's universe as its tests ran in it. A test's carryover dies
+out before the next one's readout opens, as on Track M v2, so the rungs nest under
+common random numbers here too. A caller may opt in to another schedule of the four first weeks
+(``starts``), such as :data:`LATE_STARTS`, 32, 52, 72 and 92, whose first test has 31 weeks of
+history before it: room for a reader that needs 30 weeks before a test, as a time-based
+regression's placebo windows do (Kerman, Wang and Vaver 2017, "Estimating ad effectiveness using
+geo experiments in a time-based regression framework"). The tests and their universes move with
+the schedule; the world, its quarter and its truth do not. Without it every rung is as it was.
 
 The reading is a difference-in-differences whose control is scaled by the slope of the two groups'
 co-movement: each group's KPI less its mean over the four weeks before the test, the other geos'
@@ -94,6 +100,7 @@ test whose error is understated.
 from __future__ import annotations
 
 import dataclasses
+import itertools
 import math
 from dataclasses import dataclass
 
@@ -120,6 +127,7 @@ RUNGS = tuple(range(len(STARTS) + 1))  # the tests a channel may get: none to al
 UNDERSTATED = (2.0, 3.0)  # the factors an understated rung's tests understate their error by
 SHARES = (0.5, 1.0)  # the shares of the market an overlapping rung's tests may run in
 GEO_STARTS = (20, 44, 68, 92)  # a geo world's tests' first dark weeks, of its 104
+LATE_STARTS = (32, 52, 72, 92)  # an opt-in schedule, 31 weeks of history before its first test
 # a geo reading's weights over its weeks before and its readout, and their correlation with
 # themselves h weeks on, 0 from P + Q
 _WEIGHTS = np.concatenate([np.full(PRE, -(TEST + COOLDOWN) / PRE), np.ones(TEST + COOLDOWN)])
@@ -216,9 +224,28 @@ def understated(rows: LiftRows, factor: float) -> LiftRows:
 
 
 def dark_geos(geos: int, test: int) -> tuple[int, ...]:
-    """The geos the ``test``-th of :data:`GEO_STARTS`, from 0, takes dark: every other geo of the
+    """The geos the ``test``-th of a schedule's tests, from 0, takes dark: every other geo of the
     ring, the even ones in an even test and the odd ones in an odd test."""
     return tuple(range(test % 2, geos, 2))
+
+
+def _check_starts(starts: tuple[int, ...], weeks: int, length: int) -> None:
+    """Refuse a schedule of the geo tests' first weeks whose readings would not hold: four
+    tests in order, the first's weeks before it past the adstock's first weeks, each test's
+    carryover gone before the next one's weeks before it open, and the last readout within the
+    history.
+
+    Raises:
+        ValueError: a schedule that breaks one of them.
+    """
+    if len(starts) != len(GEO_STARTS) or not all(isinstance(s, int) for s in starts):
+        raise ValueError(f"a geo ladder starts {len(GEO_STARTS)} tests a channel, not {starts}")
+    if starts[0] - PRE < 1 + length:
+        raise ValueError(f"the first test's weeks before it run into the adstock's first: {starts}")
+    if any(b - PRE <= a + TEST + length - 2 for a, b in itertools.pairwise(starts)):
+        raise ValueError(f"a test's carryover reaches the next one's weeks before it: {starts}")
+    if starts[-1] + TEST + COOLDOWN - 1 > weeks:
+        raise ValueError(f"the tests' readouts run past the world's {weeks} weeks: {starts}")
 
 
 def _geo_gaps(ours: Series, theirs: Series, first: int, slope: float) -> Series:
@@ -236,26 +263,34 @@ def _geo_reading(ours: Series, theirs: Series, first: int, slope: float) -> floa
     return float(_geo_gaps(ours, theirs, first, slope).sum()) / TEST
 
 
-def _slope(ours: Series, theirs: Series, first: int, length: int) -> float:
+def _slope(
+    ours: Series, theirs: Series, first: int, length: int, starts: tuple[int, ...] = GEO_STARTS
+) -> float:
     """The least-squares slope of ``ours`` on ``theirs`` over the weeks clear of the adstock's first
-    ``length - 1``, of every test's window in :data:`GEO_STARTS` and of the test's own from week
+    ``length - 1``, of every test's window in ``starts`` and of the test's own from week
     ``first``: its ``PRE`` weeks before and its dark weeks and cooldown. Where ``theirs`` does not
     move over them, 0: the least-squares solution of least norm."""
     clear = np.ones(ours.size, dtype=bool)
     clear[: length - 1] = False
-    for start in (*(s - 1 for s in GEO_STARTS), first):
+    for start in (*(s - 1 for s in starts), first):
         clear[max(start - PRE, 0) : start + TEST + COOLDOWN] = False
     x, y = theirs[clear], ours[clear]
     (slope,), *_ = np.linalg.lstsq((x - x.mean())[:, None], y - y.mean())
     return float(slope)
 
 
-def placebo_error(kpi: Series, treated: tuple[int, ...], first: int, length: int) -> float:
+def placebo_error(
+    kpi: Series,
+    treated: tuple[int, ...],
+    first: int,
+    length: int,
+    starts: tuple[int, ...] = GEO_STARTS,
+) -> float:
     """The standard error of the reading of a test that took ``treated`` dark from week ``first``,
     counted from 0, read in time on ``kpi``, ``(geos, weeks)``, the channel's universe had it held
-    no test: the root mean square of the same reading, at the test's slope, at every window clear
-    of the test's own and of the adstock's first ``length - 1`` weeks, widened by
-    ``sqrt(nu / (nu - 2))`` at their effective count ``nu``; see the module.
+    no test: the root mean square of the same reading, at the test's slope among the tests of
+    ``starts``, at every window clear of the test's own and of the adstock's first ``length - 1``
+    weeks, widened by ``sqrt(nu / (nu - 2))`` at their effective count ``nu``; see the module.
 
     Raises:
         ValueError: on a universe too short for a t's spread, two effective placebo readings or
@@ -263,7 +298,7 @@ def placebo_error(kpi: Series, treated: tuple[int, ...], first: int, length: int
     """
     others = [g for g in range(kpi.shape[0]) if g not in treated]
     ours, theirs = kpi[list(treated)].sum(axis=0), kpi[others].sum(axis=0)
-    slope = _slope(ours, theirs, first, length)
+    slope = _slope(ours, theirs, first, length, starts)
     after = TEST + COOLDOWN
     firsts = np.array(
         [
@@ -281,10 +316,70 @@ def placebo_error(kpi: Series, treated: tuple[int, ...], first: int, length: int
     return float(np.sqrt(np.mean(readings**2) * nu / (nu - 2.0)))
 
 
-def geo_rung(world: GeoMediaWorld, family: int, seed: int, k: int) -> LiftRows:
+def _universe(
+    world: GeoMediaWorld,
+    family: int,
+    seed: int,
+    c: int,
+    run: tuple[int, ...],
+    starts: tuple[int, ...] = GEO_STARTS,
+) -> tuple[Series, Series, Series]:
+    """The universe the ``c``-th channel's tests of ``starts`` from weeks ``run`` run in: its
+    spend, ``(geos, weeks, channels)``, the world's with the channel dark in each test's geos and
+    weeks, and its KPI's noise and its KPI, each ``(geos, weeks)``; see the module."""
+    geos, weeks = world.mix.geos, world.spend.shape[1]
+    shocks = rng(family, Role.TESTS, seed, c + 1).standard_normal((geos, weeks))
+    dark = world.spend.copy()
+    for start in run:
+        dark[list(dark_geos(geos, starts.index(start))), start - 1 : start - 1 + TEST, c] = 0.0
+    with jax.enable_x64(True):
+        level = world.base + np.asarray(world.lift(dark), dtype=float)
+    noise = kpi_noise(world, level, shocks)
+    return dark, noise, level + noise
+
+
+def geo_universes(
+    world: GeoMediaWorld,
+    family: int,
+    seed: int,
+    k: int,
+    *,
+    starts: tuple[int, ...] = GEO_STARTS,
+) -> dict[str, tuple[Series, Series]]:
+    """Each channel's universe at rung ``k`` of ``world``, which family ``family`` drew from
+    ``seed``, as :func:`geo_rung` runs its tests from ``starts`` there, by the channel's name: its
+    KPI, ``(geos, weeks)``, and its spend, ``(geos, weeks, channels)``; none at rung 0, which runs
+    no test. Each is what an analyst of the channel's tests holds: every geo's KPI and spend in the
+    universe.
+
+    Raises:
+        ValueError: a rung off the ladder, or a schedule :func:`geo_rung` refuses.
+    """
+    if k not in RUNGS:
+        raise ValueError(f"a rung holds 0 to {len(GEO_STARTS)} tests a channel, not {k}")
+    _check_starts(starts, world.spend.shape[1], world.mix.length)
+    run = starts[len(starts) - k :]
+    if not run:
+        return {}
+    out = {}
+    for c, channel in enumerate(world.mix.channels):
+        dark, _, kpi = _universe(world, family, seed, c, run, starts)
+        out[channel.name] = (kpi, dark)
+    return out
+
+
+def geo_rung(
+    world: GeoMediaWorld,
+    family: int,
+    seed: int,
+    k: int,
+    *,
+    starts: tuple[int, ...] = GEO_STARTS,
+) -> LiftRows:
     """Rung ``k``'s geo tests on ``world``, which family ``family`` drew from ``seed``: each
-    channel's latest ``k`` of :data:`GEO_STARTS`, read by difference-in-differences; see the
-    module. Each row names its tested geos. Every test is a row, whichever way its KPI moved, as
+    channel's latest ``k`` of ``starts``, :data:`GEO_STARTS` unless a caller opts in to another
+    schedule, read by difference-in-differences; see the module. Each row names its tested geos.
+    Every test is a row, whichever way its KPI moved, as
     :func:`causaldyn_bench.budget_regret.lift_rows` keeps it. A test's standard error is read in
     time (:func:`placebo_error`), at the slope its reading reads: its weeks are clear of every
     test, so the channel's universe and the universe had it held no test agree on it. A row's gaps
@@ -292,39 +387,31 @@ def geo_rung(world: GeoMediaWorld, family: int, seed: int, k: int) -> LiftRows:
     pre-period means, so their errors are correlated across the weeks.
 
     Raises:
-        ValueError: a rung off the ladder, a world with fewer than two geos, or one too short for a
-            test's readout or its placebo readings.
+        ValueError: a rung off the ladder, a world with fewer than two geos, one too short for a
+            test's readout or its placebo readings, or a schedule whose readings would not hold:
+            not four tests in order, the first too early for its weeks before it, two too close
+            for a test's carryover to die out, or the last past the history.
     """
     if k not in RUNGS:
         raise ValueError(f"a rung holds 0 to {len(GEO_STARTS)} tests a channel, not {k}")
     geos, weeks = world.mix.geos, world.spend.shape[1]
     if geos < 2:
         raise ValueError(f"a geo test reads its geos against others, and the world has {geos}")
-    if GEO_STARTS[-1] + TEST + COOLDOWN - 1 > weeks:
-        raise ValueError(f"the tests' readouts run past the world's {weeks} weeks")
-    starts = GEO_STARTS[len(GEO_STARTS) - k :]
+    _check_starts(starts, weeks, world.mix.length)
+    schedule, starts = starts, starts[len(starts) - k :]
     columns: dict[str, list] = {
         key: [] for key in ("channel", "start", "x", "change", "sigma", "geos", "gaps")
     }
     with jax.enable_x64(True):
         logged = world.base + np.asarray(world.lift(world.spend), dtype=float)
     for c, channel in enumerate(world.mix.channels):
-        shocks = rng(family, Role.TESTS, seed, c + 1).standard_normal((geos, weeks))
-        dark = world.spend.copy()
+        _, noise, kpi = _universe(world, family, seed, c, starts, schedule)
         for start in starts:
-            dark[
-                list(dark_geos(geos, GEO_STARTS.index(start))), start - 1 : start - 1 + TEST, c
-            ] = 0.0
-        with jax.enable_x64(True):
-            level = world.base + np.asarray(world.lift(dark), dtype=float)
-        noise = kpi_noise(world, level, shocks)
-        kpi = level + noise
-        for start in starts:
-            treated = dark_geos(geos, GEO_STARTS.index(start))
+            treated = dark_geos(geos, schedule.index(start))
             control = [g for g in range(geos) if g not in treated]
             first = start - 1
             ours, theirs = kpi[list(treated)].sum(axis=0), kpi[control].sum(axis=0)
-            slope = _slope(ours, theirs, first, world.mix.length)
+            slope = _slope(ours, theirs, first, world.mix.length, schedule)
             columns["channel"].append(channel.name)
             columns["start"].append(start)
             columns["x"].append(
@@ -332,7 +419,9 @@ def geo_rung(world: GeoMediaWorld, family: int, seed: int, k: int) -> LiftRows:
             )
             columns["change"].append(_geo_reading(ours, theirs, first, slope))
             columns["gaps"].append(_geo_gaps(ours, theirs, first, slope))
-            columns["sigma"].append(placebo_error(logged + noise, treated, first, world.mix.length))
+            columns["sigma"].append(
+                placebo_error(logged + noise, treated, first, world.mix.length, schedule)
+            )
             columns["geos"].append(treated)
     x = np.array(columns["x"], dtype=float)
     return LiftRows(

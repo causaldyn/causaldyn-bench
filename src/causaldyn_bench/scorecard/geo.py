@@ -57,6 +57,7 @@ its exports are the same bits either way.
 
 from __future__ import annotations
 
+import dataclasses
 from dataclasses import dataclass
 from types import MappingProxyType
 
@@ -67,11 +68,19 @@ from chc.response import Hill, Tanh
 
 from causaldyn_bench.endogenous_mmm import YEAR
 from causaldyn_bench.mmm_decision import PLANNED
+from causaldyn_bench.scorecard import switchback
 from causaldyn_bench.scorecard.continuation import GeoShadow, geo_shadow
 from causaldyn_bench.scorecard.family import Truth, number
 from causaldyn_bench.scorecard.geo_noise import LogNormalNoise
-from causaldyn_bench.scorecard.ladder import geo_rung
-from causaldyn_bench.scorecard.observe import Observation
+from causaldyn_bench.scorecard.ladder import GEO_STARTS, geo_rung, geo_universes
+from causaldyn_bench.scorecard.observe import (
+    SERIES,
+    UNIVERSES,
+    VERSION,
+    Observation,
+    SwitchbackTest,
+    Universes,
+)
 from causaldyn_bench.scorecard.returns import true_geo_returns
 from causaldyn_bench.scorecard.seeds import Role, pilot, rng, scored, stream
 from causaldyn_bench.scorecard.truth import geo_cells, geo_quarter, oracle
@@ -179,14 +188,34 @@ class Geo:
             raise ValueError(f"{self.name} has no environment {environment!r}")
         return drawn(environment, seed, mix(POLICIES[environment], seed))
 
-    def observe(self, world: World, k: int) -> Observation:
+    def observe(
+        self,
+        world: World,
+        k: int,
+        *,
+        version: int = VERSION,
+        starts: tuple[int, ...] = GEO_STARTS,
+    ) -> Observation:
         """All an arm reads of ``world`` at rung ``k``: each geo's KPI and spend, each geo's share
         of the population, the channels bought nationally, the quarter's budget and each cell's box
         and status quo, last year's weeks as the window a return is read over, and the rung's geo
-        tests. The world has no controls."""
+        tests. The world has no controls. At ``version``
+        :data:`~causaldyn_bench.scorecard.observe.UNIVERSES` it holds each channel's universe at
+        the rung too (:func:`~causaldyn_bench.scorecard.ladder.geo_universes`), its KPI and spend
+        on the export's axes, week by geo, and the world's switchback test of its national channel
+        (:mod:`~causaldyn_bench.scorecard.switchback`), the same at every rung. The rung's tests
+        start in the weeks of ``starts``, :data:`~causaldyn_bench.scorecard.ladder.GEO_STARTS`
+        unless a caller opts in to another schedule, such as
+        :data:`~causaldyn_bench.scorecard.ladder.LATE_STARTS`.
+
+        Raises:
+            ValueError: a version no export of a geo world has, or a schedule the ladder refuses.
+        """
+        if version not in (VERSION, SERIES, UNIVERSES):
+            raise ValueError(f"a geo world is exported at version {VERSION} to {UNIVERSES}")
         history = world.history
         quarter = geo_quarter(history)
-        return Observation(
+        observation = Observation(
             family=number(self),
             environment=world.environment,
             seed=world.seed,
@@ -203,17 +232,47 @@ class Geo:
             upper=quarter.upper,
             status_quo=quarter.status_quo,
             roi_window=window(history),
-            lift=geo_rung(history, number(self), world.seed, k),
+            lift=geo_rung(history, number(self), world.seed, k, starts=starts),
             population=history.shares,
             national=tuple(c.name for c in history.mix.channels if c.national),
         )
+        if version == VERSION:
+            return observation
+        if version == SERIES:
+            return dataclasses.replace(observation, version=SERIES)
+        drawn = geo_universes(history, number(self), world.seed, k, starts=starts)
+        geos, weeks, channels = history.spend.shape
+        universes = Universes(
+            tuple(drawn),
+            np.array([kpi.T for kpi, _ in drawn.values()]).reshape(len(drawn), weeks, geos),
+            np.array([spend.transpose(1, 0, 2) for _, spend in drawn.values()]).reshape(
+                len(drawn), weeks, geos, channels
+            ),
+        )
+        test = switchback.design(history, number(self), world.seed)
+        kpi, spend = switchback.universe(history, number(self), world.seed, test)
+        carried = SwitchbackTest(
+            history.mix.channels[test.channel].name,
+            test.first,
+            test.block,
+            test.on,
+            np.ascontiguousarray(kpi.T),
+            np.ascontiguousarray(spend.transpose(1, 0, 2)),
+        )
+        return dataclasses.replace(
+            observation, version=UNIVERSES, universes=universes, switchback=carried
+        )
 
     def truth(self, world: World) -> Truth:
-        """The best plan over the world's cells, the market's quarter at the status quo, and each
-        channel's returns on last year's spend; the effect holds still, so there is one path."""
+        """The best plan over the world's cells, the market's quarter at the status quo, each
+        channel's returns on last year's spend, and the lift of the world's switchback test, in all
+        and a week on (:func:`~causaldyn_bench.scorecard.switchback.lift` and
+        :func:`~causaldyn_bench.scorecard.switchback.steady`); the effect holds still, so there is
+        one path."""
         history = world.history
         quarter = geo_quarter(history)
         cells = geo_cells(history, quarter)
+        test = switchback.design(history, number(self), world.seed)
         return Truth(
             quarter=quarter,
             cells=cells,
@@ -223,6 +282,8 @@ class Geo:
             target=world.shadow.sales.sum(axis=1),
             scale=float(np.mean(history.kpi.sum(axis=0))),
             returns=true_geo_returns(history, window(history)),
+            switchback=switchback.lift(history, test),
+            switchback_steady=switchback.steady(history, test),
         )
 
 

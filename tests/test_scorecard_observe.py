@@ -263,7 +263,7 @@ def test_a_malformed_geo_observation_is_refused(observed, change, match):
 @pytest.mark.parametrize(
     ("change", "match"),
     [
-        ({"version": 4}, "no export has version"),
+        ({"version": 5}, "no export has version"),
         ({"future_controls": None}, "given in version 2"),
         ({"spend": np.zeros((156, 2))}, "spend is"),
         ({"sales": np.zeros(155)}, "spend is"),

@@ -436,9 +436,9 @@ reading are scored against.
 | 5 | `performance` | spend follows last week's sales | rho-0, rho-0.3, rho-0.6 | |
 | 6 | `outside` | every curve changes outside the range the history shows | cliff, saturation, both | |
 | 7 | `short` | an arm reads only the last weeks of the history | L-52, L-78, L-104 | |
-| 8 | `geo` | ten geos, planned and tested geo by geo | policy-0, policy-0.5 | |
-| 9 | `spillover` | family 8, each geo's media lifting its neighbours | spillover-0.2, spillover-0.5 | |
-| 10 | `few_geos` | family 8 at three, eight and fifty geos | geos-3, geos-8, geos-50 | |
+| 8 | `geo` | ten geos, planned and tested geo by geo | policy-0, policy-0.5 | the lift of the switchback test of TV each world carries |
+| 9 | `spillover` | family 8, each geo's media lifting its neighbours | spillover-0.2, spillover-0.5 | as family 8 |
+| 10 | `few_geos` | family 8 at three, eight and fifty geos | geos-3, geos-8, geos-50 | as family 8 |
 | 11 | | withdrawn: no world is drawn from its block | | |
 | 12 | `meridian` | Meridian's home ground | priors | |
 | 13 | `pymc_marketing` | PyMC-Marketing's home ground | priors | |
@@ -464,6 +464,38 @@ national set the stated ROAS is not read on the file's spend: the spend it is re
 it as the files a tool calibrates on: PyMC-Marketing's lift table with each test's date, the tests
 of several geos as experiments' records, and the dark weeks and the cooldown in a sidecar with the
 export's digest (`causaldyn_bench.scorecard.lift_inputs`).
+
+A world of the geo families, 8 to 10, exported at version 4 (`observe(world, k,
+version=UNIVERSES)`, `causaldyn_bench.scorecard.observe`) also holds each channel's universe at the
+rung: the KPI and the spend of every geo in the world that channel's tests ran in, so a reader of
+another method reads each test on the panel it ran in. Each test read again on its universe by the
+ladder's own reading is the export's row to the last bit. Exports at versions 2 and 3 are as they
+were, and a version-4 export gives their digests. Each such world also carries a switchback test of
+TV, the channel bought nationally (`causaldyn_bench.scorecard.switchback`): TV off in every geo in
+six of the history's last twelve blocks of eight weeks, their order drawn uniformly. The version-4
+export holds its design and the KPI and spend of the universe it ran in, the same at every rung,
+and the family's truth holds its lift: what the weeks on raised the KPI over TV off through the
+whole test, carry-out included. It also holds the lift a week on as a reader with a washout of half
+a block reads it: the mean of that lift over the weeks on such a reading keeps, every week of a
+block on but the first four of the first block and of a block after a switch. Its order and its noise come from further indices of the family's
+stream of tests that nothing else reads, so no world, test, quarter or truth drawn before it moves.
+
+A geo world's ladder runs each channel's tests from weeks 20, 44, 68 and 92. A caller may opt in to
+another schedule, `observe(world, k, starts=LATE_STARTS)` (`causaldyn_bench.scorecard.ladder`):
+weeks 32, 52, 72 and 92, so the first test has 31 weeks of history before it, room for a reader
+that needs 30, as a time-based regression's placebo windows do. The tests and their universes
+move with the schedule; the world, its quarter and its truth do not, and without the option every
+export is as it was. A schedule whose readings would not hold is refused.
+
+A schedule, a spend in each week of the quarter on each cell or each channel, is scored by
+`score_schedule(truth, schedule)` (`causaldyn_bench.scorecard.schedule`): its regret per euro of the
+budget against the best schedule in the same box at the same budget, carryover in and out, on the
+expected path and, where the quarter realised another, on the realised one against the best
+schedule in hindsight. It also gives the best schedule's worth over the best plan's per euro, the
+most a schedule gains over holding a rate. The best schedule is solved on cells that are concave and
+not a line, and is kept only where its Frank-Wolfe gap certifies it to 1e-10 a euro; its closed form
+where nothing carries is checked in Maxima (`scripts/schedule_kkt.mac`). The twins' and siMMMulator's
+cells state no reach week by week, so their schedules are refused.
 
 `python -m causaldyn_bench.scorecard.variance` measures what the design removes of a comparison's
 variance (`causaldyn_bench.scorecard.variance`): pairing the arms on the same worlds (common random
