@@ -1,0 +1,38 @@
+{
+  "scenario": "spend_outliers",
+  "description": "One ~15x data-entry spike per channel inflates the normalization max; real weeks collapse toward zero on the curve.",
+  "violates": "robustness of per-channel max-normalization",
+  "representable": true,
+  "channels": [
+    "TV",
+    "Search",
+    "Social",
+    "Display"
+  ],
+  "true_contribution": {
+    "TV": 7222.1819354317395,
+    "Search": 4625.931479837775,
+    "Social": 4331.00641314046,
+    "Display": 2920.7540815375205
+  },
+  "true_roas": {
+    "TV": 0.7682643861278327,
+    "Search": 0.8010896401272333,
+    "Social": 0.8907712973317713,
+    "Display": 0.7505101950547425
+  },
+  "notes": {
+    "spike_weeks": {
+      "TV": 22,
+      "Search": 36,
+      "Social": 79,
+      "Display": 56
+    },
+    "true_spend_sum": {
+      "TV": 9400.646529813279,
+      "Search": 5774.549124244149,
+      "Social": 4862.085729652063,
+      "Display": 3891.6914130986315
+    }
+  }
+}

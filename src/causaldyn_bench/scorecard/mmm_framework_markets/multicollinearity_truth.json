@@ -1,0 +1,94 @@
+{
+  "scenario": "multicollinearity",
+  "description": "All channels share one flighting driver (mean pairwise corr ~1.00); per-channel effects are weakly identified.",
+  "violates": "identifiability (independent spend variation)",
+  "representable": true,
+  "channels": [
+    "TV",
+    "Search",
+    "Social",
+    "Display"
+  ],
+  "true_contribution": {
+    "TV": 8800.333268456876,
+    "Search": 5677.571857256615,
+    "Social": 5263.341226770084,
+    "Display": 3531.308212527772
+  },
+  "true_roas": {
+    "TV": 0.9802769599498637,
+    "Search": 1.031803717966974,
+    "Social": 1.1468340874319987,
+    "Display": 0.9628045418987097
+  },
+  "notes": {
+    "mean_pairwise_corr": 0.995766387043811,
+    "n_clipped": 0,
+    "true_adstock": {
+      "TV": {
+        "family": "geometric",
+        "alpha": 0.6,
+        "l_max": 8,
+        "normalize": true,
+        "cum_share": [
+          0.4068332361273121,
+          0.6509331778036993,
+          0.7973931428095317,
+          0.8852691218130311,
+          0.9379947092151307,
+          0.9696300616563905,
+          0.9886112731211464,
+          0.9999999999999999
+        ]
+      },
+      "Search": {
+        "family": "geometric",
+        "alpha": 0.2,
+        "l_max": 8,
+        "normalize": true,
+        "cum_share": [
+          0.800002048005243,
+          0.9600024576062915,
+          0.9920025395265013,
+          0.9984025559105433,
+          0.9996825591873517,
+          0.9999385598427134,
+          0.9999897599737857,
+          1.0000000000000002
+        ]
+      },
+      "Social": {
+        "family": "geometric",
+        "alpha": 0.4,
+        "l_max": 8,
+        "normalize": true,
+        "cum_share": [
+          0.6003934738670336,
+          0.840550863413847,
+          0.9366138192325724,
+          0.9750390015600625,
+          0.9904090744910585,
+          0.996557103663457,
+          0.9990163153324163,
+          1.0
+        ]
+      },
+      "Display": {
+        "family": "geometric",
+        "alpha": 0.5,
+        "l_max": 8,
+        "normalize": true,
+        "cum_share": [
+          0.5019607843137255,
+          0.7529411764705882,
+          0.8784313725490196,
+          0.9411764705882353,
+          0.9725490196078431,
+          0.9882352941176471,
+          0.996078431372549,
+          1.0
+        ]
+      }
+    }
+  }
+}

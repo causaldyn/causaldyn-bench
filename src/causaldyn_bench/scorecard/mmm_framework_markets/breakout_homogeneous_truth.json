@@ -1,0 +1,109 @@
+{
+  "scenario": "breakout_homogeneous",
+  "description": "TV split into 3 impression sub-streams with distinct flighting but IDENTICAL per-impression effectiveness (true weights all 1). The honest model collapses to equal-weighting; an unregularized optimizer overfits the noise into spurious weights.",
+  "violates": "",
+  "representable": true,
+  "channels": [
+    "TV_Premium",
+    "TV_Standard",
+    "TV_Remnant",
+    "Search",
+    "Social",
+    "Display"
+  ],
+  "true_contribution": {
+    "TV_Premium": 3709.0321414431032,
+    "TV_Standard": 2695.225447884588,
+    "TV_Remnant": 1554.401226180234,
+    "Search": 4447.592968528248,
+    "Social": 4116.3902633666585,
+    "Display": 2839.588102439803
+  },
+  "true_roas": {
+    "TV_Premium": 0.8409358777009621,
+    "TV_Standard": 0.7968726030604323,
+    "TV_Remnant": 0.7894980450286117,
+    "Search": 0.7705191314310663,
+    "Social": 0.8074113768706981,
+    "Display": 0.7790977874343046
+  },
+  "notes": {
+    "breakout_groups": {
+      "TV": [
+        "TV_Premium",
+        "TV_Standard",
+        "TV_Remnant"
+      ]
+    },
+    "true_weights": {
+      "TV_Premium": 1.0,
+      "TV_Standard": 1.0,
+      "TV_Remnant": 1.0
+    },
+    "true_raw_effectiveness": {
+      "TV_Premium": 1.0,
+      "TV_Standard": 1.0,
+      "TV_Remnant": 1.0
+    },
+    "true_logtau": 0.0,
+    "breakout_totals": {
+      "TV_Premium": 4410.6004272088385,
+      "TV_Standard": 3382.2538728693007,
+      "TV_Remnant": 1968.8474670306525
+    },
+    "mean_pairwise_corr": 0.007565605139852879,
+    "unidentifiable": false,
+    "role": "breakout null (homogeneous -> equal weights)",
+    "n_clipped": 0,
+    "true_adstock": {
+      "Search": {
+        "family": "geometric",
+        "alpha": 0.2,
+        "l_max": 8,
+        "normalize": true,
+        "cum_share": [
+          0.800002048005243,
+          0.9600024576062915,
+          0.9920025395265013,
+          0.9984025559105433,
+          0.9996825591873517,
+          0.9999385598427134,
+          0.9999897599737857,
+          1.0000000000000002
+        ]
+      },
+      "Social": {
+        "family": "geometric",
+        "alpha": 0.4,
+        "l_max": 8,
+        "normalize": true,
+        "cum_share": [
+          0.6003934738670336,
+          0.840550863413847,
+          0.9366138192325724,
+          0.9750390015600625,
+          0.9904090744910585,
+          0.996557103663457,
+          0.9990163153324163,
+          1.0
+        ]
+      },
+      "Display": {
+        "family": "geometric",
+        "alpha": 0.5,
+        "l_max": 8,
+        "normalize": true,
+        "cum_share": [
+          0.5019607843137255,
+          0.7529411764705882,
+          0.8784313725490196,
+          0.9411764705882353,
+          0.9725490196078431,
+          0.9882352941176471,
+          0.996078431372549,
+          1.0
+        ]
+      }
+    }
+  }
+}

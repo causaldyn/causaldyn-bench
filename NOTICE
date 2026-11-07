@@ -4,3 +4,5 @@ Copyright 2026 Ilia Gradina
 This product includes data files of mmm-framework 1.5.0 (https://github.com/redam94/mmm-framework),
 licensed under the Apache License, Version 2.0, unchanged in
 src/causaldyn_bench/scorecard/mmm_framework_worlds/, whose NOTICE names each file.
+It also includes data files written by mmm-framework 1.5.0's generator, under the same licence,
+unchanged in src/causaldyn_bench/scorecard/mmm_framework_markets/, whose NOTICE says how.

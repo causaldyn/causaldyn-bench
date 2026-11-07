@@ -32,8 +32,22 @@ numbers differently:
   so an arm's ROAS is scored against the stated ROAS as stated, and its contribution against the
   stated contribution, which needs no spend (:func:`denominator`).
 
-The tool's sixteen stress-test worlds are not files: its generator draws them, and the bench does
-not run it.
+**The generator's worlds** (:data:`MARKETS`). The tool's other synthetic worlds are not files:
+its generator, ``mmm_framework.synth``, draws them. ``scripts/mmm_framework_markets.py`` ran it
+once as a black box, offline and in an environment of its own, by the call its docstrings document,
+``generate_mff(name)`` at the world's default seed and length, and the files it wrote are kept
+unchanged in ``mmm_framework_markets/`` beside this module with their ``NOTICE``. A world is read
+only where that directory's ``MANIFEST.json`` has the SHA-256 :data:`MANIFEST_SHA256` holds and each
+file the SHA-256 the manifest names. The tool's pages count sixteen stress worlds, but none of the
+wheel's documents names them, so the family holds every world of the generator's registry it can
+read: 26, the 24 national ones of 156 weeks and two panels of four geographies and 130 weeks. Two
+it cannot read: ``aurora_kitchen_sink``, which the generator refuses to draw outside the tool's
+repository, and ``geo_product``, whose file fills the product dimension. On 24 of the 26 the stated
+ROAS is the stated contribution over the file's spend; on ``spend_outliers`` and
+``mixed_data_errors``, whose recorded spend carries the recording errors the tool plants, it is
+over the true spend, which the key's notes state. The keys' notes state more of a world, each
+channel's carry-over and the planted violation's own parameters, but no channel's whole response
+curve, so here too an arm's reading is scored, not a plan.
 
 **The bench's arm that reads these worlds** (:func:`observational`) is the least-squares media mix
 of :mod:`causaldyn_bench.observational_mmm`, the observational arm of Track M v2's budgets run: each
@@ -77,6 +91,43 @@ MMM_FRAMEWORK = "1.5.0"
 WHEEL = "mmm_framework-1.5.0-py3-none-any.whl"
 WHEEL_SHA256 = "d9e28710deb382e861f88c05e030b69a51dd5ed0b0e31855ce774382cd5be366"
 DATA = "mmm_framework_worlds"  # the directory beside this module that holds the files
+MARKETS_DATA = "mmm_framework_markets"  # the one that holds the generator's worlds
+MANIFEST = "MANIFEST.json"
+MANIFEST_SHA256 = "7feddddcdfe7fca84c9099d45ad0d8f47444ae016ef5d0cc53ca060817bad028"
+MARKETS = (  # in the order of the generator's registry, ``mmm_framework.synth.dgp.SCENARIOS``
+    "realistic",
+    "clean",
+    "unobserved_confounding",
+    "confounding_controlled",
+    "reverse_causality",
+    "multicollinearity",
+    "adstock_misspec",
+    "saturation_misspec",
+    "time_varying_beta",
+    "heavy_tailed_noise",
+    "synergy",
+    "spend_outliers",
+    "mixed_data_errors",
+    "negative_effect",
+    "trend_break",
+    "seasonality_misspec",
+    "dense_controls",
+    "economic_health",
+    "reach_frequency",
+    "promo_and_media",
+    "promo_endogenous",
+    "breakout_heterogeneous",
+    "breakout_homogeneous",
+    "breakout_collinear",
+    "geo_clean",
+    "geo_heterogeneous",
+)
+UNREAD_MARKETS = MappingProxyType(
+    {
+        "aurora_kitchen_sink": "the generator refuses to draw it outside the tool's repository",
+        "geo_product": "its file fills the product dimension, which the bench does not read",
+    }
+)
 ENVIRONMENTS = ("national", "geo")
 KPI = "Sales"
 DIGESTS: Mapping[str, str] = MappingProxyType(
@@ -292,14 +343,41 @@ def read(directory: Path, environment: str) -> MffWorld:
     return MffWorld.of(environment, read_mff(paths["mff.csv"]), read_truth(paths["truth.json"]))
 
 
+def read_market(directory: Path, name: str) -> MffWorld:
+    """The generator's world ``name`` from ``directory``, its manifest the recorded one and its two
+    files those the manifest names.
+
+    Raises:
+        ValueError: the family holds no such world, or the manifest or a file is not the recorded
+            one.
+    """
+    if name not in MARKETS:
+        raise ValueError(f"mmm-framework's generated worlds hold no {name!r}")
+    manifest = Path(directory) / MANIFEST
+    found = _digest(manifest)
+    if found != MANIFEST_SHA256:
+        raise ValueError(f"{manifest} is not the recorded manifest: SHA-256 {found}")
+    recorded = json.loads(manifest.read_text())["worlds"][name]
+    paths = {kind: Path(directory) / f"{name}_{kind}" for kind in ("mff.csv", "truth.json")}
+    for kind, path in paths.items():
+        found = _digest(path)
+        if found != recorded[kind]["sha256"]:
+            raise ValueError(f"{path} is not what mmm-framework's generator wrote: SHA-256 {found}")
+    return MffWorld.of(name, read_mff(paths["mff.csv"]), read_truth(paths["truth.json"]))
+
+
 class MmmFramework:
-    """Family 21, its worlds read from ``directory``, by default the files the bench holds."""
+    """Family 21, its two shipped sets read from ``directory`` and the generator's worlds from
+    ``markets``, by default the files the bench holds."""
 
     name = "mmm-framework's answer keys"
-    environments = ENVIRONMENTS
+    environments = ENVIRONMENTS + MARKETS
     labels = (
         "The worlds are mmm-framework 1.5.0's own, the two data sets its wheel ships, and their "
         "truth is what its generator states: a rival's worlds, written to test its own model.",
+        "So are the 26 the bench holds of its generator's: drawn once by the tool's own code at "
+        "each world's default seed and length, read as files; which sixteen of them the tool's "
+        "pages count, no document of its wheel says.",
         "The tool wrote them to test its own model: the national set's adstock and saturation "
         "are in that model's family, by the truth file's own account, which hands the tool's own "
         "fit its forms.",
@@ -311,12 +389,17 @@ class MmmFramework:
         "them, and reads the geo set's total, not a geography's.",
     )
 
-    def __init__(self, directory: Path | None = None) -> None:
+    def __init__(self, directory: Path | None = None, markets: Path | None = None) -> None:
         self.directory = Path(str(files("causaldyn_bench.scorecard").joinpath(DATA)))
+        self.markets = Path(str(files("causaldyn_bench.scorecard").joinpath(MARKETS_DATA)))
         if directory is not None:
             self.directory = Path(directory)
+        if markets is not None:
+            self.markets = Path(markets)
 
     def world(self, environment: str) -> MffWorld:
+        if environment in MARKETS:
+            return read_market(self.markets, environment)
         return read(self.directory, environment)
 
     def truth(self, world: MffWorld) -> AnswerKey:
