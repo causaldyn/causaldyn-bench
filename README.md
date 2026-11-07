@@ -447,7 +447,7 @@ reading are scored against.
 | 16 | | reserved: no world is drawn from its block | | |
 | 17 | `twins` | a line whose slope drifts and a fixed S-curve over one history: a ridge's held-out score and a go-dark test read them alike, and each twin's best plan costs the other more than 0.05 a euro | curve, line | |
 | 18 | `long_term` | a brand measure every arm reads, through which nothing lasts in sales | unread, unbuilt | each channel's long-term share, 0 |
-| 19 | `flat` | one channel's spend never moves | pla, meta, tv | |
+| 19 | `flat` | one channel's spend never moves | flat-pla, flat-meta, flat-tv | |
 | 20 | `promotions` | promotions follow television's bursts; the price is a lever | independent, tv-0.5, tv-0.8 | the price's contribution against a stated level |
 
 `python -m causaldyn_bench.scorecard.lift_inputs DIRECTORY` writes each export's lift tests beside

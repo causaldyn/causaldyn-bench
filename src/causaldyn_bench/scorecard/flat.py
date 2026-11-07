@@ -1,14 +1,14 @@
 """Family 19: Track M v2's drawn worlds in which one channel's spend never moves.
 
-Each environment names the channel held flat: its spend is its mean weekly spend over the drawn
-history in every week of the history, and in the kernel's weeks before it (CHOICE: a channel bought
-at one level for as long as it has run, so its media hold one level from the first week and no
-week reads its adstock filling up). Its media and the sales follow; every other channel, the
-business's rules among them, is the drawn world's, so the budget and the bidding move the other
-channels' spend and not the flat one's, as a contract fixed for the history would. A history then
-holds nothing that moves the flat channel's effect: its return is told apart from the base only by
-the curve and the coefficient an arm assumes, and an honest arm reads it with a wide interval, or
-holds its spend where no test has read it.
+Each environment, ``flat-<channel>``, names the channel held flat: its spend is its mean weekly
+spend over the drawn history in every week of the history, and in the kernel's weeks before it
+(CHOICE: a channel bought at one level for as long as it has run, so its media hold one level from
+the first week and no week reads its adstock filling up). Its media and the sales follow; every
+other channel, the business's rules among them, is the drawn world's, so the budget and the bidding
+move the other channels' spend and not the flat one's, as a contract fixed for the history would. A
+history then holds nothing that moves the flat channel's effect: its return is told apart from the
+base only by the curve and the coefficient an arm assumes, and an honest arm reads it with a wide
+interval, or holds its spend where no test has read it.
 
 The truth states the flat channel's return as every channel's (:mod:`.returns`): its ROI and mROI
 on last year's spend, which a lift test at a rung of the ladder reads, by taking it dark. Its box
@@ -33,7 +33,11 @@ from causaldyn_bench.scorecard.seeds import pilot, scored, stream
 from causaldyn_bench.scorecard.track_m2 import TRACK_M2, World, observation, settled, truth
 
 FAMILY = 19
-ENVIRONMENTS = ("pla", "meta", "tv")  # the channel each holds flat, one of Track M v2's
+# each environment and the channel it holds flat, one of Track M v2's
+FLATTENED: MappingProxyType[str, str] = MappingProxyType(
+    {"flat-pla": "pla", "flat-meta": "meta", "flat-tv": "tv"}
+)
+ENVIRONMENTS = tuple(FLATTENED)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -86,7 +90,8 @@ class FlatSpend:
         if environment not in ENVIRONMENTS:
             raise ValueError(f"{self.name} has no environment {environment!r}")
         generator = drawn(seed)
-        return settled(environment, seed, generator, flatten(generator.simulate(seed), environment))
+        history = flatten(generator.simulate(seed), FLATTENED[environment])
+        return settled(environment, seed, generator, history)
 
     def observe(self, world: World, k: int) -> Observation:
         return observation(FAMILY, world, k)

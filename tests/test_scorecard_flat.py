@@ -10,7 +10,7 @@ import pytest
 
 from causaldyn_bench.budget_regret import TIE
 from causaldyn_bench.scorecard.family import number
-from causaldyn_bench.scorecard.flat import ENVIRONMENTS, FLAT, Flat
+from causaldyn_bench.scorecard.flat import ENVIRONMENTS, FLAT, FLATTENED, Flat
 from causaldyn_bench.scorecard.observe import VERSION, export, read
 from causaldyn_bench.scorecard.scoring import score_world
 from causaldyn_bench.scorecard.seeds import pilot, scored
@@ -20,11 +20,15 @@ from causaldyn_bench.scorecard.truth import worth
 
 def test_the_family_draws_its_environments_from_its_own_blocks():
     assert number(FLAT) == 19 and tuple(FLAT.pilots) == tuple(FLAT.scored) == ENVIRONMENTS
+    assert ENVIRONMENTS == ("flat-pla", "flat-meta", "flat-tv")
+    assert all(name == f"flat-{FLATTENED[name]}" for name in ENVIRONMENTS)
     for e, name in enumerate(ENVIRONMENTS):
         assert FLAT.pilots[name] == pilot(19, e) and FLAT.scored[name] == scored(19, e)
     assert all(label.endswith(".") for label in FLAT.labels)
     with pytest.raises(ValueError, match="no environment 'drawn'"):
-        FLAT.world("drawn", FLAT.pilots["tv"][0])
+        FLAT.world("drawn", FLAT.pilots["flat-tv"][0])
+    with pytest.raises(ValueError, match="no environment 'tv'"):
+        FLAT.world("tv", FLAT.pilots["flat-tv"][0])
 
 
 @pytest.mark.parametrize("name", ENVIRONMENTS)
@@ -33,7 +37,7 @@ def test_the_flat_channel_never_moves_and_nothing_else_does(name):
         world = FLAT.world(name, seed).history
         base = TRACK_M2.world("drawn", seed).history
         assert isinstance(world, Flat)
-        c = world.channels.index(name)
+        c = world.channels.index(FLATTENED[name])
         assert world.flat == c and world.level == float(np.mean(base.spend[:, c]))
         np.testing.assert_array_equal(world.spend[:, c], world.level)
         assert np.ptp(world.media[:, c]) <= 1e-12 * world.media[0, c]
@@ -49,12 +53,12 @@ def test_the_truth_states_the_flat_channels_return_and_its_tests_read_its_level(
     """Its ROI on last year: what the world's own media lose, over the history and the kernel's
     tail, with the window's spend removed, over what the window spent, the same number by another
     path than :mod:`.returns`. Each of its go-dark tests takes the level dark."""
-    name = "tv"
+    name, channel = "flat-tv", "tv"
     seed = FLAT.pilots[name][0]
     world = FLAT.world(name, seed)
     history = world.history
     assert isinstance(history, Flat)
-    c = history.channels.index(name)
+    c = history.channels.index(channel)
     first, last = window(history)
     tail = np.zeros(history.kernel_length - 1)
     spend = np.concatenate([history.spend[:, c], tail])
@@ -66,7 +70,7 @@ def test_the_truth_states_the_flat_channels_return_and_its_tests_read_its_level(
     assert returns.roi[c] == pytest.approx(expected, rel=1e-12, abs=0.0)
     assert returns.roi[c] > 0.0 and returns.marginal[c] > 0.0
     lift = FLAT.observe(world, 4).lift
-    rows = [r for r, channel in enumerate(lift.channel) if channel == name]
+    rows = [r for r, tested in enumerate(lift.channel) if tested == channel]
     assert rows
     np.testing.assert_array_equal(lift.x[rows], history.level)
     np.testing.assert_array_equal(lift.delta_x[rows], -history.level)
@@ -76,8 +80,8 @@ def test_a_flat_channel_worth_half_again_as_much_moves_the_oracle():
     """Television flat on the first pilot world: half again its coefficient lifts its ROI by half
     and its spend in the best plan off its floor, and the plan made for it before leaves 0.062 of a
     euro of the budget (asserted: more than 0.05)."""
-    seed = FLAT.pilots["tv"][0]
-    world = FLAT.world("tv", seed)
+    seed = FLAT.pilots["flat-tv"][0]
+    world = FLAT.world("flat-tv", seed)
     c = world.history.channels.index("tv")
     effect = list(world.history.effect)
     effect[c] *= 1.5
@@ -94,7 +98,7 @@ def test_a_flat_channel_worth_half_again_as_much_moves_the_oracle():
 
 
 def test_an_arm_reads_a_flat_world_and_its_best_plan_scores_nought(tmp_path):
-    name = "meta"
+    name = "flat-meta"
     seed = FLAT.pilots[name][0]
     world = FLAT.world(name, seed)
     observation = FLAT.observe(world, 4)
