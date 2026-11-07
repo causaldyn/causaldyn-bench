@@ -1,0 +1,128 @@
+{
+ "tool": "mmm-framework",
+ "version": "1.5.0",
+ "versions": {
+  "python": "3.12.14",
+  "mmm-framework": "1.5.0",
+  "pymc": "6.4.0",
+  "pytensor": "3.3.7",
+  "numpyro": "0.22.0",
+  "jax": "0.12.0.1",
+  "numpy": "2.5.4",
+  "pandas": "3.1.1"
+ },
+ "file": "adstock_misspec_mff.csv",
+ "settings": {
+  "kpi": "Sales",
+  "media": [
+   "TV",
+   "Search",
+   "Social",
+   "Display"
+  ],
+  "controls": [
+   "Price"
+  ],
+  "geo": false,
+  "chains": 4,
+  "draws": 2000,
+  "tune": 1000,
+  "seed": 42,
+  "backend": "numpyro",
+  "trend": "LINEAR",
+  "trend_from": "mmm_framework"
+ },
+ "fit_result_type": "MMMResults",
+ "fit_warnings": {
+  "UserWarning: `init='adapt_diag'` is ignored by `nuts_sampler='numpyro'`; the external sampler uses its own initialization.": 1,
+  "RuntimeWarning: invalid value encountered in scalar divide": 938,
+  "ConvergenceWarning: BayesianMMM fit has NOT converged: 171 divergent transition(s). The posterior is unreliable \u2014 do not trust the intervals/ROI. Increase tune/draws/chains or reparameterize and re-fit before acting.": 1
+ },
+ "contributions_type": "ContributionResults",
+ "roi": {
+  "kind": "DataFrame",
+  "index": [
+   "0",
+   "1",
+   "2",
+   "3"
+  ],
+  "columns": [
+   "Channel",
+   "Total Spend",
+   "Total Contribution",
+   "Contribution %",
+   "ROI",
+   "Metric",
+   "Value Units",
+   "Divisor Units",
+   "Reference",
+   "Is Monetary",
+   "Measurement Unit",
+   "Contribution HDI Low",
+   "Contribution HDI High"
+  ],
+  "values": [
+   [
+    "TV",
+    9825.075919933312,
+    492.8119049345464,
+    9.637029871697424,
+    0.05015858492601769,
+    "ROI",
+    "ROI",
+    "$",
+    1.0,
+    true,
+    "spend",
+    -570.5779767131536,
+    1928.5519657387754
+   ],
+   [
+    "Search",
+    5522.423698191841,
+    3383.269070927983,
+    66.16046563415185,
+    0.6126420672929781,
+    "ROI",
+    "ROI",
+    "$",
+    1.0,
+    true,
+    "spend",
+    -102.36405932412512,
+    8879.695294243318
+   ],
+   [
+    "Social",
+    4908.658799741401,
+    485.3689933417147,
+    9.491482329857806,
+    0.09888016526373458,
+    "ROI",
+    "ROI",
+    "$",
+    1.0,
+    true,
+    "spend",
+    -523.9748564079903,
+    1834.2524000382466
+   ],
+   [
+    "Display",
+    3895.120992246775,
+    752.2822853969824,
+    14.711022164292917,
+    0.19313451030003886,
+    "ROI",
+    "ROI",
+    "$",
+    1.0,
+    true,
+    "spend",
+    -487.2637996176688,
+    2920.8049359165116
+   ]
+  ]
+ }
+}

@@ -32,8 +32,22 @@ numbers differently:
   so an arm's ROAS is scored against the stated ROAS as stated, and its contribution against the
   stated contribution, which needs no spend (:func:`denominator`).
 
-The tool's sixteen stress-test worlds are not files: its generator draws them, and the bench does
-not run it.
+**The generator's worlds** (:data:`MARKETS`). The tool's other synthetic worlds are not files:
+its generator, ``mmm_framework.synth``, draws them. ``scripts/mmm_framework_markets.py`` ran it
+once as a black box, offline and in an environment of its own, by the call its docstrings document,
+``generate_mff(name)`` at the world's default seed and length, and the files it wrote are kept
+unchanged in ``mmm_framework_markets/`` beside this module with their ``NOTICE``. A world is read
+only where that directory's ``MANIFEST.json`` has the SHA-256 :data:`MANIFEST_SHA256` holds and each
+file the SHA-256 the manifest names. The tool's pages count sixteen stress worlds, but none of the
+wheel's documents names them, so the family holds every world of the generator's registry it can
+read: 26, the 24 national ones of 156 weeks and two panels of four geographies and 130 weeks. Two
+it cannot read: ``aurora_kitchen_sink``, which the generator refuses to draw outside the tool's
+repository, and ``geo_product``, whose file fills the product dimension. On 24 of the 26 the stated
+ROAS is the stated contribution over the file's spend; on ``spend_outliers`` and
+``mixed_data_errors``, whose recorded spend carries the recording errors the tool plants, it is
+over the true spend, which the key's notes state. The keys' notes state more of a world, each
+channel's carry-over and the planted violation's own parameters, but no channel's whole response
+curve, so here too an arm's reading is scored, not a plan.
 
 **The bench's arm that reads these worlds** (:func:`observational`) is the least-squares media mix
 of :mod:`causaldyn_bench.observational_mmm`, the observational arm of Track M v2's budgets run: each
@@ -58,6 +72,7 @@ import hashlib
 import itertools
 import json
 import math
+from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from importlib.resources import files
@@ -77,6 +92,43 @@ MMM_FRAMEWORK = "1.5.0"
 WHEEL = "mmm_framework-1.5.0-py3-none-any.whl"
 WHEEL_SHA256 = "d9e28710deb382e861f88c05e030b69a51dd5ed0b0e31855ce774382cd5be366"
 DATA = "mmm_framework_worlds"  # the directory beside this module that holds the files
+MARKETS_DATA = "mmm_framework_markets"  # the one that holds the generator's worlds
+MANIFEST = "MANIFEST.json"
+MANIFEST_SHA256 = "7feddddcdfe7fca84c9099d45ad0d8f47444ae016ef5d0cc53ca060817bad028"
+MARKETS = (  # in the order of the generator's registry, ``mmm_framework.synth.dgp.SCENARIOS``
+    "realistic",
+    "clean",
+    "unobserved_confounding",
+    "confounding_controlled",
+    "reverse_causality",
+    "multicollinearity",
+    "adstock_misspec",
+    "saturation_misspec",
+    "time_varying_beta",
+    "heavy_tailed_noise",
+    "synergy",
+    "spend_outliers",
+    "mixed_data_errors",
+    "negative_effect",
+    "trend_break",
+    "seasonality_misspec",
+    "dense_controls",
+    "economic_health",
+    "reach_frequency",
+    "promo_and_media",
+    "promo_endogenous",
+    "breakout_heterogeneous",
+    "breakout_homogeneous",
+    "breakout_collinear",
+    "geo_clean",
+    "geo_heterogeneous",
+)
+UNREAD_MARKETS = MappingProxyType(
+    {
+        "aurora_kitchen_sink": "the generator refuses to draw it outside the tool's repository",
+        "geo_product": "its file fills the product dimension, which the bench does not read",
+    }
+)
 ENVIRONMENTS = ("national", "geo")
 KPI = "Sales"
 DIGESTS: Mapping[str, str] = MappingProxyType(
@@ -292,14 +344,41 @@ def read(directory: Path, environment: str) -> MffWorld:
     return MffWorld.of(environment, read_mff(paths["mff.csv"]), read_truth(paths["truth.json"]))
 
 
+def read_market(directory: Path, name: str) -> MffWorld:
+    """The generator's world ``name`` from ``directory``, its manifest the recorded one and its two
+    files those the manifest names.
+
+    Raises:
+        ValueError: the family holds no such world, or the manifest or a file is not the recorded
+            one.
+    """
+    if name not in MARKETS:
+        raise ValueError(f"mmm-framework's generated worlds hold no {name!r}")
+    manifest = Path(directory) / MANIFEST
+    found = _digest(manifest)
+    if found != MANIFEST_SHA256:
+        raise ValueError(f"{manifest} is not the recorded manifest: SHA-256 {found}")
+    recorded = json.loads(manifest.read_text())["worlds"][name]
+    paths = {kind: Path(directory) / f"{name}_{kind}" for kind in ("mff.csv", "truth.json")}
+    for kind, path in paths.items():
+        found = _digest(path)
+        if found != recorded[kind]["sha256"]:
+            raise ValueError(f"{path} is not what mmm-framework's generator wrote: SHA-256 {found}")
+    return MffWorld.of(name, read_mff(paths["mff.csv"]), read_truth(paths["truth.json"]))
+
+
 class MmmFramework:
-    """Family 21, its worlds read from ``directory``, by default the files the bench holds."""
+    """Family 21, its two shipped sets read from ``directory`` and the generator's worlds from
+    ``markets``, by default the files the bench holds."""
 
     name = "mmm-framework's answer keys"
-    environments = ENVIRONMENTS
+    environments = ENVIRONMENTS + MARKETS
     labels = (
         "The worlds are mmm-framework 1.5.0's own, the two data sets its wheel ships, and their "
         "truth is what its generator states: a rival's worlds, written to test its own model.",
+        "So are the 26 the bench holds of its generator's: drawn once by the tool's own code at "
+        "each world's default seed and length, read as files; which sixteen of them the tool's "
+        "pages count, no document of its wheel says.",
         "The tool wrote them to test its own model: the national set's adstock and saturation "
         "are in that model's family, by the truth file's own account, which hands the tool's own "
         "fit its forms.",
@@ -311,12 +390,17 @@ class MmmFramework:
         "them, and reads the geo set's total, not a geography's.",
     )
 
-    def __init__(self, directory: Path | None = None) -> None:
+    def __init__(self, directory: Path | None = None, markets: Path | None = None) -> None:
         self.directory = Path(str(files("causaldyn_bench.scorecard").joinpath(DATA)))
+        self.markets = Path(str(files("causaldyn_bench.scorecard").joinpath(MARKETS_DATA)))
         if directory is not None:
             self.directory = Path(directory)
+        if markets is not None:
+            self.markets = Path(markets)
 
     def world(self, environment: str) -> MffWorld:
+        if environment in MARKETS:
+            return read_market(self.markets, environment)
         return read(self.directory, environment)
 
     def truth(self, world: MffWorld) -> AnswerKey:
@@ -505,11 +589,16 @@ NO_CELL = MappingProxyType(
 )
 
 
-def pilot(fits: Path | None = None, directory: Path | None = None) -> dict[str, Any]:
-    """Every world read by the bench's arm and, where ``fits`` holds its record of the world,
-    ``<environment>.json``, by the tool's own fit; with what each world's key states."""
+def pilot(
+    fits: Path | None = None,
+    directory: Path | None = None,
+    environments: Sequence[str] = ENVIRONMENTS,
+) -> dict[str, Any]:
+    """Every world of ``environments`` read by the bench's arm and, where ``fits`` holds its record
+    of the world, ``<environment>.json``, by the tool's own fit; with what each world's key
+    states."""
     family = MmmFramework(directory)
-    worlds = [family.world(e) for e in ENVIRONMENTS]
+    worlds = [family.world(e) for e in environments]
     readings: dict[str, list[Reading]] = {w.environment: [observational(w)] for w in worlds}
     records = {}
     for world in worlds:
@@ -522,7 +611,7 @@ def pilot(fits: Path | None = None, directory: Path | None = None) -> dict[str, 
                 "fit_warnings": record["fit_warnings"],  # each distinct one, with how often
             }
             readings[world.environment].append(tool_reading(record, world))
-    return {
+    data = {
         "family": FAMILY,
         "mmm_framework": MMM_FRAMEWORK,
         "wheel": {"name": WHEEL, "sha256": WHEEL_SHA256},
@@ -531,10 +620,48 @@ def pilot(fits: Path | None = None, directory: Path | None = None) -> dict[str, 
         "tool": records,
         "no_cell": dict(NO_CELL),
     }
+    if any(e in MARKETS for e in environments):
+        data["generator"] = {
+            "call": "mmm_framework.synth.generate_mff(name)",
+            "manifest_sha256": MANIFEST_SHA256,
+            "unread": dict(UNREAD_MARKETS),
+        }
+    return data
 
 
 def _signed(value: float) -> str:
     return f"{value:+.3f}"
+
+
+def _channel_table(world: Mapping[str, Any]) -> list[str]:
+    arms = world["arms"]
+    lines = [
+        "| channel | stated contribution | "
+        + " | ".join(f"{a['arm']}" for a in arms)
+        + " | stated ROAS | "
+        + " | ".join(f"{a['arm']}" for a in arms)
+        + " | stated over the file's spend |",
+        "|---" * (4 + 2 * len(arms)) + "|",
+    ]
+    for c, channel in enumerate(world["channels"]):
+        contributions = [
+            f"{a['contribution'][c]:.1f} [{_signed(a['contribution_error'][c])}]" for a in arms
+        ]
+        returns = []
+        for a in arms:
+            text = f"{a['roas'][c]:.3f} [{_signed(a['roas_error'][c])}]"
+            if a["roas_interval"] is not None:
+                low, high = a["roas_interval"][c]
+                text += f" ({low:.3f}, {high:.3f})"
+            returns.append(text)
+        lines.append(
+            f"| {channel} | {world['contribution'][c]:.1f} | "
+            + " | ".join(contributions)
+            + f" | {world['roas'][c]:.3f} | "
+            + " | ".join(returns)
+            + f" | {world['denominator'][c]:.4f} |"
+        )
+    return lines
 
 
 def markdown(data: Mapping[str, Any]) -> str:
@@ -558,31 +685,8 @@ def markdown(data: Mapping[str, Any]) -> str:
             f"represent it: {'yes' if world['representable'] else 'no'}, by the same file. The "
             f"bench's arm reads the controls {', '.join(world['controls'])}.",
             "",
-            "| channel | stated contribution | "
-            + " | ".join(f"{a['arm']}" for a in arms)
-            + " | stated ROAS | "
-            + " | ".join(f"{a['arm']}" for a in arms)
-            + " | stated over the file's spend |",
-            "|---" * (4 + 2 * len(arms)) + "|",
+            *_channel_table(world),
         ]
-        for c, channel in enumerate(world["channels"]):
-            contributions = [
-                f"{a['contribution'][c]:.1f} [{_signed(a['contribution_error'][c])}]" for a in arms
-            ]
-            returns = []
-            for a in arms:
-                text = f"{a['roas'][c]:.3f} [{_signed(a['roas_error'][c])}]"
-                if a["roas_interval"] is not None:
-                    low, high = a["roas_interval"][c]
-                    text += f" ({low:.3f}, {high:.3f})"
-                returns.append(text)
-            lines.append(
-                f"| {channel} | {world['contribution'][c]:.1f} | "
-                + " | ".join(contributions)
-                + f" | {world['roas'][c]:.3f} | "
-                + " | ".join(returns)
-                + f" | {world['denominator'][c]:.4f} |"
-            )
         lines.append("")
         for a in arms:
             text = (
@@ -642,22 +746,169 @@ def markdown(data: Mapping[str, Any]) -> str:
         "## Arms without a cell",
         "",
         *[f"- {arm}: {why}." for arm, why in data["no_cell"].items()],
-        "- The tool's sixteen stress-test worlds are drawn by its generator, not shipped as "
-        "files, and are not read here.",
+        "- The worlds the tool's generator draws are read apart: "
+        "`results/mmm_framework_markets.md`.",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def _fit_check(warned: Mapping[str, int]) -> str:
+    raised = any(w.startswith("ConvergenceWarning") for w in warned)
+    return "a ConvergenceWarning" if raised else "silent"
+
+
+def markets_markdown(data: Mapping[str, Any]) -> str:
+    """The report of the pilot on the generator's worlds."""
+    worlds = data["worlds"]
+    count = len(worlds)
+    lines = [
+        f"# Family {data['family']}: mmm-framework's generated worlds, pilot "
+        f"({'float64' if data['x64'] else 'float32'})",
+        "",
+        f"The {count} worlds of mmm-framework {data['mmm_framework']}'s generator the bench "
+        "holds, each drawn once by the tool's own code at its default seed and length "
+        f"(`{data['generator']['call']}`) and read as data: a rival's worlds, written to test its "
+        "own model. The tool's pages count sixteen stress worlds, but none of its wheel's "
+        "documents names them, so every world of its registry the bench can read is here. Each "
+        "arm's reading of each channel's contribution over the file's weeks and its ROAS is "
+        "scored against the world's answer key: the relative error, the reading over the stated "
+        "less 1, its size averaged over the channels.",
+        "",
+        "| world | what it breaks, by its key | the tool's model can represent it | channels | "
+        "observational: contribution, ROAS | mmm-framework: contribution, ROAS | "
+        "mmm-framework's interval holds | the tool's own check |",
+        "|---|---|---|---|---|---|---|---|",
+    ]
+    errors: dict[str, list[float]] = {}
+    held = []
+    for world in worlds:
+        arms = {a["arm"]: a for a in world["arms"]}
+        cells = []
+        for name in ("observational", "mmm-framework"):
+            arm = arms.get(name)
+            if arm is None:
+                cells.append("no cell")
+                continue
+            errors.setdefault(name, []).append(arm["mean_contribution_error"])
+            cells.append(f"{arm['mean_contribution_error']:.3f}, {arm['mean_roas_error']:.3f}")
+        tool = arms.get("mmm-framework")
+        holds, check = "no cell", "no cell"
+        if tool is not None and tool["covered"] is not None:
+            channels = len(world["channels"])
+            holds = f"{round(tool['covered'] * channels)} of {channels}"
+            held.append(round(tool["covered"] * channels) == channels)
+        if world["environment"] in data["tool"]:
+            check = _fit_check(data["tool"][world["environment"]]["fit_warnings"])
+        lines.append(
+            f"| {world['environment']} | {world['violates'] or 'nothing, by its key'} | "
+            f"{'yes' if world['representable'] else 'no'} | {len(world['channels'])} | "
+            + " | ".join(cells)
+            + f" | {holds} | {check} |"
+        )
+    lines.append("")
+    for name, values in errors.items():
+        lines.append(
+            f"{name}: a cell on {len(values)} of {count} worlds; the contribution's error, "
+            f"averaged over a world's channels, {np.median(values):.3f} at the median world, "
+            f"{min(values):.3f} to {max(values):.3f}."
+        )
+    if len(errors.get("mmm-framework", ())) == count == len(errors.get("observational", ())):
+        fewer = sum(
+            t < o for t, o in zip(errors["mmm-framework"], errors["observational"], strict=True)
+        )
+        raised = sum(
+            _fit_check(record["fit_warnings"]) != "silent" for record in data["tool"].values()
+        )
+        lines.append(
+            f"mmm-framework's contribution error is the smaller of the two on {fewer} of "
+            f"{count} worlds; its interval holds every channel's stated ROAS on {sum(held)} of "
+            f"the {count}; its own check raised a ConvergenceWarning on {raised} of them."
+        )
+    lines += [
+        "",
+        "\"The tool's own check\" is whether the tool's fit raised a ConvergenceWarning, which it "
+        'raises where its own check of a fit fails; "silent" where it raised none.',
+        "",
+        "## The worlds, channel by channel",
+        "",
+        "The last column is each channel's stated contribution over its stated ROAS, as a share "
+        "of its spend in the file: 1 where the stated ROAS is read on the file's spend. Where the "
+        "tool plants recording errors in the spend the file holds, the stated ROAS is read on "
+        "the true spend, which the key's notes state; the contribution needs none.",
+    ]
+    for world in worlds:
+        lines += [
+            "",
+            f"### {world['environment']}",
+            "",
+            f"What it breaks, by its key: {world['violates'] or 'nothing'}. The bench's arm "
+            f"reads the controls {', '.join(world['controls'])}.",
+            "",
+            *_channel_table(world),
+        ]
+    if data["tool"]:
+        lines += [
+            "",
+            "## The tool's own fit",
+            "",
+            "mmm-framework fitted as its README's Python example fits a model "
+            "(`scripts/mmm_framework_arm.py`, in the environment `scripts/mmm_framework_arm.txt` "
+            "pins), as on the two shipped sets, and given the same controls as the bench's arm. "
+            "Its interval is its ROI table's HDI of the contribution over the channel's spend. "
+            "These are the example's settings, not those of the tool's own stress harness, which "
+            "no document of its wheel states in full. Each world was fitted once; the seed does "
+            "not fix the tool's numbers, which four runs on each shipped set moved by at most "
+            "0.5 % of a channel's contribution.",
+            "",
+        ]
+        settings = Counter(
+            "{chains} chains of {tune} tuning and {draws} kept draws, seed {seed}".format(
+                **record["settings"]
+            )
+            for record in data["tool"].values()
+        )
+        lines += [f"- {text}: {n} of {count} worlds." for text, n in settings.items()]
+        warned = Counter(
+            w
+            for record in data["tool"].values()
+            for w in record["fit_warnings"]
+            if not w.startswith("ConvergenceWarning")
+        )
+        lines += [f"- {warning} (on {n} of {count} worlds)" for warning, n in warned.items()]
+        lines += [
+            f"- {environment}: {warning}"
+            for environment, record in data["tool"].items()
+            for warning in record["fit_warnings"]
+            if warning.startswith("ConvergenceWarning")
+        ]
+    lines += [
+        "",
+        "## Arms and worlds without a cell",
+        "",
+        *[f"- {arm}: {why}." for arm, why in data["no_cell"].items()],
+        *[f"- The world {name}: {why}." for name, why in data["generator"]["unread"].items()],
     ]
     return "\n".join(lines) + "\n"
 
 
 def main(argv: list[str] | None = None) -> None:
-    """Write the pilot, ``results/mmm_framework_pilot.{json,md}``, with the tool's records read from
-    ``results/mmm_framework_fits/``."""
+    """Write the pilot, ``results/mmm_framework_pilot.{json,md}``, or with ``--markets`` the
+    pilot on the generator's worlds, ``results/mmm_framework_markets.{json,md}``, with the tool's
+    records read from ``results/mmm_framework_fits/``."""
     parser = argparse.ArgumentParser(description="Family 21's pilot: mmm-framework's answer keys.")
+    parser.add_argument("--markets", action="store_true", help="the generator's worlds")
     parser.add_argument("--fits", type=Path, default=ROOT / "results" / "mmm_framework_fits")
-    parser.add_argument("--out", type=Path, default=ROOT / "results" / "mmm_framework_pilot")
+    parser.add_argument("--out", type=Path, default=None)
     arguments = parser.parse_args(argv)
-    data = pilot(arguments.fits)
-    arguments.out.with_suffix(".json").write_text(json.dumps(data, indent=1) + "\n")
-    arguments.out.with_suffix(".md").write_text(markdown(data))
+    if arguments.markets:
+        data = pilot(arguments.fits, environments=MARKETS)
+        out, text = ROOT / "results" / "mmm_framework_markets", markets_markdown(data)
+    else:
+        data = pilot(arguments.fits)
+        out, text = ROOT / "results" / "mmm_framework_pilot", markdown(data)
+    out = arguments.out or out
+    out.with_suffix(".json").write_text(json.dumps(data, indent=1) + "\n")
+    out.with_suffix(".md").write_text(text)
 
 
 if __name__ == "__main__":

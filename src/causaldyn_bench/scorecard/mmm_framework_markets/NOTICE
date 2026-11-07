@@ -1,0 +1,16 @@
+A rival's worlds, labelled so: the data files in this directory are mmm-framework's, not the
+bench's. They were written by mmm-framework 1.5.0's own generator (https://github.com/redam94/mmm-framework),
+licensed under the Apache License, Version 2.0, whose text is this repository's LICENSE, byte for byte
+the one the tool's wheel ships: the wheel mmm_framework-1.5.0-py3-none-any.whl of SHA-256
+d9e28710deb382e861f88c05e030b69a51dd5ed0b0e31855ce774382cd5be366, as PyPI lists it.
+
+The generator was run as a black box, offline, in an environment of its own
+(scripts/mmm_framework_arm.txt), by scripts/mmm_framework_markets.py: for each world <name>,
+mmm_framework.synth.generate_mff(<name>) at the world's default seed and length, the master flat file
+it returns written as <name>_mff.csv and the answer key as <name>_truth.json. MANIFEST.json names the
+tool's version, the call, and each file's size and SHA-256; its own SHA-256 is
+
+  MANIFEST.json  7feddddcdfe7fca84c9099d45ad0d8f47444ae016ef5d0cc53ca060817bad028
+
+The files are those the generator wrote, unchanged. The bench reads them as data
+(causaldyn_bench.scorecard.mmm_framework) and holds none of the tool's code.

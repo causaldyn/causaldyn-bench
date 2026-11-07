@@ -1,0 +1,109 @@
+{
+  "scenario": "breakout_collinear",
+  "description": "TV sub-streams differ in true effectiveness but share one flighting calendar (near-collinear); the mix is unidentifiable. The honest model reports wide weight posteriors rather than a confident point.",
+  "violates": "identifiability (independent breakout variation)",
+  "representable": true,
+  "channels": [
+    "TV_Premium",
+    "TV_Standard",
+    "TV_Remnant",
+    "Search",
+    "Social",
+    "Display"
+  ],
+  "true_contribution": {
+    "TV_Premium": 5249.704942095186,
+    "TV_Standard": 1972.2456766187968,
+    "TV_Remnant": 421.7161527638413,
+    "Search": 4427.893196703644,
+    "Social": 3388.94966467646,
+    "Display": 2849.2380244726874
+  },
+  "true_roas": {
+    "TV_Premium": 1.2465503552056376,
+    "TV_Standard": 0.60470753888113,
+    "TV_Remnant": 0.22459888564721478,
+    "Search": 0.7087111877109327,
+    "Social": 0.7031202367721812,
+    "Display": 0.7600192044093796
+  },
+  "notes": {
+    "breakout_groups": {
+      "TV": [
+        "TV_Premium",
+        "TV_Standard",
+        "TV_Remnant"
+      ]
+    },
+    "true_weights": {
+      "TV_Premium": 1.4518131587798249,
+      "TV_Standard": 0.8065628659887916,
+      "TV_Remnant": 0.32262514639551665
+    },
+    "true_raw_effectiveness": {
+      "TV_Premium": 1.8,
+      "TV_Standard": 1.0,
+      "TV_Remnant": 0.4
+    },
+    "true_logtau": 0.6188996224706236,
+    "breakout_totals": {
+      "TV_Premium": 4211.386182814224,
+      "TV_Standard": 3261.4868342272966,
+      "TV_Remnant": 1877.6413406887755
+    },
+    "mean_pairwise_corr": 0.99712444118187,
+    "unidentifiable": true,
+    "role": "breakout unidentifiable (collinear)",
+    "n_clipped": 0,
+    "true_adstock": {
+      "Search": {
+        "family": "geometric",
+        "alpha": 0.2,
+        "l_max": 8,
+        "normalize": true,
+        "cum_share": [
+          0.800002048005243,
+          0.9600024576062915,
+          0.9920025395265013,
+          0.9984025559105433,
+          0.9996825591873517,
+          0.9999385598427134,
+          0.9999897599737857,
+          1.0000000000000002
+        ]
+      },
+      "Social": {
+        "family": "geometric",
+        "alpha": 0.4,
+        "l_max": 8,
+        "normalize": true,
+        "cum_share": [
+          0.6003934738670336,
+          0.840550863413847,
+          0.9366138192325724,
+          0.9750390015600625,
+          0.9904090744910585,
+          0.996557103663457,
+          0.9990163153324163,
+          1.0
+        ]
+      },
+      "Display": {
+        "family": "geometric",
+        "alpha": 0.5,
+        "l_max": 8,
+        "normalize": true,
+        "cum_share": [
+          0.5019607843137255,
+          0.7529411764705882,
+          0.8784313725490196,
+          0.9411764705882353,
+          0.9725490196078431,
+          0.9882352941176471,
+          0.996078431372549,
+          1.0
+        ]
+      }
+    }
+  }
+}
