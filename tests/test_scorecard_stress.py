@@ -24,6 +24,7 @@ from causaldyn_bench.scorecard.track_m2 import TRACK_M2
 
 FAMILIES = {2: CONFOUNDED, 3: COLLINEAR, 4: S_CURVES, 5: PERFORMANCE, 6: OUTSIDE, 7: SHORT}
 KEPT = {6, 7}  # the families whose stress leaves the history alone, and moves what reads past it
+COUNT = {2: 4}  # the families of other than three environments: family 2's search-demand is its 4th
 
 
 def _top(f: int, name: str) -> int:
@@ -38,10 +39,10 @@ def _first(f: int, e: int, *, pilots: bool = True) -> tuple[str, int]:
 
 
 @pytest.mark.parametrize("f", FAMILIES)
-def test_a_family_draws_its_three_environments_from_its_own_blocks(f):
+def test_a_family_draws_its_environments_from_its_own_blocks(f):
     family = FAMILIES[f]
     assert number(family) == f and tuple(family.pilots) == tuple(family.scored)
-    assert len(family.scored) == 3
+    assert len(family.scored) == COUNT.get(f, 3)
     for e, name in enumerate(family.scored):
         assert family.pilots[name] == pilot(f, e) and family.scored[name] == scored(f, e)
     assert all(label.endswith(".") for label in family.labels)
@@ -60,7 +61,7 @@ def test_a_world_is_its_seed_alone(f):
     assert family.truth(first).best.worth == family.truth(again).best.worth
     np.testing.assert_array_equal(family.truth(first).best.weekly, family.truth(again).best.weekly)
     others = [family.observe(family.world(n, seed), 0).digest() for n in family.scored]
-    assert len(set(others)) == 3  # each environment moves the world
+    assert len(set(others)) == len(family.scored)  # each environment moves the world
 
 
 @pytest.mark.parametrize("f", FAMILIES)
