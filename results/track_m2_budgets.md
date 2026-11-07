@@ -53,3 +53,27 @@ CHC against each arm: CHC's regret minus the arm's over the same worlds, and the
 PyMC-Marketing's fits: 0 raised; of the rest, 12 had divergent transitions, 2 an r-hat over 1.01, 0 an optimiser that reported failure; 88 of 1200 geo tests dropped, their sales not having fallen; 0 plans moved into the box.
 
 CHC's readings: 266 of 300 channels' scale intervals open above, the tests not having read the curve's bend; the plan reads the family's shape past the tested spend.
+
+## Variance reduction
+
+What each design removes of a comparison's variance a world, so of the worlds it needs for one precision: the share, with its 95 % percentile bootstrap interval over the worlds (10000 resamples). *Pairing*: the arms scored on the same worlds (common random numbers), against an unpaired comparison, `1 - var(a - b) / (var(a) + var(b))`; negative where the arms' regrets move against each other. *Control variates*: the paired difference adjusted by the world's covariates, the status quo's and the equal split's regrets, the best plan's return per euro and the budget's shadow price, `1 - var(adjusted) / var(raw)`, each world by the slope fitted on the worlds of `track_m2_budgets_pilot`, the pilot of these arms in this environment, none of them a world here, and frozen; *on the pilot* is the share that pilot read on its own worlds, left out, the number this run checks out of sample; it is the saving where the covariates' mean is read on many more worlds than the arms are scored on. *Both*: one less the product of what each keeps. `sd` is the paired difference's.
+
+### drawn
+
+| first | second | worlds | sd | pairing [95 %] | control variates [95 %] | both [95 %] | on the pilot [95 %] |
+|---|---|---|---|---|---|---|---|
+| CHC | status quo | 200 | 0.1631 | +0.041 [-0.076, +0.163] | +0.688 [+0.513, +0.824] | +0.701 [+0.578, +0.816] | +0.735 [+0.484, +0.885] |
+| CHC | equal split | 200 | 0.2110 | +0.034 [-0.060, +0.151] | +0.814 [+0.686, +0.900] | +0.820 [+0.727, +0.897] | +0.879 [+0.744, +0.953] |
+| CHC | observational | 200 | 0.2843 | -0.049 [-0.120, +0.033] | -0.082 [-0.378, +0.124] | -0.135 [-0.444, +0.083] | -0.054 [-0.750, +0.332] |
+| CHC | myopic | 200 | 0.1198 | +0.320 [+0.128, +0.526] | -0.413 [-0.877, -0.134] | +0.039 [-0.279, +0.281] | +0.067 [-0.439, +0.412] |
+| CHC | PyMC-Marketing | 200 | 0.0935 | +0.303 [+0.089, +0.524] | -0.081 [-0.157, -0.017] | +0.247 [+0.025, +0.468] | -0.003 [-0.458, +0.194] |
+
+### reference
+
+| first | second | worlds | sd | pairing [95 %] | control variates [95 %] | both [95 %] | on the pilot [95 %] |
+|---|---|---|---|---|---|---|---|
+| CHC | status quo | 100 | 0.0661 | +0.007 [-0.036, +0.052] | -1.015 [-3.006, -0.429] | -1.001 [-2.940, -0.415] | -0.171 [-1.554, +0.148] |
+| CHC | equal split | 100 | 0.0649 | +0.033 [-0.009, +0.077] | -1.085 [-3.114, -0.482] | -1.017 [-3.020, -0.422] | -0.207 [-1.664, +0.112] |
+| CHC | observational | 100 | 0.2790 | -0.038 [-0.122, +0.039] | -0.875 [-1.343, -0.445] | -0.945 [-1.450, -0.482] | +0.637 [+0.370, +0.819] |
+| CHC | myopic | 100 | 0.0651 | +0.052 [-0.006, +0.152] | -1.127 [-3.412, -0.501] | -1.016 [-2.936, -0.410] | -0.183 [-1.751, +0.130] |
+| CHC | PyMC-Marketing | 100 | 0.0662 | +0.236 [-0.057, +0.607] | -0.155 [-0.410, -0.050] | +0.118 [-0.271, +0.498] | -0.306 [-1.225, -0.118] |

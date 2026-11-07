@@ -53,7 +53,11 @@ Each share carries a 95 % percentile bootstrap interval, the worlds resampled :d
 ``python -m causaldyn_bench.scorecard.variance`` writes the table (:func:`section`) into Track M
 v2's committed pilot reports, :data:`PILOTS`, after their last line: their arms' regrets as the
 reports hold them, each world's covariates from the scorecard's oracle on the same world (family 0,
-whose worlds are those runs' own), the pairs each report compares.
+whose worlds are those runs' own), the pairs each report compares. It writes it too into each
+scored run's report, :data:`SCORED`, out of sample: each pair's slope fitted on the run's pilot, the
+same arms in the same environment on other worlds, frozen and applied to the scored worlds, beside
+the share the pilot read left out on its own (:func:`scored_section`). A run that rewrites its
+report drops the section, so the command runs after it.
 """
 
 from __future__ import annotations
@@ -62,8 +66,9 @@ import json
 import math
 import sys
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any
 
 import numpy as np
@@ -84,6 +89,9 @@ PILOTS = (
     "track_m2_external_pilot_genre",
     "track_m2_external_pilot_union",
 )
+# each committed scored run whose report compares arms world by world, and the pilot whose worlds
+# freeze its slopes: the same arms, in the same environment
+SCORED: Mapping[str, str] = MappingProxyType({"track_m2_budgets": "track_m2_budgets_pilot"})
 HEADING = "## Variance reduction"
 
 
@@ -359,6 +367,7 @@ class Row:
     pairing: Reduction
     adjustment: Reduction
     both: Reduction
+    piloted: Reduction | None = None  # the pilot's own share, left out, where a slope was frozen
 
 
 def row(
@@ -412,15 +421,20 @@ def _share(reduction: Reduction) -> str:
     return f"{reduction.share:+.3f} [{low:+.3f}, {high:+.3f}]"
 
 
-def section(rows: Sequence[Row], *, pilot: bool = True) -> str:
-    """The rows as a report's markdown section, one table an environment."""
+def section(rows: Sequence[Row], *, frozen_on: str | None = None) -> str:
+    """The rows as a report's markdown section, one table an environment: read left out, as a
+    pilot reads them, or by the slopes frozen on the pilot ``frozen_on``, beside its own shares."""
     how = (
         "each world by the slope fitted on the other worlds of its environment (left out), and "
         "its raw value against the others' mean, so the share is what a slope frozen on this "
         "pilot removes from a world it was not fitted on"
-        if pilot
-        else "each world by the slope frozen on the pilot"
+        if frozen_on is None
+        else f"each world by the slope fitted on the worlds of `{frozen_on}`, the pilot of these "
+        "arms in this environment, none of them a world here, and frozen; *on the pilot* is the "
+        "share that pilot read on its own worlds, left out, the number this run checks out of "
+        "sample"
     )
+    extra = "" if frozen_on is None else " on the pilot [95 %] |"
     lines = [
         HEADING,
         "",
@@ -441,12 +455,13 @@ def section(rows: Sequence[Row], *, pilot: bool = True) -> str:
             f"### {environment}",
             "",
             "| first | second | worlds | sd | pairing [95 %] | control variates [95 %] "
-            "| both [95 %] |",
-            "|---|---|---|---|---|---|---|",
+            f"| both [95 %] |{extra}",
+            "|---|---|---|---|---|---|---|" + ("---|" if extra else ""),
         ]
         lines += [
             f"| {r.first} | {r.second} | {r.worlds} | {r.sd:.4f} | {_share(r.pairing)} "
             f"| {_share(r.adjustment)} | {_share(r.both)} |"
+            + ("" if r.piloted is None else f" {_share(r.piloted)} |")
             for r in rows
             if r.environment == environment
         ]
@@ -454,8 +469,8 @@ def section(rows: Sequence[Row], *, pilot: bool = True) -> str:
 
 
 def pilot(name: str, root: Path = ROOT) -> tuple[tuple[Sample, ...], tuple[tuple[str, str], ...]]:
-    """A committed Track M v2 pilot, ``results/<name>.json``, as samples, each world's covariates
-    from family 0's oracle, and the pairs its report compares, in its order.
+    """A committed Track M v2 run, ``results/<name>.json``, a pilot or a scored run, as samples,
+    each world's covariates from family 0's oracle, and the pairs its report compares, in its order.
 
     Raises:
         RuntimeError: a world's status quo is not the oracle's within the bench's tie, so the
@@ -494,6 +509,29 @@ def pilot_section(name: str, root: Path = ROOT) -> str:
     return section(rows)
 
 
+def scored_section(name: str, root: Path = ROOT) -> str:
+    """The section :func:`main` writes into the report of the scored run ``name``: each pair's
+    control variates by the slope fitted on its pilot's worlds, :data:`SCORED`, and frozen, beside
+    the share the pilot read left out.
+
+    Raises:
+        ValueError: the run and its pilot hold other environments or compare other pairs.
+    """
+    trial, pairs = pilot(SCORED[name], root)
+    held, compared = pilot(name, root)
+    if compared != pairs or [s.environment for s in held] != [s.environment for s in trial]:
+        raise ValueError(f"{name} and its pilot {SCORED[name]} compare other pairs or environments")
+    rows = []
+    for before, sample in zip(trial, held, strict=True):
+        for first, second in pairs:
+            if not {first, second} <= set(sample.regrets) & set(before.regrets):
+                continue
+            a, b, x = before.pair(first, second)
+            frozen = row(sample, first, second, fit(a - b, x))
+            rows.append(replace(frozen, piloted=adjustment(a - b, x)))
+    return section(rows, frozen_on=SCORED[name])
+
+
 def written(report: str, part: str) -> str:
     """``report`` with ``part`` as its last section, in place of the one it held."""
     kept = report.split(f"\n{HEADING}\n", 1)[0].rstrip("\n")
@@ -501,11 +539,12 @@ def written(report: str, part: str) -> str:
 
 
 def main(argv: list[str] | None = None) -> None:
-    """The section in each pilot's report ``argv`` names, every one of :data:`PILOTS` by
-    default."""
-    for name in (sys.argv[1:] if argv is None else argv) or PILOTS:
+    """The section in each report ``argv`` names, every one of :data:`PILOTS` and
+    :data:`SCORED` by default."""
+    for name in (sys.argv[1:] if argv is None else argv) or (*PILOTS, *SCORED):
         path = ROOT / "results" / f"{name}.md"
-        path.write_text(written(path.read_text(), pilot_section(name)))
+        part = scored_section(name) if name in SCORED else pilot_section(name)
+        path.write_text(written(path.read_text(), part))
 
 
 if __name__ == "__main__":

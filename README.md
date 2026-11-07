@@ -460,11 +460,14 @@ variance (`causaldyn_bench.scorecard.variance`): pairing the arms on the same wo
 numbers) against an unpaired comparison, and control variates on the four covariates every world
 record keeps, the slope fitted on pilot worlds and frozen, with a bootstrap interval on each share.
 It writes the table, an environment and a pair of arms a row, at the end of Track M v2's committed
-pilot reports (`results/track_m2_budgets_pilot.md`, `_pymc130`, and the external arms' two). On the
-budgets pilot's drawn worlds pairing removes 0.63 [0.31, 0.83] of the variance of CHC against
-PyMC-Marketing, and the control variates nothing more: -0.003 [-0.46, +0.19] once their slope is
-read on worlds it was not fitted on (`scripts/control_variates.mac` holds the closed forms the
-tests check them against).
+pilot reports (`results/track_m2_budgets_pilot.md`, `_pymc130`, and the external arms' two), and of
+the scored budgets run's (`results/track_m2_budgets.md`), there by the slopes frozen on its pilot
+beside the pilot's own shares. On the budgets pilot's drawn worlds pairing removes 0.63 [0.31, 0.83]
+of the variance of CHC against PyMC-Marketing, and the control variates nothing more: -0.003
+[-0.46, +0.19] once their slope is read on worlds it was not fitted on. Out of sample, on the scored
+run's 200 drawn worlds, the slope frozen on the pilot adds variance, -0.081 [-0.157, -0.017], while
+pairing removes 0.30 [0.09, 0.52] (`scripts/control_variates.mac` holds the closed forms the tests
+check them against).
 
 ### Pre-registration
 

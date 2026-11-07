@@ -8,6 +8,7 @@ covariance ``E``. Every Monte Carlo test draws from a fixed seed and reads its s
 band of four standard errors or more of the statistic it reads, so its own false-red rate is below
 1e-4."""
 
+import json
 import math
 
 import numpy as np
@@ -20,6 +21,7 @@ from causaldyn_bench.scorecard.variance import (
     HEADING,
     PILOTS,
     ROOT,
+    SCORED,
     Centre,
     Slope,
     _left_out,
@@ -30,6 +32,7 @@ from causaldyn_bench.scorecard.variance import (
     pairing,
     pilot_section,
     samples,
+    scored_section,
     written,
 )
 
@@ -251,3 +254,35 @@ def test_each_committed_pilot_report_ends_with_its_variance_section(name):
     ``python -m causaldyn_bench.scorecard.variance`` rewrites them."""
     report = (ROOT / "results" / f"{name}.md").read_text()
     assert report.endswith("\n\n" + pilot_section(name))
+
+
+def _table(part):
+    """A section's rows by environment and pair, each row's cells."""
+    rows, environment = {}, None
+    for line in part.splitlines():
+        if line.startswith("### "):
+            environment = line.removeprefix("### ")
+        elif line.startswith("| ") and not line.startswith("| first"):
+            cells = [cell.strip() for cell in line.strip("| ").split(" | ")]
+            rows[environment, cells[0], cells[1]] = cells
+    return rows
+
+
+@pytest.mark.parametrize("name", SCORED)
+def test_each_committed_scored_report_reads_its_pilots_slopes_out_of_sample(name):
+    """The scored run's numbers are the code's on the committed records, each slope fitted on the
+    pilot alone: the pilot ran the same arms in the same environment, on none of the run's worlds,
+    and each pair's share on the pilot is the one the pilot's own report holds."""
+    trial = json.loads((ROOT / "results" / f"{SCORED[name]}.json").read_text())
+    run = json.loads((ROOT / "results" / f"{name}.json").read_text())
+    assert trial["pilot"] and not run["pilot"]
+    for key in ("design", "pymc_environment", "x64"):
+        assert trial[key] == run[key], key
+    for before, after in zip(trial["environments"], run["environments"], strict=True):
+        assert not {w["seed"] for w in before["worlds"]} & {w["seed"] for w in after["worlds"]}
+    part = scored_section(name)
+    assert (ROOT / "results" / f"{name}.md").read_text().endswith("\n\n" + part)
+    own, scored = _table(pilot_section(SCORED[name])), _table(part)
+    assert scored and set(scored) == set(own)
+    for key, cells in scored.items():
+        assert cells[-1] == own[key][5], key  # the pilot's control-variate share, left out
