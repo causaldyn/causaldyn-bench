@@ -469,6 +469,16 @@ run's 200 drawn worlds, the slope frozen on the pilot adds variance, -0.081 [-0.
 pairing removes 0.30 [0.09, 0.52] (`scripts/control_variates.mac` holds the closed forms the tests
 check them against).
 
+`causaldyn_bench.scorecard.refresh` reads an arm fitted again as weeks arrive. Its refresh swing
+cuts one export to its first year and four more weeks at a time, six times, and has every cut plan
+the world's one quarter: for each channel it reads the largest move of the mean return between
+consecutive refits, on one window every cut holds, and the refits whose mean leaves the previous
+fit's central 80 %; for the plans, each refit's regret per euro on the truth less the previous
+fit's. Its rolling origin cuts a world whose effect holds still at the same seven lengths, each cut
+a world with its own quarter and truth, and reads the same columns with the CRPS of each origin's
+forecast of its quarter; on family 7 the window an arm reads rolls with the origin. Both read pilot
+worlds and state what moved between refits, not a claim.
+
 ### Pre-registration
 
 A scored run is pre-registered: its design, sample and reading are fixed in a file before its first
