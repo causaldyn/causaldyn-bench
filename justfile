@@ -212,16 +212,18 @@ track-m2-lift:
 
 # Track M v2, budgets -> results/track_m2_budgets.{md,json}; `-pilot` runs the seeds the design was
 # set on into results/track_m2_budgets_pilot.{md,json}. The worlds and their geo tests are exported
-# for PyMC-Marketing, which fits them in its own pinned environment and never enters the lock, in
-# `shards` processes; a shard that dies leaves worlds without a record, and the scoring then refuses
-# to run. Then every arm's plan is scored against the oracle. At 64-bit, as the arms were piloted.
+# for PyMC-Marketing, which fits them in its own pinned environment and never enters the lock,
+# `shards` at a time, each world in a process of its own: the tool's process keeps what it built for
+# every world it fits (0.28 GB a world under 1.3.0). A fit that dies leaves its world without a
+# record, and the scoring then refuses to run. Then every arm's plan is scored against the oracle.
+# At 64-bit, as the arms were piloted.
 track-m2-budgets shards="2": (_track-m2-budgets "outputs/track_m2_budgets" "" shards)
 
 track-m2-budgets-pilot shards="2": (_track-m2-budgets "outputs/track_m2_budgets_pilot" "--pilot" shards)
 
 _track-m2-budgets work pilot shards:
     JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.budget_regret export --work {{work}} {{pilot}}
-    for environment in drawn reference; do for k in $(seq 0 $(({{shards}} - 1))); do OMP_NUM_THREADS=1 uv run --no-project --python 3.12 --with-requirements scripts/pymc_marketing_arm.txt python -u scripts/pymc_marketing_arm.py --worlds {{work}}/$environment --out {{work}}/$environment/pymc --shard $k/{{shards}} & done; wait; done
+    for environment in drawn reference; do for k in $(seq 0 $(({{shards}} - 1))); do (i=0; for world in {{work}}/$environment/world_*.npz; do if [ $((i % {{shards}})) -eq $k ]; then one={{work}}/$environment/one/$(basename $world .npz); mkdir -p $one && ln -f $world $one/ && OMP_NUM_THREADS=1 uv run --no-project --python 3.12 --with-requirements scripts/pymc_marketing_arm.txt python -u scripts/pymc_marketing_arm.py --worlds $one --out {{work}}/$environment/pymc; fi; i=$((i + 1)); done) & done; wait; done
     JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.budget_regret score --work {{work}} {{pilot}} --out results
 
 # PyMC-Marketing's arm at the version scripts/pymc_marketing_arm.txt pins, on the scorecard's
@@ -267,8 +269,8 @@ track-m2-geo-pilot workers="4":
     JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.geo_selection --pilot --workers {{workers}} --out results
 
 # Track M v2, budgets, the external arms: Meridian and Robyn fit the same exported worlds, each in
-# an environment that never enters the lock, and write their records beside PyMC-Marketing's, in
-# `shards` processes. Meridian's environment is pinned in scripts/meridian_arm.txt; Robyn runs on a
+# an environment that never enters the lock, and write their records beside PyMC-Marketing's,
+# `shards` at a time, each world in a process of its own as PyMC-Marketing's are. Meridian's environment is pinned in scripts/meridian_arm.txt; Robyn runs on a
 # scratch R library `rlib` and a Python environment `venv`, built as scripts/robyn_arm.lock.txt
 # records, on its sample's drawn worlds alone (causaldyn_bench.external_arms.SAMPLES), over the
 # setting of the demo's ranges the pilot chose (ROBYN_SETTING); its pilot runs either, `ranges`.
@@ -280,7 +282,7 @@ track-m2-meridian-pilot shards="2": (_track-m2-meridian "outputs/track_m2_budget
 
 _track-m2-meridian work pilot shards:
     JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.budget_regret export --work {{work}} {{pilot}}
-    for environment in drawn reference; do for k in $(seq 0 $(({{shards}} - 1))); do JAX_PLATFORMS=cpu uv run --no-project --python 3.12 --with-requirements scripts/meridian_arm.txt python -u scripts/meridian_arm.py --worlds {{work}}/$environment --out {{work}}/$environment/meridian --shard $k/{{shards}} & done; wait; done
+    for environment in drawn reference; do for k in $(seq 0 $(({{shards}} - 1))); do (i=0; for world in {{work}}/$environment/world_*.npz; do if [ $((i % {{shards}})) -eq $k ]; then one={{work}}/$environment/one/$(basename $world .npz); mkdir -p $one && ln -f $world $one/ && JAX_PLATFORMS=cpu uv run --no-project --python 3.12 --with-requirements scripts/meridian_arm.txt python -u scripts/meridian_arm.py --worlds $one --out {{work}}/$environment/meridian; fi; i=$((i + 1)); done) & done; wait; done
 
 track-m2-robyn rlib venv shards="2": (_track-m2-robyn "outputs/track_m2_budgets" "" "10000:10100" "genre" rlib venv shards)
 
