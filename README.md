@@ -513,11 +513,11 @@ cells state no reach week by week, so their schedules are refused.
 (`causaldyn_bench.scorecard.pymc_marketing_pilot`): its national model on family 0's pilot, the
 budgets run's 60 worlds, and on family 13's 100, then its geo model on families 8 and 10. An export
 holds every test, whichever way its sales moved, and 1.3.0's default likelihood, a Normal of the
-signed change, takes each: the records of the 203 worlds fitted count 1 920 national rows and
-4 008 geo rows taken, and none refused (`results/pymc_marketing_pilot.md`). Family 0's 49 tests
-whose sales did not fall are the ones the budgets run's version-1 export left out, which its 1.3.0
-record (`results/track_m2_budgets_pilot_pymc130.md`) counts as dropped. The run reached 8 or 9 of
-each geo environment's 100 pilot worlds; one geo plan raised in the tool's optimiser after its fit.
+signed change, takes each: on family 0's and family 13's 160 worlds the records count 1 920 rows
+taken and none refused, and `results/pymc_marketing_pilot.md` counts the geo worlds' rows beside
+them, with any pilot world not fitted counted as not run. Family 0's 49 tests whose sales did not
+fall are the ones the budgets run's version-1 export left out, which its 1.3.0 record
+(`results/track_m2_budgets_pilot_pymc130.md`) counts as dropped.
 
 `python -m causaldyn_bench.scorecard.variance` measures what the design removes of a comparison's
 variance (`causaldyn_bench.scorecard.variance`): pairing the arms on the same worlds (common random
