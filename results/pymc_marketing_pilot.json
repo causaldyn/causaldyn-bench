@@ -1,0 +1,5402 @@
+{
+ "arm": "pymc-marketing",
+ "setting": "static",
+ "versions": {
+  "pymc-marketing": "1.3.0",
+  "pymc": "6.3.2",
+  "pytensor": "3.3.6",
+  "arviz": "1.3.0",
+  "numpy": "2.4.6",
+  "scipy": "1.18.1",
+  "pandas": "3.1.0"
+ },
+ "rung": 4,
+ "x64": true,
+ "environments": [
+  {
+   "family": 0,
+   "name": "Track M v2",
+   "environment": "drawn",
+   "pilots": 40,
+   "fitted": 40,
+   "whole": 40,
+   "tests": 480,
+   "not_fallen": 29,
+   "taken": 480,
+   "dropped": 0,
+   "tests_dropped": null,
+   "raised": 0,
+   "divergent": 4,
+   "rhat": 0,
+   "optimiser_failed": 0
+  },
+  {
+   "family": 0,
+   "name": "Track M v2",
+   "environment": "reference",
+   "pilots": 20,
+   "fitted": 20,
+   "whole": 20,
+   "tests": 240,
+   "not_fallen": 20,
+   "taken": 240,
+   "dropped": 0,
+   "tests_dropped": null,
+   "raised": 0,
+   "divergent": 5,
+   "rhat": 0,
+   "optimiser_failed": 0
+  },
+  {
+   "family": 13,
+   "name": "PyMC-Marketing's home ground",
+   "environment": "priors",
+   "pilots": 100,
+   "fitted": 100,
+   "whole": 100,
+   "tests": 1200,
+   "not_fallen": 51,
+   "taken": 1200,
+   "dropped": 0,
+   "tests_dropped": null,
+   "raised": 0,
+   "divergent": 9,
+   "rhat": 0,
+   "optimiser_failed": 0
+  },
+  {
+   "family": 8,
+   "name": "geo",
+   "environment": "policy-0",
+   "pilots": 100,
+   "fitted": 9,
+   "whole": 9,
+   "tests": 108,
+   "not_fallen": 20,
+   "taken": 540,
+   "dropped": 0,
+   "tests_dropped": 0,
+   "raised": 0,
+   "divergent": 7,
+   "rhat": 1,
+   "optimiser_failed": 0
+  },
+  {
+   "family": 8,
+   "name": "geo",
+   "environment": "policy-0.5",
+   "pilots": 100,
+   "fitted": 9,
+   "whole": 9,
+   "tests": 108,
+   "not_fallen": 18,
+   "taken": 540,
+   "dropped": 0,
+   "tests_dropped": 0,
+   "raised": 0,
+   "divergent": 8,
+   "rhat": 1,
+   "optimiser_failed": 0
+  },
+  {
+   "family": 10,
+   "name": "few geos",
+   "environment": "geos-3",
+   "pilots": 100,
+   "fitted": 9,
+   "whole": 9,
+   "tests": 108,
+   "not_fallen": 27,
+   "taken": 144,
+   "dropped": 0,
+   "tests_dropped": 0,
+   "raised": 1,
+   "divergent": 8,
+   "rhat": 1,
+   "optimiser_failed": 0
+  },
+  {
+   "family": 10,
+   "name": "few geos",
+   "environment": "geos-8",
+   "pilots": 100,
+   "fitted": 8,
+   "whole": 8,
+   "tests": 96,
+   "not_fallen": 16,
+   "taken": 384,
+   "dropped": 0,
+   "tests_dropped": 0,
+   "raised": 0,
+   "divergent": 7,
+   "rhat": 2,
+   "optimiser_failed": 0
+  },
+  {
+   "family": 10,
+   "name": "few geos",
+   "environment": "geos-50",
+   "pilots": 100,
+   "fitted": 8,
+   "whole": 8,
+   "tests": 96,
+   "not_fallen": 18,
+   "taken": 2400,
+   "dropped": 0,
+   "tests_dropped": 0,
+   "raised": 0,
+   "divergent": 8,
+   "rhat": 1,
+   "optimiser_failed": 0
+  }
+ ],
+ "reports": [
+  {
+   "family": 0,
+   "name": "Track M v2",
+   "kind": "pilot",
+   "preregistration": null,
+   "labels": [
+    "The world's media are PyMC-Marketing's default class: its logistic saturation is the world's tanh curve, and its normalised geometric adstock at the kernel's length is the world's kernel.",
+    "Every arm is told the kernel's length.",
+    "A geo test is two universes at the market's scale, so its gap holds no noise between regions beyond the noise drawn."
+   ],
+   "cells": [
+    {
+     "k": 4,
+     "environment": "drawn",
+     "worlds": 40,
+     "look": 40,
+     "arms": {
+      "status quo": {
+       "regret": {
+        "mean": 0.15019234355353978,
+        "low": 0.11821641114744162,
+        "high": 0.18216827595963792,
+        "n": 40
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "equal split": {
+       "regret": {
+        "mean": 0.17928537496098876,
+        "low": 0.12520483895141898,
+        "high": 0.23336591097055853,
+        "n": 40
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "pymc-marketing": {
+       "regret": {
+        "mean": 0.040965579685955524,
+        "low": 0.022259743986996795,
+        "high": 0.05967141538491425,
+        "n": 40
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": {
+        "mean": 0.09713588011600253,
+        "low": 0.0873163048271038,
+        "high": 0.10695545540490127,
+        "n": 40
+       },
+       "mape": {
+        "mean": 0.10887908013447303,
+        "low": 0.09939176098732037,
+        "high": 0.11836639928162569,
+        "n": 40
+       },
+       "coverage": {
+        "roi_coverage": {
+         "80": 0.7333333333333334,
+         "90": 0.875,
+         "95": 0.9333333333333332
+        },
+        "mroi_coverage": {
+         "80": 0.8333333333333333,
+         "90": 0.8916666666666666,
+         "95": 0.9666666666666666
+        },
+        "worlds": 40
+       },
+       "shares": {
+        "pull": -0.025103886606703457,
+        "miss": 0.031463804098471,
+        "channels": 120
+       }
+      }
+     }
+    },
+    {
+     "k": 4,
+     "environment": "reference",
+     "worlds": 20,
+     "look": 20,
+     "arms": {
+      "status quo": {
+       "regret": {
+        "mean": 0.3373313210816408,
+        "low": 0.3339011660995044,
+        "high": 0.34076147606377727,
+        "n": 20
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "equal split": {
+       "regret": {
+        "mean": 0.7288462603657582,
+        "low": 0.7262388028650121,
+        "high": 0.7314537178665043,
+        "n": 20
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "pymc-marketing": {
+       "regret": {
+        "mean": 0.018942761022096192,
+        "low": -0.004810297959281711,
+        "high": 0.04269582000347409,
+        "n": 20
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": {
+        "mean": 0.09936555892963683,
+        "low": 0.08439654471737616,
+        "high": 0.1143345731418975,
+        "n": 20
+       },
+       "mape": {
+        "mean": 0.11254507454754166,
+        "low": 0.09832199806809074,
+        "high": 0.1267681510269926,
+        "n": 20
+       },
+       "coverage": {
+        "roi_coverage": {
+         "80": 0.7,
+         "90": 0.8166666666666667,
+         "95": 0.9166666666666666
+        },
+        "mroi_coverage": {
+         "80": 0.7166666666666666,
+         "90": 0.8500000000000002,
+         "95": 0.9333333333333333
+        },
+        "worlds": 20
+       },
+       "shares": {
+        "pull": 0.0049181509126333175,
+        "miss": 0.029575015407779775,
+        "channels": 60
+       }
+      }
+     }
+    },
+    {
+     "k": 4,
+     "environment": "pooled",
+     "worlds": 20,
+     "look": 40,
+     "arms": {
+      "status quo": {
+       "regret": {
+        "mean": 0.24377344901958145,
+        "low": 0.20461187319564977,
+        "high": 0.2829350248435131,
+        "n": 40
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "equal split": {
+       "regret": {
+        "mean": 0.45115280584812556,
+        "low": 0.3516397340936104,
+        "high": 0.5506658776026407,
+        "n": 40
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "pymc-marketing": {
+       "regret": {
+        "mean": 0.029752391365970188,
+        "low": 0.01268542992801966,
+        "high": 0.046819352803920716,
+        "n": 40
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": {
+        "mean": 0.09918304789266019,
+        "low": 0.08891369870185437,
+        "high": 0.10945239708346602,
+        "n": 40
+       },
+       "mape": {
+        "mean": 0.1129476975254522,
+        "low": 0.10325314753523865,
+        "high": 0.12264224751566574,
+        "n": 40
+       },
+       "coverage": {
+        "roi_coverage": {
+         "80": 0.7333333333333332,
+         "90": 0.85,
+         "95": 0.925
+        },
+        "mroi_coverage": {
+         "80": 0.7749999999999999,
+         "90": 0.875,
+         "95": 0.95
+        },
+        "worlds": 40
+       },
+       "shares": {
+        "pull": -0.01622949824959049,
+        "miss": 0.030757842433893793,
+        "channels": 120
+       }
+      }
+     }
+    }
+   ]
+  },
+  {
+   "family": 13,
+   "name": "PyMC-Marketing's home ground",
+   "kind": "pilot",
+   "preregistration": null,
+   "labels": [
+    "The world's media are PyMC-Marketing's default class, by the bench's generator: each channel's spend over its largest week through PyMC-Marketing 1.2.0's normalised geometric adstock and its logistic saturation.",
+    "Alpha and lam are drawn from PyMC-Marketing's default priors, Beta(1, 3) and Gamma(3, 1), not from Track M v2's ranges; beta is not drawn from its prior but gives each channel the return over the history of the Track M v2 world beneath.",
+    "Every arm is told the kernel's length, Track M v2's.",
+    "Beneath the media each world is a Track M v2 drawn world: its base, its spend, its measurement layer and its quarter.",
+    "A geo test is two universes at the market's scale, so its gap holds no noise between regions beyond the noise drawn."
+   ],
+   "cells": [
+    {
+     "k": 4,
+     "environment": "priors",
+     "worlds": 100,
+     "look": 100,
+     "arms": {
+      "status quo": {
+       "regret": {
+        "mean": 0.2038081256709517,
+        "low": 0.17902070629071676,
+        "high": 0.22859554505118662,
+        "n": 100
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "equal split": {
+       "regret": {
+        "mean": 0.13795285955222275,
+        "low": 0.1099948749759239,
+        "high": 0.1659108441285216,
+        "n": 100
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "pymc-marketing": {
+       "regret": {
+        "mean": 0.09074394066998588,
+        "low": 0.06509311581153464,
+        "high": 0.11639476552843712,
+        "n": 100
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": {
+        "mean": 0.10134187866552478,
+        "low": 0.09453684835423322,
+        "high": 0.10814690897681635,
+        "n": 100
+       },
+       "mape": {
+        "mean": 0.11429494402232572,
+        "low": 0.107258497809488,
+        "high": 0.12133139023516344,
+        "n": 100
+       },
+       "coverage": {
+        "roi_coverage": {
+         "80": 0.7400000000000001,
+         "90": 0.82,
+         "95": 0.8933333333333333
+        },
+        "mroi_coverage": {
+         "80": 0.7400000000000001,
+         "90": 0.8333333333333335,
+         "95": 0.9033333333333333
+        },
+        "worlds": 100
+       },
+       "shares": {
+        "pull": -0.057239591924025036,
+        "miss": 0.03448121164758204,
+        "channels": 300
+       }
+      }
+     }
+    },
+    {
+     "k": 4,
+     "environment": "pooled",
+     "worlds": 100,
+     "look": 100,
+     "arms": {
+      "status quo": {
+       "regret": {
+        "mean": 0.2038081256709517,
+        "low": 0.17902070629071676,
+        "high": 0.22859554505118662,
+        "n": 100
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "equal split": {
+       "regret": {
+        "mean": 0.13795285955222275,
+        "low": 0.1099948749759239,
+        "high": 0.1659108441285216,
+        "n": 100
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "pymc-marketing": {
+       "regret": {
+        "mean": 0.09074394066998588,
+        "low": 0.06509311581153464,
+        "high": 0.11639476552843712,
+        "n": 100
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": {
+        "mean": 0.10134187866552478,
+        "low": 0.09453684835423322,
+        "high": 0.10814690897681635,
+        "n": 100
+       },
+       "mape": {
+        "mean": 0.11429494402232572,
+        "low": 0.107258497809488,
+        "high": 0.12133139023516344,
+        "n": 100
+       },
+       "coverage": {
+        "roi_coverage": {
+         "80": 0.7400000000000001,
+         "90": 0.82,
+         "95": 0.8933333333333333
+        },
+        "mroi_coverage": {
+         "80": 0.7400000000000001,
+         "90": 0.8333333333333335,
+         "95": 0.9033333333333333
+        },
+        "worlds": 100
+       },
+       "shares": {
+        "pull": -0.057239591924025036,
+        "miss": 0.03448121164758204,
+        "channels": 300
+       }
+      }
+     }
+    }
+   ]
+  },
+  {
+   "family": 8,
+   "name": "geo",
+   "kind": "pilot",
+   "preregistration": null,
+   "labels": [
+    "Each geo's effect on a channel is drawn from the hierarchy chc's geo model takes: log-normal about the channel's national median, independent across geos and channels.",
+    "A geo's lift is its population times a curve of its spend per head.",
+    "Every arm is told the kernel's length.",
+    "National media is allotted to the geos by population, so outside its tests every geo spends the same on it a head."
+   ],
+   "cells": [
+    {
+     "k": 4,
+     "environment": "policy-0",
+     "worlds": 9,
+     "look": 9,
+     "arms": {
+      "status quo": {
+       "regret": {
+        "mean": 0.11194571287466773,
+        "low": 0.0747424009876188,
+        "high": 0.14914902476171665,
+        "n": 9
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "equal split": {
+       "regret": {
+        "mean": 0.0672840546574247,
+        "low": 0.03915455881484334,
+        "high": 0.09541355050000605,
+        "n": 9
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "pymc-marketing": {
+       "regret": {
+        "mean": 0.025807620741042675,
+        "low": 0.01774812672246357,
+        "high": 0.03386711475962178,
+        "n": 9
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": {
+        "mean": 0.006246136332873515,
+        "low": 0.004991304793905091,
+        "high": 0.00750096787184194,
+        "n": 9
+       },
+       "mape": {
+        "mean": 0.008012940531539246,
+        "low": 0.006555981963564042,
+        "high": 0.009469899099514451,
+        "n": 9
+       },
+       "coverage": null,
+       "shares": null
+      }
+     }
+    },
+    {
+     "k": 4,
+     "environment": "policy-0.5",
+     "worlds": 9,
+     "look": 9,
+     "arms": {
+      "status quo": {
+       "regret": {
+        "mean": 0.0823510968479137,
+        "low": 0.06545487887029017,
+        "high": 0.09924731482553723,
+        "n": 9
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "equal split": {
+       "regret": {
+        "mean": 0.049390127853406955,
+        "low": 0.03209259433880461,
+        "high": 0.0666876613680093,
+        "n": 9
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "pymc-marketing": {
+       "regret": {
+        "mean": 0.025790735891250114,
+        "low": 0.021384041341950565,
+        "high": 0.030197430440549664,
+        "n": 9
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": {
+        "mean": 0.007589080605893568,
+        "low": 0.005981123429335426,
+        "high": 0.00919703778245171,
+        "n": 9
+       },
+       "mape": {
+        "mean": 0.009836747846291448,
+        "low": 0.007832187204162367,
+        "high": 0.01184130848842053,
+        "n": 9
+       },
+       "coverage": null,
+       "shares": null
+      }
+     }
+    },
+    {
+     "k": 4,
+     "environment": "pooled",
+     "worlds": 9,
+     "look": 18,
+     "arms": {
+      "status quo": {
+       "regret": {
+        "mean": 0.09714840486129071,
+        "low": 0.07749712630900725,
+        "high": 0.11679968341357418,
+        "n": 18
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "equal split": {
+       "regret": {
+        "mean": 0.05833709125541583,
+        "low": 0.04298324720399238,
+        "high": 0.07369093530683928,
+        "n": 18
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "pymc-marketing": {
+       "regret": {
+        "mean": 0.025799178316146396,
+        "low": 0.021722602326515093,
+        "high": 0.0298757543057777,
+        "n": 18
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": {
+        "mean": 0.006917608469383542,
+        "low": 0.005949393314132699,
+        "high": 0.007885823624634384,
+        "n": 18
+       },
+       "mape": {
+        "mean": 0.008924844188915346,
+        "low": 0.007730158131781463,
+        "high": 0.01011953024604923,
+        "n": 18
+       },
+       "coverage": null,
+       "shares": null
+      }
+     }
+    }
+   ]
+  },
+  {
+   "family": 10,
+   "name": "few geos",
+   "kind": "pilot",
+   "preregistration": null,
+   "labels": [
+    "Each geo's effect on a channel is drawn from the hierarchy chc's geo model takes: log-normal about the channel's national median, independent across geos and channels.",
+    "A geo's lift is its population times a curve of its spend per head.",
+    "Every arm is told the kernel's length.",
+    "National media is allotted to the geos by population, so outside its tests every geo spends the same on it a head."
+   ],
+   "cells": [
+    {
+     "k": 4,
+     "environment": "geos-3",
+     "worlds": 9,
+     "look": 9,
+     "arms": {
+      "status quo": {
+       "regret": {
+        "mean": 0.08861902900699263,
+        "low": 0.05449629201873537,
+        "high": 0.12274176599524989,
+        "n": 9
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "equal split": {
+       "regret": {
+        "mean": 0.06494743390855556,
+        "low": 0.044797654278387646,
+        "high": 0.08509721353872349,
+        "n": 9
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "pymc-marketing": {
+       "regret": {
+        "mean": 0.02998775701007376,
+        "low": 0.00075256244120981,
+        "high": 0.05922295157893771,
+        "n": 9
+       },
+       "failed": 1,
+       "moved": 0,
+       "crps": {
+        "mean": 0.01030137017622743,
+        "low": 0.005751825652081899,
+        "high": 0.014850914700372959,
+        "n": 8
+       },
+       "mape": {
+        "mean": 0.013763763510674931,
+        "low": 0.007603703664131831,
+        "high": 0.019923823357218033,
+        "n": 8
+       },
+       "coverage": null,
+       "shares": null
+      }
+     }
+    },
+    {
+     "k": 4,
+     "environment": "geos-8",
+     "worlds": 8,
+     "look": 8,
+     "arms": {
+      "status quo": {
+       "regret": {
+        "mean": 0.09393881704730658,
+        "low": 0.06736757676946523,
+        "high": 0.12051005732514794,
+        "n": 8
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "equal split": {
+       "regret": {
+        "mean": 0.06523012527269476,
+        "low": 0.04198311351343306,
+        "high": 0.08847713703195645,
+        "n": 8
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "pymc-marketing": {
+       "regret": {
+        "mean": 0.02201474016904049,
+        "low": 0.011737820774911397,
+        "high": 0.03229165956316959,
+        "n": 8
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": {
+        "mean": 0.0065803845884073045,
+        "low": 0.0049216497634020995,
+        "high": 0.008239119413412509,
+        "n": 8
+       },
+       "mape": {
+        "mean": 0.008444166059746426,
+        "low": 0.006557345812901936,
+        "high": 0.010330986306590916,
+        "n": 8
+       },
+       "coverage": null,
+       "shares": null
+      }
+     }
+    },
+    {
+     "k": 4,
+     "environment": "geos-50",
+     "worlds": 8,
+     "look": 8,
+     "arms": {
+      "status quo": {
+       "regret": {
+        "mean": 0.0796503945821741,
+        "low": 0.06725327027893684,
+        "high": 0.09204751888541136,
+        "n": 8
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "equal split": {
+       "regret": {
+        "mean": 0.05327458549929658,
+        "low": 0.03710141132992717,
+        "high": 0.069447759668666,
+        "n": 8
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "pymc-marketing": {
+       "regret": {
+        "mean": 0.06311310677077885,
+        "low": 0.04989696985541678,
+        "high": 0.07632924368614091,
+        "n": 8
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": {
+        "mean": 0.010605794661757286,
+        "low": 0.008519040719204073,
+        "high": 0.012692548604310499,
+        "n": 8
+       },
+       "mape": {
+        "mean": 0.013538137005356377,
+        "low": 0.010752643236799822,
+        "high": 0.016323630773912932,
+        "n": 8
+       },
+       "coverage": null,
+       "shares": null
+      }
+     }
+    },
+    {
+     "k": 4,
+     "environment": "pooled",
+     "worlds": 8,
+     "look": 24,
+     "arms": {
+      "status quo": {
+       "regret": {
+        "mean": 0.0889811168572261,
+        "low": 0.0753956488940023,
+        "high": 0.10256658482044989,
+        "n": 24
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "equal split": {
+       "regret": {
+        "mean": 0.06045161846632929,
+        "low": 0.05008824943182312,
+        "high": 0.07081498750083547,
+        "n": 24
+       },
+       "failed": 0,
+       "moved": 0,
+       "crps": null,
+       "mape": null,
+       "coverage": null,
+       "shares": null
+      },
+      "pymc-marketing": {
+       "regret": {
+        "mean": 0.0385367697164471,
+        "low": 0.025507859368943016,
+        "high": 0.05156568006395119,
+        "n": 24
+       },
+       "failed": 1,
+       "moved": 0,
+       "crps": {
+        "mean": 0.008978843687033599,
+        "low": 0.007278289489519083,
+        "high": 0.010679397884548116,
+        "n": 23
+       },
+       "mape": {
+        "mean": 0.011678598398027843,
+        "low": 0.009406673376129144,
+        "high": 0.013950523419926543,
+        "n": 23
+       },
+       "coverage": null,
+       "shares": null
+      }
+     }
+    }
+   ]
+  }
+ ],
+ "worlds": [
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 900,
+   "index": 0,
+   "digest": "86b5ccc0c53ff983",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0036527970117977,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.12432630404000801,
+    "equal split": 0.13982744115129225,
+    "pymc-marketing": 0.11511500674967609
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 901,
+   "index": 1,
+   "digest": "299f1373d6308dc6",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0044399589417694,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.041646040033063055,
+    "equal split": 0.02608342514532007,
+    "pymc-marketing": 0.09561661024571792
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 902,
+   "index": 2,
+   "digest": "66408e64f91017c3",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.005294714753186,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.012538263211725157,
+    "equal split": 0.011701696175350875,
+    "pymc-marketing": 0.01003960662588786
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 903,
+   "index": 3,
+   "digest": "34434074b9dd5cde",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0043903346713159,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.06289343192103489,
+    "equal split": 0.11771496428040266,
+    "pymc-marketing": 0.05268834417688515
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 904,
+   "index": 4,
+   "digest": "da7a2bd52cff600f",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.003944818229687,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.14251663099472772,
+    "equal split": 0.044566129014456085,
+    "pymc-marketing": 0.011871097045918802
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 905,
+   "index": 5,
+   "digest": "6f6ea96e4b8b8c9d",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.004134085590193,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.04309094107427209,
+    "equal split": 0.026789247343303357,
+    "pymc-marketing": 0.05090126720659745
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 906,
+   "index": 6,
+   "digest": "6b63700d1791c001",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 1,
+   "max_rhat": 1.0052634128998192,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.11365698749058614,
+    "equal split": 0.013234645556675513,
+    "pymc-marketing": 0.02302427970326683
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 907,
+   "index": 7,
+   "digest": "c32d5096c7ef69f6",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0058571629648339,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3648846458495494,
+    "equal split": 0.291324329731305,
+    "pymc-marketing": 0.0012615895699348914
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 908,
+   "index": 8,
+   "digest": "31f65ac7c3b61a5f",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.002702920595019,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.09338010407842359,
+    "equal split": 0.20428330773951558,
+    "pymc-marketing": 0.019406324156719442
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 909,
+   "index": 9,
+   "digest": "997b979ba389a6cf",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 1,
+   "max_rhat": 1.0036423633954343,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.15249627300676227,
+    "equal split": 0.09404694333591437,
+    "pymc-marketing": -2.6102254935889044e-15
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 910,
+   "index": 10,
+   "digest": "5b1c7dc4a9521591",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0026244148385008,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.2667171918103631,
+    "equal split": 0.5636494380593543,
+    "pymc-marketing": 0.0
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 911,
+   "index": 11,
+   "digest": "98d148a57389fa7b",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0038014777375517,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.24057218077343454,
+    "equal split": 0.5355900211243674,
+    "pymc-marketing": 0.1273445508092216
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 912,
+   "index": 12,
+   "digest": "2fd22633ea233e3d",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 1,
+   "max_rhat": 1.0021792512487453,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.12419668983233038,
+    "equal split": 0.19872453907455132,
+    "pymc-marketing": 0.015690155581142305
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 913,
+   "index": 13,
+   "digest": "43d2240037d8f9a6",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0073876989137396,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.2818578072619496,
+    "equal split": 0.6288109512221951,
+    "pymc-marketing": -6.16920913731428e-15
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 914,
+   "index": 14,
+   "digest": "e17d592f95682711",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0033786091708847,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3868153199173416,
+    "equal split": 0.15882745444867147,
+    "pymc-marketing": 0.0
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 915,
+   "index": 15,
+   "digest": "bea338dc517d51ce",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.00303175327832,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.05272942034122923,
+    "equal split": 0.004374215348276979,
+    "pymc-marketing": 0.030063203742125216
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 916,
+   "index": 16,
+   "digest": "af8662543e1be2fc",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.002906536602029,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.012023084201216805,
+    "equal split": 0.053355482329156934,
+    "pymc-marketing": 0.011915510656271812
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 917,
+   "index": 17,
+   "digest": "bfeee081486b5ee2",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0037536408866248,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.1980869075320097,
+    "equal split": 0.10086215468907407,
+    "pymc-marketing": 0.2076100842208634
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 918,
+   "index": 18,
+   "digest": "59503567646c9915",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0033222213179487,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.09142157020883372,
+    "equal split": 0.19729860291888363,
+    "pymc-marketing": 0.012807256609789385
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 919,
+   "index": 19,
+   "digest": "3ace505a28fae859",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0033481945881995,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.19846174557158103,
+    "equal split": 0.05812203792179038,
+    "pymc-marketing": 0.02588554709687426
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 920,
+   "index": 20,
+   "digest": "5dff87d58704fd98",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0035831189519544,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.17932891503974166,
+    "equal split": 0.14985490463039514,
+    "pymc-marketing": 0.0
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 921,
+   "index": 21,
+   "digest": "7ccfac2a82e98f77",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0065239144536315,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.06467529142579316,
+    "equal split": 0.21484257880437363,
+    "pymc-marketing": 0.0022727484718582376
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 922,
+   "index": 22,
+   "digest": "c55435998b78a050",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.002905129349137,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.1651174207938303,
+    "equal split": 0.02277668558590964,
+    "pymc-marketing": 0.010775210020173568
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 923,
+   "index": 23,
+   "digest": "7f353e4d9dfae8f8",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0083849800727966,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.04369239039429299,
+    "equal split": 0.10418387460986553,
+    "pymc-marketing": 0.15841972439035945
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 924,
+   "index": 24,
+   "digest": "1fc94dbf8ee7f96e",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 1,
+   "max_rhat": 1.0032184235357062,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.10182230296817422,
+    "equal split": 0.3266538837770006,
+    "pymc-marketing": 0.008514212984124754
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 925,
+   "index": 25,
+   "digest": "96a07e8b26cf91f3",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0021661074481685,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.05128041097902681,
+    "equal split": 0.17715313398792015,
+    "pymc-marketing": 0.032180662480367134
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 926,
+   "index": 26,
+   "digest": "f6c5a0aeb432764f",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0036395773558473,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3639987383816449,
+    "equal split": 0.5327051924689591,
+    "pymc-marketing": 2.6560711555688176e-15
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 927,
+   "index": 27,
+   "digest": "0daf98addee1a5d6",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0033266124304632,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.1482296912333704,
+    "equal split": 0.017560396369139423,
+    "pymc-marketing": 0.026620913927073074
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 928,
+   "index": 28,
+   "digest": "4165c1b523fcd73e",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0049363454436626,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.18078051289527067,
+    "equal split": 0.34335296891608647,
+    "pymc-marketing": 0.022256111616992348
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 929,
+   "index": 29,
+   "digest": "e77be62622f560db",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.002693347071925,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.22864201594763797,
+    "equal split": 0.032414481055429246,
+    "pymc-marketing": 0.023324392425485275
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 930,
+   "index": 30,
+   "digest": "4eb38cc7ead95090",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0016755309355039,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3245215326066486,
+    "equal split": 0.10496723829536588,
+    "pymc-marketing": 0.007054464642876651
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 931,
+   "index": 31,
+   "digest": "8752b29f3623ef03",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.006239786201769,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.039010188498542694,
+    "equal split": 0.08220341329630904,
+    "pymc-marketing": 8.95987769227137e-05
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 932,
+   "index": 32,
+   "digest": "f894370ae68827e0",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0045359608802886,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.1939374456915097,
+    "equal split": 0.3607916679191376,
+    "pymc-marketing": 0.10720988210419147
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 933,
+   "index": 33,
+   "digest": "574dd424d0bd4464",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0040724738591347,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.07217296907937715,
+    "equal split": 0.2150884088494128,
+    "pymc-marketing": 0.04103444082738577
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 934,
+   "index": 34,
+   "digest": "9ca7b94d75d50278",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0046150124256221,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.2428896444135841,
+    "equal split": 0.45746692412303064,
+    "pymc-marketing": 0.025227892214990996
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 935,
+   "index": 35,
+   "digest": "9520c323c898b2aa",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0036321063429032,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.10839138871835031,
+    "equal split": 0.093152314261774,
+    "pymc-marketing": 0.0035202226728992606
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 936,
+   "index": 36,
+   "digest": "8e20b41a532724d2",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0019478425254658,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.1321746168946444,
+    "equal split": 0.019427199776670578,
+    "pymc-marketing": 0.006253754542790289
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 937,
+   "index": 37,
+   "digest": "dc2084aa8e5daa2d",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0066023888170375,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.12017333996065209,
+    "equal split": 0.09210296252483773,
+    "pymc-marketing": 2.2656543444994118e-15
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 938,
+   "index": 38,
+   "digest": "4eb7700013485e81",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0032586484593329,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.05968153259214177,
+    "equal split": 0.13889685682877348,
+    "pymc-marketing": 0.23121412909875286
+   }
+  },
+  {
+   "family": 0,
+   "environment": "drawn",
+   "seed": 939,
+   "index": 39,
+   "digest": "8e0d1f050e04cc69",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0017212209992,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.1828618544769158,
+    "equal split": 0.2166328857493026,
+    "pymc-marketing": 0.12141439204408848
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 900,
+   "index": 0,
+   "digest": "38d1bc116bf4668f",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0037111445934725,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.31892494743647365,
+    "equal split": 0.7205301011523494,
+    "pymc-marketing": 8.200034309010057e-14
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 901,
+   "index": 1,
+   "digest": "38decc64a78e2171",
+   "tests": 12,
+   "not_fallen": 3,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0027889206894673,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.33931935643432465,
+    "equal split": 0.7305439436262643,
+    "pymc-marketing": 0.021214437268220657
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 902,
+   "index": 2,
+   "digest": "2d1427e133c457ce",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.003121904050024,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.34144102910822943,
+    "equal split": 0.7264892625021705,
+    "pymc-marketing": -1.4121172594219957e-14
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 903,
+   "index": 3,
+   "digest": "3a9108f96bdb3aad",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.003676791829103,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.33787283644823524,
+    "equal split": 0.7252277668282286,
+    "pymc-marketing": 2.6453779058991097e-15
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 904,
+   "index": 4,
+   "digest": "34f35c5aa9391933",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0033945515069276,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3293485101499154,
+    "equal split": 0.7280093091196516,
+    "pymc-marketing": 2.3454926990986624e-14
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 905,
+   "index": 5,
+   "digest": "da874c8f2add3b74",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 1,
+   "max_rhat": 1.0020414057214047,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3332024386707718,
+    "equal split": 0.7209114615823441,
+    "pymc-marketing": -5.176842852477708e-15
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 906,
+   "index": 6,
+   "digest": "d75a529ca6189556",
+   "tests": 12,
+   "not_fallen": 3,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 1,
+   "max_rhat": 1.0019936997884042,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3402490998917229,
+    "equal split": 0.726010253908392,
+    "pymc-marketing": -3.5398027776946545e-15
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 907,
+   "index": 7,
+   "digest": "8caa65ab06a501ea",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0025058918321945,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3359196612733228,
+    "equal split": 0.7315278918273701,
+    "pymc-marketing": 0.20172146370783084
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 908,
+   "index": 8,
+   "digest": "5cf0d9c30f21fd27",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.003208814532811,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3407194550619691,
+    "equal split": 0.7393124845331056,
+    "pymc-marketing": -3.646952731131255e-15
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 909,
+   "index": 9,
+   "digest": "5d9e88f987ba4d63",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0020545335120383,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3269014171586218,
+    "equal split": 0.7266229820635133,
+    "pymc-marketing": -3.480300658118539e-15
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 910,
+   "index": 10,
+   "digest": "2c161a63a7a111e9",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0035556683568814,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3408892808572794,
+    "equal split": 0.7237942794758876,
+    "pymc-marketing": -9.676125555113183e-15
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 911,
+   "index": 11,
+   "digest": "36380d5e7cd23c25",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0028610260441797,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3414754506208859,
+    "equal split": 0.7377777393749677,
+    "pymc-marketing": 0.11551431827586231
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 912,
+   "index": 12,
+   "digest": "7a4ebc60bcb2d787",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 1,
+   "max_rhat": 1.0031341131585294,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.33417141329608574,
+    "equal split": 0.7315152572135561,
+    "pymc-marketing": -8.851364560483093e-16
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 913,
+   "index": 13,
+   "digest": "7d46840c8d233424",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.004803545738682,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3348137858665887,
+    "equal split": 0.726643690939052,
+    "pymc-marketing": 1.7626311820897943e-14
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 914,
+   "index": 14,
+   "digest": "70b8877403cb42a3",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0048114872120655,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3291299945439928,
+    "equal split": 0.7320602296970288,
+    "pymc-marketing": -6.780353379097565e-14
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 915,
+   "index": 15,
+   "digest": "3864218159e83ee7",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0038804330561242,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.34234842841601637,
+    "equal split": 0.7357070084758818,
+    "pymc-marketing": 0.04040500118998693
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 916,
+   "index": 16,
+   "digest": "ff5c074e3bcc3c52",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0027294832542988,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3448690089648173,
+    "equal split": 0.7363136257521199,
+    "pymc-marketing": -6.364712020809819e-15
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 917,
+   "index": 17,
+   "digest": "fbafd4f531ec1cfe",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 1,
+   "max_rhat": 1.0031356020205742,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.34185640761434544,
+    "equal split": 0.7203855843222923,
+    "pymc-marketing": 1.6612934958254614e-14
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 918,
+   "index": 18,
+   "digest": "0834c3cdaa565760",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0035105913360773,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3521515626413582,
+    "equal split": 0.727418707350714,
+    "pymc-marketing": -8.966391316864664e-15
+   }
+  },
+  {
+   "family": 0,
+   "environment": "reference",
+   "seed": 919,
+   "index": 19,
+   "digest": "6edb91a3f961e24a",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 2,
+   "max_rhat": 1.0027929772120194,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.34102233717785924,
+    "equal split": 0.7301236275702735,
+    "pymc-marketing": 4.455064214399597e-15
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460000,
+   "index": 0,
+   "digest": "6d8180bf04e79aae",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0029058502577934,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.24640567023215973,
+    "equal split": 0.12373901292772331,
+    "pymc-marketing": 0.48354967744719474
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460001,
+   "index": 1,
+   "digest": "5c56e0a0da0ade2c",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0041694215583865,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.19834981535420657,
+    "equal split": 0.02546271300093537,
+    "pymc-marketing": 0.007302072526576872
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460002,
+   "index": 2,
+   "digest": "e4367c2d32acac8e",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0030528737925841,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.31223657116988296,
+    "equal split": 0.1171807775272963,
+    "pymc-marketing": 0.03341492083041626
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460003,
+   "index": 3,
+   "digest": "001d01d200f498de",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.004053370649687,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.24809305797935005,
+    "equal split": 0.10929428776717788,
+    "pymc-marketing": 0.45886640152888747
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460004,
+   "index": 4,
+   "digest": "a99b3d4d63881300",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0021433505504627,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.09576133934257511,
+    "equal split": 0.007989753488338596,
+    "pymc-marketing": 0.05252005613684088
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460005,
+   "index": 5,
+   "digest": "a8b855103ed4d1c3",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0037172809724242,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.07281889428631595,
+    "equal split": 0.11427953103419516,
+    "pymc-marketing": 0.00015706935547773953
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460006,
+   "index": 6,
+   "digest": "3dc9a8582af6db1f",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0030408502612995,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.2894818121823908,
+    "equal split": 0.3696482774463506,
+    "pymc-marketing": 0.09672473611140045
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460007,
+   "index": 7,
+   "digest": "ccbc8ddc215fcaa8",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.003053873492723,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.33367480743401984,
+    "equal split": 0.035032548111877275,
+    "pymc-marketing": 0.0011804667402962583
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460008,
+   "index": 8,
+   "digest": "b667fc69c37d0e6a",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0048981142608513,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.23147125811816946,
+    "equal split": 0.36303109625953267,
+    "pymc-marketing": 0.05913157619198974
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460009,
+   "index": 9,
+   "digest": "cfc4844418ddfdee",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0032078168351728,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.1808510906620301,
+    "equal split": 0.14614389011522402,
+    "pymc-marketing": 0.08860276429156541
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460010,
+   "index": 10,
+   "digest": "c7dcdf765e50f29b",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.005158926415992,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.198616636891813,
+    "equal split": 0.07526440674927892,
+    "pymc-marketing": 0.10419953635152461
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460011,
+   "index": 11,
+   "digest": "cf71bd3a1cfdd687",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0035631761859505,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.29130798827353777,
+    "equal split": 0.07461033110614067,
+    "pymc-marketing": 0.005566848861164413
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460012,
+   "index": 12,
+   "digest": "2aca294e250b517b",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0052168484562205,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.2168305670231774,
+    "equal split": 0.07625017231003514,
+    "pymc-marketing": 0.02919792409053158
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460013,
+   "index": 13,
+   "digest": "ab70fe6043e3acff",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 1,
+   "max_rhat": 1.004942133842937,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.14725162764695188,
+    "equal split": 0.3693910772597504,
+    "pymc-marketing": -1.0665444413468236e-13
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460014,
+   "index": 14,
+   "digest": "cedb6b04a045d78c",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0039721498995597,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.0772867695151113,
+    "equal split": 0.16447509709374417,
+    "pymc-marketing": 0.10978547351454199
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460015,
+   "index": 15,
+   "digest": "43ebb1804aa61818",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 2,
+   "max_rhat": 1.003259266330688,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.08083902683574322,
+    "equal split": 0.007391351759650013,
+    "pymc-marketing": 0.04403381112794542
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460016,
+   "index": 16,
+   "digest": "d2182fb0a0b17ec2",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0026512660311266,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.42272356410023193,
+    "equal split": 0.03160493043093244,
+    "pymc-marketing": 0.06377474157758105
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460017,
+   "index": 17,
+   "digest": "c76f0e7e8f626882",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0028940590136026,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.159814756575873,
+    "equal split": 0.040176966927391436,
+    "pymc-marketing": 8.819317645028226e-16
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460018,
+   "index": 18,
+   "digest": "af2c14def7910a98",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0048487024609911,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.031187731106667563,
+    "equal split": 0.14677789012106418,
+    "pymc-marketing": 0.04066006891833392
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460019,
+   "index": 19,
+   "digest": "462cc15c37c9f460",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.003989827032013,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.17656991442452732,
+    "equal split": 0.21857177377333087,
+    "pymc-marketing": 0.14042156585661658
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460020,
+   "index": 20,
+   "digest": "759550cba958dafc",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 4,
+   "max_rhat": 1.004497675280088,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3007641226961173,
+    "equal split": 0.10192207922459114,
+    "pymc-marketing": 0.0010100082666139197
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460021,
+   "index": 21,
+   "digest": "b8086c135c27a1d1",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0042839312506426,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.025512088668127934,
+    "equal split": 0.11449753724006699,
+    "pymc-marketing": 0.10361917352553737
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460022,
+   "index": 22,
+   "digest": "a217081690bee2a1",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0054345192799525,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.08741415727888785,
+    "equal split": 0.19014418844214323,
+    "pymc-marketing": -8.588105637878848e-16
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460023,
+   "index": 23,
+   "digest": "1c52c0794326fd47",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0022840850935006,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.14140987807676103,
+    "equal split": 0.005833165201765081,
+    "pymc-marketing": 0.04940977035496222
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460024,
+   "index": 24,
+   "digest": "6f80af6d0ac799f0",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.003036603249183,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.255604552981369,
+    "equal split": 0.4323372721134502,
+    "pymc-marketing": 0.12758911815370683
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460025,
+   "index": 25,
+   "digest": "e11e85f2805d65cd",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0032689363060663,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.31153943943692164,
+    "equal split": 0.1914176331753118,
+    "pymc-marketing": 4.377206842961339e-16
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460026,
+   "index": 26,
+   "digest": "3d6f59c233938d4f",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0021848562430993,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.229068618949993,
+    "equal split": 0.10045112204292302,
+    "pymc-marketing": 0.05575719385619076
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460027,
+   "index": 27,
+   "digest": "73bd3efc94823c47",
+   "tests": 12,
+   "not_fallen": 3,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0049350174110259,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.022276471602710533,
+    "equal split": 0.1619877188155441,
+    "pymc-marketing": 0.06044608374239363
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460028,
+   "index": 28,
+   "digest": "61887be1c285db85",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0029485598548753,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.09134185574926637,
+    "equal split": 0.17148167282843976,
+    "pymc-marketing": 2.61893845674884e-15
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460029,
+   "index": 29,
+   "digest": "1c5fa827e9cb1286",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0035637577657675,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.14716556890228102,
+    "equal split": 0.1275082287712001,
+    "pymc-marketing": 0.18274244701358125
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460030,
+   "index": 30,
+   "digest": "1901673ba781c987",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0038960039685423,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.534418861617957,
+    "equal split": 0.45435862992696013,
+    "pymc-marketing": 0.0023093111007482263
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460031,
+   "index": 31,
+   "digest": "040cbf31b11a9682",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0033185225826295,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.1516300391448441,
+    "equal split": 0.047381157763913155,
+    "pymc-marketing": 0.008643501334373
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460032,
+   "index": 32,
+   "digest": "716ed2e5c85341c9",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0044381622904919,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.17720455734450558,
+    "equal split": 0.19816797890308815,
+    "pymc-marketing": 0.20658937968014637
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460033,
+   "index": 33,
+   "digest": "02937b79a1d5d5ce",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0018999421199042,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.27863950097282375,
+    "equal split": 0.08432969837344846,
+    "pymc-marketing": 0.10996245444437165
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460034,
+   "index": 34,
+   "digest": "92bd074c22449a00",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 2,
+   "max_rhat": 1.0027907655742636,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.06605628774623577,
+    "equal split": 0.043919029898334745,
+    "pymc-marketing": 0.021675708665353385
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460035,
+   "index": 35,
+   "digest": "6b46c4f32a3cc078",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0046185382017148,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.053990218055897946,
+    "equal split": 0.13732931783275423,
+    "pymc-marketing": 0.0022748233593023527
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460036,
+   "index": 36,
+   "digest": "8568ec35aaaa5c08",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0047643946865068,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.17179343092560803,
+    "equal split": 0.028099010230921196,
+    "pymc-marketing": 0.20925960032280194
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460037,
+   "index": 37,
+   "digest": "def0d179fbe28643",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0037382281115732,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.36214294462072766,
+    "equal split": 0.09432008004889747,
+    "pymc-marketing": 0.00334761760790427
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460038,
+   "index": 38,
+   "digest": "5f3feefc284e344a",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0020178555054662,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.007624704308715866,
+    "equal split": 0.042290308165102354,
+    "pymc-marketing": 0.021936401483701327
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460039,
+   "index": 39,
+   "digest": "334c415f4200e57a",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.002689146070436,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.033091593397525536,
+    "equal split": 0.10613509357244877,
+    "pymc-marketing": 0.21546193259285132
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460040,
+   "index": 40,
+   "digest": "a6e1baba520b39f0",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0029879746323664,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.19704150101448933,
+    "equal split": 0.03536379901040955,
+    "pymc-marketing": 4.508420842236193e-16
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460041,
+   "index": 41,
+   "digest": "9fabfeecd7c77ad2",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0027699355659865,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.33659604337085897,
+    "equal split": 0.03820794687465932,
+    "pymc-marketing": 0.04343763900920348
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460042,
+   "index": 42,
+   "digest": "8290e0d86cdbb011",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0030229809687206,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.0067810572506031164,
+    "equal split": 0.06601928543930236,
+    "pymc-marketing": 0.21886412277583708
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460043,
+   "index": 43,
+   "digest": "536eabc6b69ab695",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0042919413557507,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.0016668587033128537,
+    "equal split": 0.09285286512114817,
+    "pymc-marketing": 0.18165321084053954
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460044,
+   "index": 44,
+   "digest": "d7fa35ec5f0c69da",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0029758618707354,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.15150558344350445,
+    "equal split": 0.025132901663073446,
+    "pymc-marketing": 0.230173769154508
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460045,
+   "index": 45,
+   "digest": "b70c4f79c33847bb",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.002107025137598,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.0004977153985008301,
+    "equal split": 0.015749374560138682,
+    "pymc-marketing": 0.021525793690456718
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460046,
+   "index": 46,
+   "digest": "b6828b26786923f9",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.003080161875639,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.23936743790806764,
+    "equal split": 0.043195695541578934,
+    "pymc-marketing": 0.0007991893481127453
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460047,
+   "index": 47,
+   "digest": "7cc3aa9c6b42b9cf",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0039724354983823,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3053590741291538,
+    "equal split": 0.056442175955286555,
+    "pymc-marketing": 1.2043665196222538e-06
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460048,
+   "index": 48,
+   "digest": "a64dd5b3f4935aa3",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0026593680696243,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.004199296131910811,
+    "equal split": 0.05106811301878456,
+    "pymc-marketing": 0.05375471509383405
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460049,
+   "index": 49,
+   "digest": "d1d6bb921dd13fb9",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0051477208269468,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3379029001644469,
+    "equal split": 0.236025026487664,
+    "pymc-marketing": 0.002784216130155841
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460050,
+   "index": 50,
+   "digest": "34aa5cd8f2311647",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 1,
+   "max_rhat": 1.0030272110975773,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.029986662255140527,
+    "equal split": 0.32360139163321405,
+    "pymc-marketing": 0.07146829393566922
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460051,
+   "index": 51,
+   "digest": "1b1ff5e94249f0c6",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.004354148656163,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.1911307887574437,
+    "equal split": 0.014934295651811098,
+    "pymc-marketing": 0.008022660268508744
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460052,
+   "index": 52,
+   "digest": "41ec7089591c8ae5",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0030782780010712,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.16718829614490827,
+    "equal split": 0.340021848177868,
+    "pymc-marketing": -5.07395291219092e-14
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460053,
+   "index": 53,
+   "digest": "f787f19cfe3cf5fb",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0032646899473687,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.22276434907155754,
+    "equal split": 0.2594647207849594,
+    "pymc-marketing": 0.002445417781323879
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460054,
+   "index": 54,
+   "digest": "cd261aa9502c5030",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.003937473058163,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.33223024491891584,
+    "equal split": 0.13557096386512452,
+    "pymc-marketing": 0.10014986695797304
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460055,
+   "index": 55,
+   "digest": "a135b2d8e8c095c3",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0038315300250642,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.5320905067729563,
+    "equal split": 0.8697461132857394,
+    "pymc-marketing": -1.152654446458009e-14
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460056,
+   "index": 56,
+   "digest": "3b7db8afc0339224",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 1,
+   "max_rhat": 1.0044643259129127,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.09161960480775931,
+    "equal split": 0.039025337034739545,
+    "pymc-marketing": 0.07021785732855898
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460057,
+   "index": 57,
+   "digest": "e3c012a2e7d27e34",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0049037322751715,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.21589206866284305,
+    "equal split": 0.03203123040869164,
+    "pymc-marketing": 0.8215412605921825
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460058,
+   "index": 58,
+   "digest": "e3127a2436e7c2e7",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 1,
+   "max_rhat": 1.0036077354090562,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.17841900820169487,
+    "equal split": 0.32005747131923623,
+    "pymc-marketing": 0.07142162994745137
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460059,
+   "index": 59,
+   "digest": "34a43ccc68086b97",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0038814933398934,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.12477324566190484,
+    "equal split": 0.0014609848337412737,
+    "pymc-marketing": 0.2659955461867336
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460060,
+   "index": 60,
+   "digest": "caece7f4ffd5ad02",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0031457048538852,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.32816720171658503,
+    "equal split": 0.251637422493916,
+    "pymc-marketing": 0.0094832732452567
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460061,
+   "index": 61,
+   "digest": "209147729e200c0d",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.004228536154908,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.13395551563870753,
+    "equal split": 0.013420934812379133,
+    "pymc-marketing": 0.35938733484892965
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460062,
+   "index": 62,
+   "digest": "c64fd7431f97618c",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0032735755184439,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.4335224699134462,
+    "equal split": 0.2108492519287903,
+    "pymc-marketing": -4.3908113711221493e-16
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460063,
+   "index": 63,
+   "digest": "6da6491301e24fbe",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0052065633360696,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3900502715157144,
+    "equal split": 0.5200313488561424,
+    "pymc-marketing": 0.2752769669387849
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460064,
+   "index": 64,
+   "digest": "443d90d6e8ec1103",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0032559023740268,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.21721228498334044,
+    "equal split": 0.38591376791241516,
+    "pymc-marketing": 0.03344548002775757
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460065,
+   "index": 65,
+   "digest": "555790002d86bee7",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0016154155979506,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.23682594382501895,
+    "equal split": 0.015443269102696644,
+    "pymc-marketing": 0.23269605185831366
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460066,
+   "index": 66,
+   "digest": "32983ce7644137c2",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0040681819239878,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.23633518287349603,
+    "equal split": 0.049154018907668275,
+    "pymc-marketing": 0.022558797649866097
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460067,
+   "index": 67,
+   "digest": "a2802d4f6329fd13",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0023204900457856,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.06661389798950293,
+    "equal split": 0.24482533316077826,
+    "pymc-marketing": 1.8890454002100275e-05
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460068,
+   "index": 68,
+   "digest": "8ca3d73239d2e16e",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0016821943536067,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.17270961397803117,
+    "equal split": 0.060413657930599045,
+    "pymc-marketing": 0.016520424794705692
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460069,
+   "index": 69,
+   "digest": "976c34c0c2dac7bf",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 2,
+   "max_rhat": 1.0055800720541677,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3230201878891611,
+    "equal split": 0.038868819832668315,
+    "pymc-marketing": 0.04451623100722901
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460070,
+   "index": 70,
+   "digest": "49482f7476e62f12",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0026979407809267,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.336166381347343,
+    "equal split": 0.08148887888289444,
+    "pymc-marketing": 0.0785272530948991
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460071,
+   "index": 71,
+   "digest": "54f47da3d3d38a26",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0029897947828992,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.0012941938688874933,
+    "equal split": 0.046053131452517625,
+    "pymc-marketing": 0.015408064888728807
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460072,
+   "index": 72,
+   "digest": "b304314b921e1647",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0061802428249373,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.287901000058109,
+    "equal split": 0.020289212515785797,
+    "pymc-marketing": 0.04971797754794822
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460073,
+   "index": 73,
+   "digest": "43b0d231d86002fc",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0038554005884166,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.2493040637298527,
+    "equal split": 0.028787301475169984,
+    "pymc-marketing": 0.0909459375644316
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460074,
+   "index": 74,
+   "digest": "411224779b90655b",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0037113561252111,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.2017200896413557,
+    "equal split": 0.2470467001349438,
+    "pymc-marketing": 0.2187449459102448
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460075,
+   "index": 75,
+   "digest": "be41d4031899938a",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0030877029622927,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.23941424654203755,
+    "equal split": 0.09109732975027901,
+    "pymc-marketing": 0.07912259003791688
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460076,
+   "index": 76,
+   "digest": "2245c45445695794",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0030705208456345,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.2460680641032816,
+    "equal split": 0.04833579686787175,
+    "pymc-marketing": 0.0015523638406264892
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460077,
+   "index": 77,
+   "digest": "fd03c2327ea36976",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.003388092707455,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.4317165477637938,
+    "equal split": 0.33930418028568904,
+    "pymc-marketing": 0.002750129589055451
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460078,
+   "index": 78,
+   "digest": "4245d972dcffddf6",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0050703139676391,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3298539782018553,
+    "equal split": 0.08276506612832135,
+    "pymc-marketing": 0.023831959097092036
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460079,
+   "index": 79,
+   "digest": "171f0c05bb047c88",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0021778974308904,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.2587184752865562,
+    "equal split": 0.22089441015458164,
+    "pymc-marketing": 0.192108242884663
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460080,
+   "index": 80,
+   "digest": "e2d5c2d58c76ff17",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0027774783415195,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.2602156707613441,
+    "equal split": 0.03215819812945199,
+    "pymc-marketing": 0.0006651359299739715
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460081,
+   "index": 81,
+   "digest": "db3df9c9f201b82a",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0019432071394803,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.14125373541534175,
+    "equal split": 0.08101169638485416,
+    "pymc-marketing": 0.10036183382229118
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460082,
+   "index": 82,
+   "digest": "b9dad03af49f9341",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.003390938976556,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.2327080677205647,
+    "equal split": 0.1062714424167717,
+    "pymc-marketing": 2.6779637492037123e-15
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460083,
+   "index": 83,
+   "digest": "4cb09f9446f2be94",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.003514974251805,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.22257647166963593,
+    "equal split": 0.01629200893140674,
+    "pymc-marketing": 0.3779582820685429
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460084,
+   "index": 84,
+   "digest": "ca4ec4c9a74e311f",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0028566235802057,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3656378032878019,
+    "equal split": 0.19061887420071225,
+    "pymc-marketing": 0.31927789208008556
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460085,
+   "index": 85,
+   "digest": "9937337bc8c5cb5c",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0016650511351766,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.17825190091286414,
+    "equal split": 0.01987697434685132,
+    "pymc-marketing": 0.031219390657036435
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460086,
+   "index": 86,
+   "digest": "366f8030545c0a0b",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0081851133254653,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.275940671119694,
+    "equal split": 0.1942010112070937,
+    "pymc-marketing": -1.3128769731462598e-15
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460087,
+   "index": 87,
+   "digest": "011bafdebaf10a2f",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0033442690335654,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.35212196965636283,
+    "equal split": 0.06479536315345537,
+    "pymc-marketing": 0.30812955379719115
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460088,
+   "index": 88,
+   "digest": "f50a54a4962c759b",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.003554499752408,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.2134046676842212,
+    "equal split": 0.07991062322668474,
+    "pymc-marketing": 0.022364495719345373
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460089,
+   "index": 89,
+   "digest": "156df55eed3e89d5",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0048588551255273,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.3863966066668956,
+    "equal split": 0.3740592982525887,
+    "pymc-marketing": 0.001415687426922931
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460090,
+   "index": 90,
+   "digest": "9bfd3f20aee5ce4b",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0046969313620637,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.28701413961755884,
+    "equal split": 0.4070127309796849,
+    "pymc-marketing": 0.16764397567235
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460091,
+   "index": 91,
+   "digest": "996a7048ae44b178",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 2,
+   "max_rhat": 1.0036673103394862,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.041545991851159224,
+    "equal split": 0.04147565212335524,
+    "pymc-marketing": 9.847241132317797e-05
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460092,
+   "index": 92,
+   "digest": "63ffc909f91d3ea1",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0042562261217802,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.030067207622248564,
+    "equal split": 0.08611395103135049,
+    "pymc-marketing": 0.037856130492050936
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460093,
+   "index": 93,
+   "digest": "b7a24273497557b3",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0036166840823826,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.4080414393372313,
+    "equal split": 0.055083275737155976,
+    "pymc-marketing": 0.040385976636051056
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460094,
+   "index": 94,
+   "digest": "30b37c2434792e28",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.002905497099718,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.04484093448507264,
+    "equal split": 0.08003610877252958,
+    "pymc-marketing": 0.002930079910544318
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460095,
+   "index": 95,
+   "digest": "9f047db13539883b",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0056595564768518,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.30102384406766536,
+    "equal split": 0.12902771826755158,
+    "pymc-marketing": 0.040566973596049424
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460096,
+   "index": 96,
+   "digest": "a0d78a80f0ee6916",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0020545413723416,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.2193338107730167,
+    "equal split": 0.11249443575966445,
+    "pymc-marketing": 0.14841631431115182
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460097,
+   "index": 97,
+   "digest": "091633f37fedb8f4",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0056995191440772,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.07329619408007312,
+    "equal split": 0.22758875457774708,
+    "pymc-marketing": 0.12283782617455442
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460098,
+   "index": 98,
+   "digest": "5bef8b961d6acf6c",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0030901415216686,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.006517836788794285,
+    "equal split": 0.04058152025117879,
+    "pymc-marketing": 0.048889250675983986
+   }
+  },
+  {
+   "family": 13,
+   "environment": "priors",
+   "seed": 460099,
+   "index": 99,
+   "digest": "6952e5b084e160e6",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 12,
+   "lift_dropped": 0,
+   "lift_tests": null,
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0034965575697394,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.09277995830956363,
+    "equal split": 0.013858136437635556,
+    "pymc-marketing": 0.19138324996585657
+   }
+  },
+  {
+   "family": 8,
+   "environment": "policy-0",
+   "seed": 360000,
+   "index": 0,
+   "digest": "753096a0687361f8",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 60,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0060734685893802,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.1775584405600383,
+    "equal split": 0.11316692742788192,
+    "pymc-marketing": 0.023974642340273505
+   }
+  },
+  {
+   "family": 8,
+   "environment": "policy-0",
+   "seed": 360001,
+   "index": 1,
+   "digest": "ba9071bd9f72e083",
+   "tests": 12,
+   "not_fallen": 3,
+   "lift_rows": 60,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 40,
+   "max_rhat": 1.0062282797804674,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.07896743338287114,
+    "equal split": 0.0798622082331238,
+    "pymc-marketing": 0.022905291719246823
+   }
+  },
+  {
+   "family": 8,
+   "environment": "policy-0",
+   "seed": 360002,
+   "index": 2,
+   "digest": "6018bb8d15178e65",
+   "tests": 12,
+   "not_fallen": 3,
+   "lift_rows": 60,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 19,
+   "max_rhat": 1.0049413719452875,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.13154080179217137,
+    "equal split": 0.07050463830045381,
+    "pymc-marketing": 0.024199455752487904
+   }
+  },
+  {
+   "family": 8,
+   "environment": "policy-0",
+   "seed": 360003,
+   "index": 3,
+   "digest": "c2417be1c3895e10",
+   "tests": 12,
+   "not_fallen": 4,
+   "lift_rows": 60,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 6,
+   "max_rhat": 1.0048704354321827,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.14605903688248797,
+    "equal split": 0.047984337955817864,
+    "pymc-marketing": 0.015304601153655334
+   }
+  },
+  {
+   "family": 8,
+   "environment": "policy-0",
+   "seed": 360004,
+   "index": 4,
+   "digest": "513f79178640d9df",
+   "tests": 12,
+   "not_fallen": 4,
+   "lift_rows": 60,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 24,
+   "max_rhat": 1.0047862854817227,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.042565931370649714,
+    "equal split": 0.04194142576072987,
+    "pymc-marketing": 0.033606394619917664
+   }
+  },
+  {
+   "family": 8,
+   "environment": "policy-0",
+   "seed": 360005,
+   "index": 5,
+   "digest": "79b05b2c183efe81",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 60,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 946,
+   "max_rhat": 1.4199644908430962,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.09537175535635553,
+    "equal split": 0.016919608835491526,
+    "pymc-marketing": 0.014461144206691123
+   }
+  },
+  {
+   "family": 8,
+   "environment": "policy-0",
+   "seed": 360006,
+   "index": 6,
+   "digest": "e51bc7386c5baef6",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 60,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.005403811626229,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.11545565208501157,
+    "equal split": 0.060072495085564885,
+    "pymc-marketing": 0.01776340221907033
+   }
+  },
+  {
+   "family": 8,
+   "environment": "policy-0",
+   "seed": 360007,
+   "index": 7,
+   "digest": "19324dcaf67036fe",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 60,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 8,
+   "max_rhat": 1.00443084262061,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.16783994746637274,
+    "equal split": 0.13235685622904186,
+    "pymc-marketing": 0.03309298201258822
+   }
+  },
+  {
+   "family": 8,
+   "environment": "policy-0",
+   "seed": 360008,
+   "index": 8,
+   "digest": "d14ab9559fb7d7e0",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 60,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 16,
+   "max_rhat": 1.0050172801726223,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.05215241697605132,
+    "equal split": 0.04274799408871664,
+    "pymc-marketing": 0.04696067264545318
+   }
+  },
+  {
+   "family": 8,
+   "environment": "policy-0.5",
+   "seed": 360100,
+   "index": 0,
+   "digest": "c143d563096b33ff",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 60,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 2,
+   "max_rhat": 1.0046007741473655,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.05377066998062128,
+    "equal split": 0.01793844576952727,
+    "pymc-marketing": 0.019782988019910127
+   }
+  },
+  {
+   "family": 8,
+   "environment": "policy-0.5",
+   "seed": 360101,
+   "index": 1,
+   "digest": "a6385758df290444",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 60,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 1,
+   "max_rhat": 1.0040404668751306,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.04433777807727594,
+    "equal split": 0.04467664086086031,
+    "pymc-marketing": 0.021878616638438098
+   }
+  },
+  {
+   "family": 8,
+   "environment": "policy-0.5",
+   "seed": 360102,
+   "index": 2,
+   "digest": "fd42f7af89766824",
+   "tests": 12,
+   "not_fallen": 4,
+   "lift_rows": 60,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 6,
+   "max_rhat": 1.0042057282225239,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.09211375446847829,
+    "equal split": 0.03640829005334812,
+    "pymc-marketing": 0.01961725408687654
+   }
+  },
+  {
+   "family": 8,
+   "environment": "policy-0.5",
+   "seed": 360103,
+   "index": 3,
+   "digest": "a7eb65bff8ea8ec7",
+   "tests": 12,
+   "not_fallen": 3,
+   "lift_rows": 60,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 8,
+   "max_rhat": 1.0059504867734368,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.07934488083480529,
+    "equal split": 0.04091708992328333,
+    "pymc-marketing": 0.022344981708335813
+   }
+  },
+  {
+   "family": 8,
+   "environment": "policy-0.5",
+   "seed": 360104,
+   "index": 4,
+   "digest": "949ed24d6e730074",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 60,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 4,
+   "max_rhat": 1.0050394972170975,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.09917070432681245,
+    "equal split": 0.055542127671598156,
+    "pymc-marketing": 0.02531228001773986
+   }
+  },
+  {
+   "family": 8,
+   "environment": "policy-0.5",
+   "seed": 360105,
+   "index": 5,
+   "digest": "72b5ff82f7cd49ee",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 60,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 5,
+   "max_rhat": 1.0042106628518281,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.09393212735981987,
+    "equal split": 0.053662144255499936,
+    "pymc-marketing": 0.027924998356684865
+   }
+  },
+  {
+   "family": 8,
+   "environment": "policy-0.5",
+   "seed": 360106,
+   "index": 6,
+   "digest": "8327f5cc6d5a44f4",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 60,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 19,
+   "max_rhat": 1.01134834308328,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.07306993849109183,
+    "equal split": 0.034335939105738185,
+    "pymc-marketing": 0.03707563266693554
+   }
+  },
+  {
+   "family": 8,
+   "environment": "policy-0.5",
+   "seed": 360107,
+   "index": 7,
+   "digest": "aad050c73b0dcc0c",
+   "tests": 12,
+   "not_fallen": 4,
+   "lift_rows": 60,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 9,
+   "max_rhat": 1.0043287634749756,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.09357101585196119,
+    "equal split": 0.09753222448335651,
+    "pymc-marketing": 0.03104489106389403
+   }
+  },
+  {
+   "family": 8,
+   "environment": "policy-0.5",
+   "seed": 360108,
+   "index": 8,
+   "digest": "90d8e3161b7201f5",
+   "tests": 12,
+   "not_fallen": 3,
+   "lift_rows": 60,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0060025843043985,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.11184900224035707,
+    "equal split": 0.06349824855745079,
+    "pymc-marketing": 0.027134980462436155
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-3",
+   "seed": 400000,
+   "index": 0,
+   "digest": "c55a0458e752549a",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 18,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 65,
+   "max_rhat": 1.0047955967091535,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.04628341336634329,
+    "equal split": 0.04462699598471335,
+    "pymc-marketing": 0.027290080710918017
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-3",
+   "seed": 400001,
+   "index": 1,
+   "digest": "cfd79080127eeda0",
+   "tests": 12,
+   "not_fallen": 6,
+   "lift_rows": 18,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 127,
+   "max_rhat": 1.005058698948206,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.054744211256083856,
+    "equal split": 0.03902233082887466,
+    "pymc-marketing": 0.017504443286428126
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-3",
+   "seed": 400002,
+   "index": 2,
+   "digest": "90cf40ecbe2fe207",
+   "tests": 12,
+   "not_fallen": 4,
+   "lift_rows": 18,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 707,
+   "max_rhat": 1.1684587733812777,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.034802174666176446,
+    "equal split": 0.0470929303862903,
+    "pymc-marketing": 0.008721414701369438
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-3",
+   "seed": 400003,
+   "index": 3,
+   "digest": "86d2fb81b31d0127",
+   "tests": 12,
+   "not_fallen": 6,
+   "lift_rows": null,
+   "lift_dropped": null,
+   "lift_tests": null,
+   "error": "MinimizeException: Optimization failed: Positive directional derivative for linesearch",
+   "divergences": null,
+   "max_rhat": null,
+   "optimiser_success": null,
+   "regret": {
+    "status quo": 0.12987770633991785,
+    "equal split": 0.06257912497677906,
+    "pymc-marketing": 0.12987770633991785
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-3",
+   "seed": 400004,
+   "index": 4,
+   "digest": "24d55d582c3f1fbe",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 18,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 51,
+   "max_rhat": 1.005563423159751,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.09068607991274648,
+    "equal split": 0.053796953465637315,
+    "pymc-marketing": 0.019718675143132258
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-3",
+   "seed": 400005,
+   "index": 5,
+   "digest": "3c618ac462ee838f",
+   "tests": 12,
+   "not_fallen": 0,
+   "lift_rows": 18,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 96,
+   "max_rhat": 1.0047250512397854,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.1316458453769995,
+    "equal split": 0.12339013966145947,
+    "pymc-marketing": 0.011134648690011323
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-3",
+   "seed": 400006,
+   "index": 6,
+   "digest": "64c182713111c397",
+   "tests": 12,
+   "not_fallen": 4,
+   "lift_rows": 18,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 11,
+   "max_rhat": 1.0046657016253802,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.10101832561407957,
+    "equal split": 0.0546648066856047,
+    "pymc-marketing": 0.010248548274756814
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-3",
+   "seed": 400007,
+   "index": 7,
+   "digest": "77ad442e8ae2020f",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 18,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 123,
+   "max_rhat": 1.0058926427909922,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.1577753550052337,
+    "equal split": 0.07762787502661349,
+    "pymc-marketing": 0.01936418052964196
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-3",
+   "seed": 400008,
+   "index": 8,
+   "digest": "b1310a56483ae892",
+   "tests": 12,
+   "not_fallen": 4,
+   "lift_rows": 18,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 72,
+   "max_rhat": 1.0047606100640618,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.05073814952535295,
+    "equal split": 0.08172574816102776,
+    "pymc-marketing": 0.0260301154144881
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-8",
+   "seed": 400100,
+   "index": 0,
+   "digest": "95fab4649f5e49c6",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 48,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 22,
+   "max_rhat": 1.0047486192294515,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.11180208823048825,
+    "equal split": 0.04496344028601276,
+    "pymc-marketing": 0.021792377486538096
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-8",
+   "seed": 400101,
+   "index": 1,
+   "digest": "a20f50f54df900cc",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 48,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 25,
+   "max_rhat": 1.0057064967294318,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.042725364289643075,
+    "equal split": 0.05117830580251646,
+    "pymc-marketing": 0.032307468900059005
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-8",
+   "seed": 400102,
+   "index": 2,
+   "digest": "f6a1dcc8fbc81a19",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 48,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 12,
+   "max_rhat": 1.0051378490953131,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.10397114804265448,
+    "equal split": 0.10386825085293849,
+    "pymc-marketing": 0.012358435124639367
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-8",
+   "seed": 400103,
+   "index": 3,
+   "digest": "97f13382e607e3c9",
+   "tests": 12,
+   "not_fallen": 4,
+   "lift_rows": 48,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 3,
+   "max_rhat": 1.0043346711307506,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.0999692575097316,
+    "equal split": 0.07898739770964748,
+    "pymc-marketing": 0.023705116071052485
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-8",
+   "seed": 400104,
+   "index": 4,
+   "digest": "1aebe933fb69859d",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 48,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 30,
+   "max_rhat": 1.0053828702361434,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.06490871975234665,
+    "equal split": 0.05580630200051653,
+    "pymc-marketing": 0.040193334284714145
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-8",
+   "seed": 400105,
+   "index": 5,
+   "digest": "272ebd0c4aea52fe",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 48,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 0,
+   "max_rhat": 1.0043934586312302,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.12407910602944947,
+    "equal split": 0.10327394572114625,
+    "pymc-marketing": 0.02893133931329621
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-8",
+   "seed": 400106,
+   "index": 6,
+   "digest": "3b692aed0bf2c960",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 48,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 46,
+   "max_rhat": 1.0120863087334906,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.13450929837725176,
+    "equal split": 0.026138405176688,
+    "pymc-marketing": 0.015745144536115734
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-8",
+   "seed": 400107,
+   "index": 7,
+   "digest": "7891833be7452317",
+   "tests": 12,
+   "not_fallen": 3,
+   "lift_rows": 48,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 244,
+   "max_rhat": 1.0167323432503481,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.06954555414688744,
+    "equal split": 0.05762495463209202,
+    "pymc-marketing": 0.0010847056359088885
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-50",
+   "seed": 400200,
+   "index": 0,
+   "digest": "b128d9465598282b",
+   "tests": 12,
+   "not_fallen": 3,
+   "lift_rows": 300,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 209,
+   "max_rhat": 1.0449992001122979,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.07040222443163424,
+    "equal split": 0.044829964254290845,
+    "pymc-marketing": 0.06751120118561504
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-50",
+   "seed": 400201,
+   "index": 1,
+   "digest": "df05d099a71565b6",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 300,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 53,
+   "max_rhat": 1.0084812652827988,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.0770237640190883,
+    "equal split": 0.04075344387179461,
+    "pymc-marketing": 0.08151257924127879
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-50",
+   "seed": 400202,
+   "index": 2,
+   "digest": "920c9bb4ca4dea29",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 300,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 76,
+   "max_rhat": 1.0056040219796174,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.07520279877843863,
+    "equal split": 0.040312895427974886,
+    "pymc-marketing": 0.04508114614691095
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-50",
+   "seed": 400203,
+   "index": 3,
+   "digest": "ea62b9e7b3880970",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 300,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 61,
+   "max_rhat": 1.006588611904716,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.0779300929156253,
+    "equal split": 0.0329339189971505,
+    "pymc-marketing": 0.04881181458315067
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-50",
+   "seed": 400204,
+   "index": 4,
+   "digest": "5bd5d28fc8794474",
+   "tests": 12,
+   "not_fallen": 2,
+   "lift_rows": 300,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 42,
+   "max_rhat": 1.0057823479835484,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.11357992719976963,
+    "equal split": 0.0921390068365315,
+    "pymc-marketing": 0.06634293855984413
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-50",
+   "seed": 400205,
+   "index": 5,
+   "digest": "7587b46af3cebf76",
+   "tests": 12,
+   "not_fallen": 1,
+   "lift_rows": 300,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 19,
+   "max_rhat": 1.006911727166108,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.08269816541006762,
+    "equal split": 0.06815881364964733,
+    "pymc-marketing": 0.08317746048833523
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-50",
+   "seed": 400206,
+   "index": 6,
+   "digest": "552674a1e3ba3997",
+   "tests": 12,
+   "not_fallen": 3,
+   "lift_rows": 300,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 186,
+   "max_rhat": 1.0075650863494183,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.07667568280941195,
+    "equal split": 0.04729896880561172,
+    "pymc-marketing": 0.042927587090216844
+   }
+  },
+  {
+   "family": 10,
+   "environment": "geos-50",
+   "seed": 400207,
+   "index": 7,
+   "digest": "3f23af56380ac6a2",
+   "tests": 12,
+   "not_fallen": 3,
+   "lift_rows": 300,
+   "lift_dropped": 0,
+   "lift_tests": {
+    "taken": 12,
+    "dropped": 0
+   },
+   "error": null,
+   "divergences": 97,
+   "max_rhat": 1.0075878702294496,
+   "optimiser_success": true,
+   "regret": {
+    "status quo": 0.06369050109335705,
+    "equal split": 0.059769672151371266,
+    "pymc-marketing": 0.06954012687087906
+   }
+  }
+ ]
+}

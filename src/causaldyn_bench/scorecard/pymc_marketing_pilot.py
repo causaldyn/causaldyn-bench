@@ -244,8 +244,9 @@ def markdown(data: Mapping[str, Any]) -> str:
         "out. *Rows taken* and *refused*: the rows the arm gave the likelihood and those it did "
         "not, its records' `lift_rows` and `lift_dropped`; the geo model takes a test as one row "
         "a tested geo, so there they outnumber the tests, and *tests refused* counts tests. "
-        "*Divergent*: fits with a divergent transition; *r-hat*: fits whose largest r-hat is over "
-        f"{RHAT}.",
+        "*Raised*: worlds whose script raised, whose arm then played the status quo; their record "
+        "holds no count of rows. *Divergent*: fits with a divergent transition; *r-hat*: fits "
+        f"whose largest r-hat is over {RHAT}.",
         "",
         "| family | environment | pilot worlds | fitted | tests | not fallen | rows taken "
         "| refused | tests refused | raised | divergent | r-hat | optimiser failed |",
