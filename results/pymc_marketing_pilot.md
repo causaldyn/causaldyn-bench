@@ -4,6 +4,8 @@ The arm as `scripts/pymc_marketing_arm.py` fits it, static media and every lift 
 
 The pilot: the seeds the design was set on, apart from every scored one. No gate reads it.
 
+Exported and scored under causal-hybrid-control 1.2.0, jax 0.11.2, jaxlib 0.11.2, numpy 2.5.4, scipy 1.18.1: an export's bits, and so the digest a record echoes, move with them.
+
 ## The lift tests
 
 *Tests*: the tests the exports hold, one row each. *Not fallen*: those whose sales did not fall, which PyMC-Marketing 1.2.0 refused and the budgets run's version-1 export left out. *Rows taken* and *refused*: the rows the arm gave the likelihood and those it did not, its records' `lift_rows` and `lift_dropped`; the geo model takes a test as one row a tested geo, so there they outnumber the tests, and *tests refused* counts tests. *Raised*: worlds whose script raised, whose arm then played the status quo; their record holds no count of rows. *Divergent*: fits with a divergent transition; *r-hat*: fits whose largest r-hat is over 1.01.

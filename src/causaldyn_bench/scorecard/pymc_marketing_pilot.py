@@ -37,6 +37,7 @@ from __future__ import annotations
 import argparse
 import json
 from collections.abc import Mapping, Sequence
+from importlib import metadata
 from pathlib import Path
 from typing import Any
 
@@ -62,6 +63,8 @@ RUNG = 4  # the ladder's top rung: four go-dark tests a channel
 # the packages a record names (the arm's PACKAGES), each held to the pin file's version
 PACKAGES = ("pymc-marketing", "pymc", "pytensor", "arviz", "numpy", "scipy", "pandas")
 RHAT = 1.01  # the largest R-hat PyMC's own convergence check passes
+# the bench's packages an export's bits, and so its digest, move with
+BENCH = ("causal-hybrid-control", "jax", "jaxlib", "numpy", "scipy")
 CELLS: tuple[tuple[Family[Any], str], ...] = (
     (TRACK_M2, "drawn"),
     (TRACK_M2, "reference"),
@@ -209,6 +212,7 @@ def pilot(work: Path, pinned: Mapping[str, str] | None = None) -> dict[str, Any]
         "arm": ARM,
         "setting": SETTING,
         "versions": dict(pinned),
+        "scored_under": {name: metadata.version(name) for name in BENCH},
         "rung": RUNG,
         "x64": jnp.zeros(()).dtype == jnp.float64,
         "environments": environments,
@@ -236,6 +240,10 @@ def markdown(data: Mapping[str, Any]) -> str:
         "",
         "The pilot: the seeds the design was set on, apart from every scored one. No gate reads "
         "it.",
+        "",
+        "Exported and scored under "
+        + ", ".join(f"{name} {v}" for name, v in data["scored_under"].items())
+        + ": an export's bits, and so the digest a record echoes, move with them.",
         "",
         "## The lift tests",
         "",

@@ -5,6 +5,7 @@ sales did not fall are those the version-1 record counted as dropped, and its ma
 from its JSON."""
 
 import json
+from importlib.metadata import version
 
 import jax
 import numpy as np
@@ -14,6 +15,7 @@ from causaldyn_bench.budget_regret import PILOTS
 from causaldyn_bench.scorecard.observe import export
 from causaldyn_bench.scorecard.pymc_marketing_pilot import (
     ARM,
+    BENCH,
     CELLS,
     OUT,
     PACKAGES,
@@ -91,6 +93,7 @@ def test_a_record_at_the_pin_is_scored_and_its_lift_counted(work):
     assert all(e["fitted"] == 0 for e in data["environments"][1:])
     assert world["regret"][ARM] == world["regret"]["status quo"]
     assert "compute" not in data["reports"][0] and data["versions"] == pins()
+    assert data["scored_under"]["causal-hybrid-control"] == version("causal-hybrid-control")
     assert "family 0's reference, 20 of its 20 pilot worlds" in markdown(data)
 
 
@@ -118,6 +121,7 @@ def committed():
 def test_the_committed_pilot_names_the_pin_and_refused_no_row(committed):
     assert committed["versions"] == pins() and committed["arm"] == ARM
     assert committed["rung"] == RUNG and committed["x64"]
+    assert set(committed["scored_under"]) == set(BENCH)
     worlds = committed["worlds"]
     # a fit that raised holds no count; the geo arm's optimiser may raise after the fit
     assert worlds and all(w["lift_dropped"] == 0 for w in worlds if w["error"] is None)
