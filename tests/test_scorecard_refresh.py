@@ -99,6 +99,7 @@ def test_each_cut_plans_the_world_s_quarter_on_the_weeks_after_it(world):
     full = TRACK_M2.observe(world, 2)
     cuts = refresh.windows(full)
     assert [c.sales.shape[0] for c in cuts] == [132, 136, 140, 144, 148, 152, 156]
+    assert full.future_controls is not None
     for c in cuts:
         weeks = c.sales.shape[0]
         assert c.roi_window == (81, 132)
@@ -108,6 +109,7 @@ def test_each_cut_plans_the_world_s_quarter_on_the_weeks_after_it(world):
         for name, series in full.controls.items():
             np.testing.assert_array_equal(c.controls[name], series[:weeks])
             spliced = np.concatenate([series[weeks:], full.future_controls[name]])[:13]
+            assert c.future_controls is not None
             np.testing.assert_array_equal(c.future_controls[name], spliced)
         ends = np.asarray(c.lift.start) + TEST + COOLDOWN - 1
         assert np.all(ends <= weeks)

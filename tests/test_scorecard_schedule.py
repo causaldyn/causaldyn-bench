@@ -23,16 +23,15 @@ from causaldyn_bench.scorecard.track_m2 import TRACK_M2
 from causaldyn_bench.scorecard.twins import TWINS
 
 WORLDS = {
-    "track m2": (TRACK_M2, "drawn", 905),
-    "geo": (GEO, "policy-0", GEO.pilots["policy-0"][1]),
-    "cpm": (DRIFT, "cpm", DRIFT.pilots["cpm"][0]),
+    "track m2": lambda: TRACK_M2.truth(TRACK_M2.world("drawn", 905)),
+    "geo": lambda: GEO.truth(GEO.world("policy-0", GEO.pilots["policy-0"][1])),
+    "cpm": lambda: DRIFT.truth(DRIFT.world("cpm", DRIFT.pilots["cpm"][0])),
 }
 
 
 @pytest.fixture(scope="module", params=sorted(WORLDS))
 def truths(request):
-    family, environment, seed = WORLDS[request.param]
-    return family.truth(family.world(environment, seed))
+    return WORLDS[request.param]()
 
 
 def test_a_cells_unit_is_its_kernel_from_each_quarter_week_and_its_rows_its_reach(truths):
@@ -166,6 +165,7 @@ def test_a_schedule_is_scored_against_the_best_schedule(truths):
         assert own.realised is None
     else:
         hindsight = schedule.oracle(truths.realised, quarter)
+        assert own.realised is not None
         assert own.realised == pytest.approx(
             (hindsight.worth - schedule.worth(truths.realised, best.weekly)) / quarter.budget,
             rel=1e-12,
@@ -178,6 +178,7 @@ def test_a_channels_schedule_on_a_geo_world_is_allotted_to_its_cells_week_by_wee
     world = GEO.world("policy-0", GEO.pilots["policy-0"][1])
     truths = GEO.truth(world)
     quarter = truths.quarter
+    assert isinstance(quarter, truth.GeoQuarter)
     channels = np.bincount(quarter.channel, weights=quarter.status_quo)
     rising = np.linspace(0.8, 1.2, PLANNED)[:, None] * channels[None, :]
     by_channel = schedule.score_schedule(truths, rising)
