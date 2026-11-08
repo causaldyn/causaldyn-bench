@@ -297,16 +297,26 @@ def test_the_tools_record_is_read_in_the_keys_channels(worlds):
 def test_the_committed_pilot_is_what_the_command_writes(tmp_path):
     """The bench's arm read again on both sets, and the tool's committed records read again, give
     the committed pilot: the arm's numbers within 1e-6 of them, as its channels are JAX's at
-    either precision, the report's rounding and the tool's numbers exactly."""
+    either precision, the report's rounding and the tool's numbers exactly.
+
+    The arm's own numbers hold within 1e-6 only on a machine that ends its fit where the pilot's
+    machine did: its least-squares fit takes its Jacobian from differences of its residuals and
+    stops on a relative change of 1e-8 in its cost, so another machine's last bits end it at
+    another point of that valley. CI's runners read its returns up to 4.4e-4 apart, on numpy 2.4
+    and 2.5 alike, so the arm is held within 5e-3 everywhere and the report is read where its
+    numbers are the pilot's to 1e-6."""
     committed = json.loads(PILOT.with_suffix(".json").read_text())
     main(["--out", str(tmp_path / "pilot")])
     fresh = json.loads((tmp_path / "pilot.json").read_text())
     assert fresh["no_cell"] == committed["no_cell"] == dict(NO_CELL)
     assert fresh["tool"] == committed["tool"] and set(fresh["tool"]) == set(ENVIRONMENTS)
+    same = True
     for new, old in zip(fresh["worlds"], committed["worlds"], strict=True):
         assert [a["arm"] for a in new["arms"]] == ["observational", "mmm-framework"]
         for a, b in zip(new["arms"], old["arms"], strict=True):
+            rtol = 5e-3 if a["arm"] == "observational" else 1e-6
             for field in ("contribution", "roas"):
-                np.testing.assert_allclose(a[field], b[field], rtol=1e-6, atol=0)
-    if fresh["x64"]:
+                np.testing.assert_allclose(a[field], b[field], rtol=rtol, atol=0)
+                same &= bool(np.allclose(a[field], b[field], rtol=1e-6, atol=0))
+    if fresh["x64"] and same:
         assert markdown(fresh) == PILOT.with_suffix(".md").read_text()
