@@ -15,13 +15,11 @@ Exported and scored under causal-hybrid-control 1.2.0, jax 0.11.2, jaxlib 0.11.2
 | 0 | drawn | 40 | 40 | 480 | 29 | 480 | 0 | n/a | 0 | 4 | 0 | 0 |
 | 0 | reference | 20 | 20 | 240 | 20 | 240 | 0 | n/a | 0 | 5 | 0 | 0 |
 | 13 | priors | 100 | 100 | 1200 | 51 | 1200 | 0 | n/a | 0 | 9 | 0 | 0 |
-| 8 | policy-0 | 100 | 9 | 108 | 20 | 540 | 0 | 0 | 0 | 7 | 1 | 0 |
-| 8 | policy-0.5 | 100 | 9 | 108 | 18 | 540 | 0 | 0 | 0 | 8 | 1 | 0 |
-| 10 | geos-3 | 100 | 9 | 108 | 27 | 144 | 0 | 0 | 1 | 8 | 1 | 0 |
-| 10 | geos-8 | 100 | 8 | 96 | 16 | 384 | 0 | 0 | 0 | 7 | 2 | 0 |
-| 10 | geos-50 | 100 | 8 | 96 | 18 | 2400 | 0 | 0 | 0 | 8 | 1 | 0 |
-
-Not run: family 8's policy-0, 91 of its 100 pilot worlds; family 8's policy-0.5, 91 of its 100 pilot worlds; family 10's geos-3, 91 of its 100 pilot worlds; family 10's geos-8, 92 of its 100 pilot worlds; family 10's geos-50, 92 of its 100 pilot worlds. Each environment's cells below read the first worlds of its seeded order it holds whole.
+| 8 | policy-0 | 100 | 100 | 1200 | 177 | 5940 | 0 | 0 | 1 | 96 | 4 | 0 |
+| 8 | policy-0.5 | 100 | 100 | 1200 | 215 | 5940 | 0 | 0 | 1 | 81 | 5 | 0 |
+| 10 | geos-3 | 100 | 100 | 1200 | 281 | 1692 | 0 | 0 | 6 | 94 | 11 | 0 |
+| 10 | geos-8 | 100 | 100 | 1200 | 222 | 4752 | 0 | 0 | 1 | 97 | 10 | 0 |
+| 10 | geos-50 | 100 | 100 | 1200 | 253 | 30000 | 0 | 0 | 0 | 100 | 6 | 0 |
 
 ## Family 0: Track M v2, pilot
 
@@ -96,33 +94,33 @@ By construction: National media is allotted to the geos by population, so outsid
 
 ### k = 4, policy-0
 
-9 worlds, the first 9 of each environment.
+100 worlds, the first 100 of each environment.
 
 | arm | regret per euro | failed | moved | CRPS | MAPE, % | coverage 80/90/95 | effect against spend share |
 |---|---|---|---|---|---|---|---|
-| status quo | +0.1119 [+0.0747, +0.1491] | 0 | 0 | n/a | n/a | n/a | n/a |
-| equal split | +0.0673 [+0.0392, +0.0954] | 0 | 0 | n/a | n/a | n/a | n/a |
-| pymc-marketing | +0.0258 [+0.0177, +0.0339] | 0 | 0 | +0.0062 [+0.0050, +0.0075] | +0.80 [+0.66, +0.95] | n/a | n/a |
+| status quo | +0.0871 [+0.0788, +0.0955] | 0 | 0 | n/a | n/a | n/a | n/a |
+| equal split | +0.0626 [+0.0544, +0.0708] | 0 | 0 | n/a | n/a | n/a | n/a |
+| pymc-marketing | +0.0271 [+0.0248, +0.0293] | 1 | 0 | +0.0060 [+0.0057, +0.0063] | +0.76 [+0.72, +0.80] | n/a | n/a |
 
 ### k = 4, policy-0.5
 
-9 worlds, the first 9 of each environment.
+100 worlds, the first 100 of each environment.
 
 | arm | regret per euro | failed | moved | CRPS | MAPE, % | coverage 80/90/95 | effect against spend share |
 |---|---|---|---|---|---|---|---|
-| status quo | +0.0824 [+0.0655, +0.0992] | 0 | 0 | n/a | n/a | n/a | n/a |
-| equal split | +0.0494 [+0.0321, +0.0667] | 0 | 0 | n/a | n/a | n/a | n/a |
-| pymc-marketing | +0.0258 [+0.0214, +0.0302] | 0 | 0 | +0.0076 [+0.0060, +0.0092] | +0.98 [+0.78, +1.18] | n/a | n/a |
+| status quo | +0.0966 [+0.0882, +0.1051] | 0 | 0 | n/a | n/a | n/a | n/a |
+| equal split | +0.0621 [+0.0551, +0.0690] | 0 | 0 | n/a | n/a | n/a | n/a |
+| pymc-marketing | +0.0293 [+0.0263, +0.0322] | 1 | 0 | +0.0073 [+0.0068, +0.0077] | +0.92 [+0.86, +0.97] | n/a | n/a |
 
 ### k = 4, pooled
 
-18 worlds, the first 9 of each environment.
+200 worlds, the first 100 of each environment.
 
 | arm | regret per euro | failed | moved | CRPS | MAPE, % | coverage 80/90/95 | effect against spend share |
 |---|---|---|---|---|---|---|---|
-| status quo | +0.0971 [+0.0775, +0.1168] | 0 | 0 | n/a | n/a | n/a | n/a |
-| equal split | +0.0583 [+0.0430, +0.0737] | 0 | 0 | n/a | n/a | n/a | n/a |
-| pymc-marketing | +0.0258 [+0.0217, +0.0299] | 0 | 0 | +0.0069 [+0.0059, +0.0079] | +0.89 [+0.77, +1.01] | n/a | n/a |
+| status quo | +0.0919 [+0.0859, +0.0978] | 0 | 0 | n/a | n/a | n/a | n/a |
+| equal split | +0.0623 [+0.0570, +0.0677] | 0 | 0 | n/a | n/a | n/a | n/a |
+| pymc-marketing | +0.0282 [+0.0263, +0.0300] | 2 | 0 | +0.0066 [+0.0063, +0.0069] | +0.84 [+0.80, +0.87] | n/a | n/a |
 
 ## Family 10: few geos, pilot
 
@@ -133,40 +131,40 @@ By construction: National media is allotted to the geos by population, so outsid
 
 ### k = 4, geos-3
 
-9 worlds, the first 9 of each environment.
+100 worlds, the first 100 of each environment.
 
 | arm | regret per euro | failed | moved | CRPS | MAPE, % | coverage 80/90/95 | effect against spend share |
 |---|---|---|---|---|---|---|---|
-| status quo | +0.0886 [+0.0545, +0.1227] | 0 | 0 | n/a | n/a | n/a | n/a |
-| equal split | +0.0649 [+0.0448, +0.0851] | 0 | 0 | n/a | n/a | n/a | n/a |
-| pymc-marketing | +0.0300 [+0.0008, +0.0592] | 1 | 0 | +0.0103 [+0.0058, +0.0149] | +1.38 [+0.76, +1.99] | n/a | n/a |
+| status quo | +0.0874 [+0.0748, +0.1001] | 0 | 0 | n/a | n/a | n/a | n/a |
+| equal split | +0.0582 [+0.0506, +0.0658] | 0 | 0 | n/a | n/a | n/a | n/a |
+| pymc-marketing | +0.0276 [+0.0213, +0.0339] | 6 | 0 | +0.0101 [+0.0093, +0.0108] | +1.28 [+1.19, +1.38] | n/a | n/a |
 
 ### k = 4, geos-8
 
-8 worlds, the first 8 of each environment.
+100 worlds, the first 100 of each environment.
 
 | arm | regret per euro | failed | moved | CRPS | MAPE, % | coverage 80/90/95 | effect against spend share |
 |---|---|---|---|---|---|---|---|
-| status quo | +0.0939 [+0.0674, +0.1205] | 0 | 0 | n/a | n/a | n/a | n/a |
-| equal split | +0.0652 [+0.0420, +0.0885] | 0 | 0 | n/a | n/a | n/a | n/a |
-| pymc-marketing | +0.0220 [+0.0117, +0.0323] | 0 | 0 | +0.0066 [+0.0049, +0.0082] | +0.84 [+0.66, +1.03] | n/a | n/a |
+| status quo | +0.1005 [+0.0900, +0.1110] | 0 | 0 | n/a | n/a | n/a | n/a |
+| equal split | +0.0657 [+0.0577, +0.0737] | 0 | 0 | n/a | n/a | n/a | n/a |
+| pymc-marketing | +0.0274 [+0.0241, +0.0306] | 1 | 0 | +0.0067 [+0.0063, +0.0071] | +0.85 [+0.80, +0.90] | n/a | n/a |
 
 ### k = 4, geos-50
 
-8 worlds, the first 8 of each environment.
+100 worlds, the first 100 of each environment.
 
 | arm | regret per euro | failed | moved | CRPS | MAPE, % | coverage 80/90/95 | effect against spend share |
 |---|---|---|---|---|---|---|---|
-| status quo | +0.0797 [+0.0673, +0.0920] | 0 | 0 | n/a | n/a | n/a | n/a |
-| equal split | +0.0533 [+0.0371, +0.0694] | 0 | 0 | n/a | n/a | n/a | n/a |
-| pymc-marketing | +0.0631 [+0.0499, +0.0763] | 0 | 0 | +0.0106 [+0.0085, +0.0127] | +1.35 [+1.08, +1.63] | n/a | n/a |
+| status quo | +0.0910 [+0.0858, +0.0963] | 0 | 0 | n/a | n/a | n/a | n/a |
+| equal split | +0.0576 [+0.0539, +0.0613] | 0 | 0 | n/a | n/a | n/a | n/a |
+| pymc-marketing | +0.0607 [+0.0584, +0.0630] | 0 | 0 | +0.0100 [+0.0095, +0.0104] | +1.27 [+1.21, +1.33] | n/a | n/a |
 
 ### k = 4, pooled
 
-24 worlds, the first 8 of each environment.
+300 worlds, the first 100 of each environment.
 
 | arm | regret per euro | failed | moved | CRPS | MAPE, % | coverage 80/90/95 | effect against spend share |
 |---|---|---|---|---|---|---|---|
-| status quo | +0.0890 [+0.0754, +0.1026] | 0 | 0 | n/a | n/a | n/a | n/a |
-| equal split | +0.0605 [+0.0501, +0.0708] | 0 | 0 | n/a | n/a | n/a | n/a |
-| pymc-marketing | +0.0385 [+0.0255, +0.0516] | 1 | 0 | +0.0090 [+0.0073, +0.0107] | +1.17 [+0.94, +1.40] | n/a | n/a |
+| status quo | +0.0930 [+0.0873, +0.0987] | 0 | 0 | n/a | n/a | n/a | n/a |
+| equal split | +0.0605 [+0.0567, +0.0643] | 0 | 0 | n/a | n/a | n/a | n/a |
+| pymc-marketing | +0.0386 [+0.0355, +0.0416] | 7 | 0 | +0.0089 [+0.0085, +0.0093] | +1.13 [+1.09, +1.18] | n/a | n/a |
