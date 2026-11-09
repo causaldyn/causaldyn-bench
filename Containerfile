@@ -28,6 +28,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.13.7 /uv /uvx /usr/local/bin/
 RUN dnf -y install --setopt=install_weak_deps=False \
         R-core R-core-devel gcc gcc-c++ gcc-gfortran make cmake curl git which python3.13 \
         libcurl-devel openssl-devel libxml2-devel libicu-devel zlib-devel libpng-devel NLopt-devel \
+        libuv-devel \
     && dnf clean all \
     && R --version | head -1
 
