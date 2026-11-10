@@ -6,8 +6,11 @@ Family ``f``, 1 to 20, owns the stream ``100 + f`` and the block of world seeds 
 block's first thousand, and its scored worlds from ``200 000 + 20 000 f + 1 000 (e + 1)``. No
 family draws from the blocks of 11, withdrawn, or of 16, reserved. Family 0, Track M v2 itself,
 keeps the committed runs' seeds and owns the stream 100 for the variates the scorecard adds to its
-worlds. Within an environment the worlds are taken in the order of their seeds, so a run's sample,
-and each look at it, is a prefix of that order.
+worlds. Each of its scored blocks goes on past the committed run's in a block of its own
+(:data:`TRACK_M2_EXTENSIONS`), apart from every seed and stream a committed run drew from, so that
+each environment holds 260 scored worlds, the committed run's first. Within an environment the
+worlds are taken in the order of their seeds, so a run's sample, and each look at it, is a prefix
+of that order.
 
 Every variate a family adds is drawn from ``numpy.random.default_rng((stream, role, seed))``, the
 role one of :class:`Role`. Two rules keep a family built on Track M v2's world a Track M v2 world
@@ -38,6 +41,12 @@ BLOCK = 20_000
 PILOTS = 100  # pilot worlds an environment's pilot block holds
 WORLDS = 1_000  # scored worlds an environment's block holds
 TRACK_M2 = 100  # Track M v2's stream: its worlds' continuation, whichever family drew them
+# family 0's scored worlds past the budgets run's 200 drawn and 100 reference ones, each block from
+# its environment's first seed plus 1 000: 10 200 to 10 499 are the lift track's tests' seeds
+TRACK_M2_EXTENSIONS: dict[str, range] = {
+    "drawn": range(11_000, 11_060),
+    "reference": range(21_000, 21_160),
+}
 
 
 class Role(IntEnum):

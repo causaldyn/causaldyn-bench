@@ -2,10 +2,11 @@
 
 The worlds are the budgets run's (:mod:`causaldyn_bench.budget_regret`): Heusch's generator over
 156 weeks, every channel's retention, saturation and effect drawn on the *drawn* worlds and his own
-on the *reference* ones, at the run's seeds, pilots and scored alike. Each channel's effect holds
-still, so the path the best plan is made for is the one the quarter realises: the channel's
-coefficient in every week. The ladder's top rung is the run's experiments, so a record fitted to
-its exports (version 1) is scored here unchanged.
+on the *reference* ones, at the run's seeds, pilots and scored alike, each scored block going on
+past the run's to 260 worlds (:data:`~causaldyn_bench.scorecard.seeds.TRACK_M2_EXTENSIONS`), drawn
+as the run's are. Each channel's effect holds still, so the path the best plan is made for is the
+one the quarter realises: the channel's coefficient in every week. The ladder's top rung is the
+run's experiments, so a record fitted to its exports (version 1) is scored here unchanged.
 
 The worlds of other families that are built on Track M v2's are read the same way:
 :func:`observation` is what an arm reads of such a world and :func:`truth` what its plan is scored
@@ -35,7 +36,7 @@ from causaldyn_bench.scorecard.cpm import Price
 from causaldyn_bench.scorecard.family import Truth
 from causaldyn_bench.scorecard.observe import Held, Observation
 from causaldyn_bench.scorecard.returns import true_returns
-from causaldyn_bench.scorecard.seeds import stream
+from causaldyn_bench.scorecard.seeds import TRACK_M2_EXTENSIONS, stream
 from causaldyn_bench.scorecard.truth import cells, oracle
 
 
@@ -202,7 +203,9 @@ class TrackM2:
         "regions beyond the noise drawn.",
     )
     pilots = MappingProxyType({e.name: e.seeds for e in PILOTS})
-    scored = MappingProxyType({e.name: e.seeds for e in ENVIRONMENTS})
+    scored = MappingProxyType(
+        {e.name: (*e.seeds, *TRACK_M2_EXTENSIONS[e.name]) for e in ENVIRONMENTS}
+    )
 
     def world(self, environment: str, seed: int) -> World:
         if environment not in self.scored:

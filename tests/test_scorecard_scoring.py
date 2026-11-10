@@ -29,6 +29,7 @@ from causaldyn_bench.scorecard.scoring import (
     score_arm,
     score_world,
 )
+from causaldyn_bench.scorecard.seeds import TRACK_M2_EXTENSIONS
 from causaldyn_bench.scorecard.track_m2 import TRACK_M2
 from causaldyn_bench.scorecard.truth import worth
 
@@ -305,9 +306,11 @@ def test_family_nought_reproduces_the_external_runs_oracle_and_its_bounds(throug
         )
 
 
-def test_family_noughts_worlds_are_the_budgets_runs():
+def test_family_noughts_worlds_are_the_budgets_runs_then_their_extension():
     assert number(TRACK_M2) == 0
-    assert dict(TRACK_M2.scored) == {e.name: e.seeds for e in ENVIRONMENTS}
+    assert dict(TRACK_M2.scored) == {
+        e.name: (*e.seeds, *TRACK_M2_EXTENSIONS[e.name]) for e in ENVIRONMENTS
+    }
     assert dict(TRACK_M2.pilots) == {e.name: e.seeds for e in PILOTS}
     assert all(label.endswith(".") for label in TRACK_M2.labels)
 

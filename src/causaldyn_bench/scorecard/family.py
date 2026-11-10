@@ -11,7 +11,7 @@ construction.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Protocol, TypeVar
 
@@ -72,12 +72,12 @@ class Family(Protocol[W]):
         ...
 
     @property
-    def pilots(self) -> Mapping[str, range]:
+    def pilots(self) -> Mapping[str, Sequence[int]]:
         """Each environment's pilot worlds, in their seeded order."""
         ...
 
     @property
-    def scored(self) -> Mapping[str, range]:
+    def scored(self) -> Mapping[str, Sequence[int]]:
         """Each environment's scored worlds, in their seeded order."""
         ...
 

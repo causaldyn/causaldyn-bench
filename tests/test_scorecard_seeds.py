@@ -1,15 +1,20 @@
 """The scorecard's seeds: every family's block and stream apart from one another and from every seed
-and stream a committed run drew from, numpy's padding included."""
+and stream a committed run drew from, numpy's padding included; family 0's scored blocks extended
+past the budgets run's without moving one of its worlds."""
+
+from collections import Counter
 
 import numpy as np
 import pytest
 
+from causaldyn_bench.budget_regret import ENVIRONMENTS
 from causaldyn_bench.scorecard.seeds import (
     BLOCK,
     FAMILIES,
     FIRST,
     PILOTS,
     TRACK_M2,
+    TRACK_M2_EXTENSIONS,
     USED_SEEDS,
     USED_STREAMS,
     WORLDS,
@@ -19,6 +24,9 @@ from causaldyn_bench.scorecard.seeds import (
     scored,
     stream,
 )
+from causaldyn_bench.scorecard.track_m2 import TRACK_M2 as FAMILY_0
+
+CHANNELS = 3  # a Track M v2 world's channels, each with tests of its own noise
 
 
 def _canonical(seed: int | tuple[int, ...]) -> tuple[int, ...]:
@@ -124,3 +132,67 @@ def test_a_further_index_of_nought_and_a_family_out_of_range_are_refused():
         scored(1, BLOCK // WORLDS - 1)
     with pytest.raises(ValueError, match="pilots hold"):
         pilot(1, WORLDS // PILOTS)
+
+
+def test_family_noughts_scored_blocks_keep_the_budgets_runs_worlds_first_then_go_on():
+    """Each environment holds 260 scored worlds: the budgets run's, in their order, then its
+    extension from the environment's first seed plus 1 000, the seeded order the seeds' own."""
+    for environment in ENVIRONMENTS:
+        held = FAMILY_0.scored[environment.name]
+        assert len(held) == 260
+        assert tuple(held[: environment.worlds]) == tuple(environment.seeds)
+        assert tuple(held[environment.worlds :]) == tuple(TRACK_M2_EXTENSIONS[environment.name])
+        assert held[environment.worlds] == environment.first + 1_000
+        assert list(held) == sorted(held)
+    assert tuple(FAMILY_0.scored) == tuple(TRACK_M2_EXTENSIONS) == ("drawn", "reference")
+
+
+def test_every_block_is_apart_from_every_other_but_family_noughts_two_pilot_blocks():
+    """No seed is in two blocks, every family's pilots and scored worlds and family 0's alike, but
+    the budgets run's pilots, which draw both its environments from 900 by that run's design."""
+    blocks = [*_blocks(), *FAMILY_0.pilots.values(), *FAMILY_0.scored.values()]
+    twice = {s for s, n in Counter(s for block in blocks for s in block).items() if n > 1}
+    assert twice == set(FAMILY_0.pilots["drawn"]) & set(FAMILY_0.pilots["reference"])
+    assert twice == set(range(900, 920))
+
+
+def test_family_noughts_new_worlds_draw_from_no_committed_seed_and_no_familys_block():
+    """A new world of family 0 draws its history from its seed, a drawn one its channels from
+    (7, seed), and its tests' noise from 1000 seed + c: none is a seed or stream a committed run
+    drew from, and none a world's seed of any family's block or a test's seed of one."""
+    used = _used()
+    families = range(FIRST + BLOCK, FIRST + BLOCK * (FAMILIES + 1))
+    for environment, block in TRACK_M2_EXTENSIONS.items():
+        for seed in block:
+            drawn = [seed, *range(1000 * seed, 1000 * seed + CHANNELS)]
+            assert not {_canonical(s) for s in drawn} & used, seed
+            assert all(s not in families and s // 1000 not in families for s in drawn), seed
+            if environment == "drawn":
+                assert _canonical((7, seed)) not in used, seed
+
+
+def test_family_noughts_old_worlds_export_as_before_and_its_new_ones_as_drawn(other_kernels):
+    """The budgets run's worlds export bit for bit as before the extension, at both ends of each
+    block and of each pilot block, and the extension's first and last worlds as they were first
+    drawn: digests read on x86 without AVX-512."""
+    if other_kernels is not None:
+        pytest.skip(other_kernels)
+    pinned = {
+        ("drawn", 10_000): ("7f01368ac3050d95", "e652d0ae03e53abf"),
+        ("drawn", 10_199): ("c5764f912ba35800", "1010148a60211e8e"),
+        ("reference", 20_000): ("6f940216e0b94fe0", "fbef107fdd1a31a9"),
+        ("reference", 20_099): ("ee463176fa8bed94", "4bfd0f6977402f04"),
+        ("drawn", 11_000): ("0b9fe7ec6590bb47", "62dd3a62b222f60c"),
+        ("drawn", 11_059): ("e4464e8d133b77cd", "4e482872d456d575"),
+        ("reference", 21_000): ("5cc243c9dcaee0a3", "3bd3405ce58702db"),
+        ("reference", 21_159): ("fab0ba00c51098e8", "82313bdeeada4997"),
+    }
+    for (environment, seed), digests in pinned.items():
+        world = FAMILY_0.world(environment, seed)
+        assert len(world.history.channels) == CHANNELS
+        assert tuple(FAMILY_0.observe(world, k).digest() for k in (0, 4)) == digests
+    for environment, seed, digest in (
+        ("drawn", 939, "8e0d1f050e04cc69"),
+        ("reference", 919, "6edb91a3f961e24a"),
+    ):
+        assert FAMILY_0.observe(FAMILY_0.world(environment, seed), 4).digest() == digest
