@@ -93,12 +93,20 @@
 # scaled from the spend its geos withheld to the market's spend over its dark weeks, at the test's
 # ROI, and that spend is the calibration's. The record says so under settings$geo.
 #
+# --ts-validation fits a version-2 export with Robyn's time-series validation on, the arm's tuned
+# setting, everything else as above: each candidate's ridge is fitted on its first train_size of the
+# weeks (the demo's range, 0.5-0.8, searched with the other hyperparameters), nevergrad minimises
+# the NRMSE of the next half of the rest, the validation weeks, beside DECOMP.RSSD and the
+# calibration MAPE, and the model is chosen by Robyn's error score over those same three. The model's
+# decomposition and the allocator still read every week of the history. Its records say so under
+# settings$ts_validation and carry the train, validation and test NRMSE under flags.
+#
 # --smoke runs 400 iterations and 4 trials to check the plumbing; its records say they are a smoke
 # run, not a result. A version-1 export is fitted as before, by the same code, in full.
 #
 #   R_LIBS=LIB R_LIBS_USER=LIB RETICULATE_PYTHON=VENV/bin/python \
 #       timeout SECONDS Rscript --vanilla scripts/robyn_arm.R --worlds DIR --out DIR \
-#       --ranges genre|union [--seeds FIRST:STOP] [--shard K/N] [--smoke]
+#       --ranges genre|union [--ts-validation] [--seeds FIRST:STOP] [--shard K/N] [--smoke]
 #
 # --seeds keeps the worlds from seed FIRST up to STOP, STOP left out, as Python's range, so a run
 # can fit a part of the worlds exported.
@@ -212,8 +220,8 @@ hyperparameters <- function(channels, setting) {
 }
 
 # Robyn's own ranking: the clusters' top models by error score, or the Pareto models if the
-# clustering failed
-select_model <- function(OutputCollect) {
+# clustering failed, their error scores read on the validation weeks where ts_validation is on
+select_model <- function(OutputCollect, ts_validation = FALSE) {
   models <- OutputCollect$clusters$models
   if (is.data.frame(models) && nrow(models) > 0) {
     best <- models[which.min(models$error_score), ]
@@ -221,7 +229,7 @@ select_model <- function(OutputCollect) {
   }
   pareto <- OutputCollect$resultHypParam
   pareto <- pareto[pareto$solID %in% OutputCollect$allSolutions, ]
-  scores <- Robyn:::errors_scores(pareto, ts_validation = FALSE)
+  scores <- Robyn:::errors_scores(pareto, ts_validation = ts_validation)
   at <- which.min(scores)
   list(solID = pareto$solID[at], route = "pareto", error_score = scores[at])
 }
@@ -478,7 +486,7 @@ mapped_response <- function(OutputCollect, solID, channels, weeks) {
   )
 }
 
-plan_second <- function(path, setting, smoke) {
+plan_second <- function(path, setting, smoke, ts_validation = FALSE) {
   world <- read_second(path)
   seed <- as.integer(world$seed)
   set.seed(seed)
@@ -514,7 +522,7 @@ plan_second <- function(path, setting, smoke) {
     cores = CORES,
     iterations = iterations,
     trials = trials,
-    ts_validation = FALSE,
+    ts_validation = ts_validation,
     add_penalty_factor = FALSE,
     seed = seed
   )
@@ -528,7 +536,7 @@ plan_second <- function(path, setting, smoke) {
     export = FALSE,
     quiet = TRUE
   )
-  chosen <- select_model(OutputCollect)
+  chosen <- select_model(OutputCollect, ts_validation)
 
   recent <- colMeans(world$spend[(weeks - 12):weeks, , drop = FALSE])
   allocation <- robyn_allocator(
@@ -603,6 +611,14 @@ plan_second <- function(path, setting, smoke) {
       calibration_mape = if (is.null(lifts)) NULL else model$mape,
       convergence = I(OutputModels$convergence$conv_msg)
     ),
+    validation = if (ts_validation) {
+      list(
+        train_size = model$train_size,
+        nrmse_train = model$nrmse_train,
+        nrmse_val = model$nrmse_val,
+        nrmse_test = model$nrmse_test
+      )
+    },
     response = mapped_response(OutputCollect, chosen$solID, channels, weeks),
     selected = chosen$solID,
     selection = chosen$route,
@@ -638,6 +654,7 @@ plan_second <- function(path, setting, smoke) {
         gain_window = GAIN_WINDOW
       ),
       if (world$geo) list(geo = GEO), # a national record carries no geo key
+      if (ts_validation) list(ts_validation = TRUE), # nor does an untuned one a ts_validation key
       list(smoke = smoke)
     ),
     `n/a` = NOT_GIVEN,
@@ -691,6 +708,7 @@ main <- function() {
   setting <- option(args, "--ranges")
   if (!setting %in% names(RANGES)) stop("--ranges takes genre or union, not ", setting)
   smoke <- "--smoke" %in% args
+  ts_validation <- "--ts-validation" %in% args
   library_path <- Sys.getenv("R_LIBS_USER")
   if (!nzchar(library_path) || Sys.getenv("R_LIBS") != library_path ||
     normalizePath(.libPaths()[1]) != normalizePath(library_path) ||
@@ -714,13 +732,15 @@ main <- function() {
     target <- file.path(out, paste0(stem, ".json"))
     if (file.exists(target)) next
     second <- exported_version(path) == SECOND
-    if (smoke && !second) stop(path, " is a version-1 export, fitted as version 1 fitted it")
+    if ((smoke || ts_validation) && !second) {
+      stop(path, " is a version-1 export, fitted as version 1 fitted it")
+    }
     began <- proc.time()
     calls <- NULL
     seen <- character()
     record <- tryCatch(
       withCallingHandlers(
-        if (second) plan_second(path, setting, smoke) else plan_world(path, setting),
+        if (second) plan_second(path, setting, smoke, ts_validation) else plan_world(path, setting),
         error = function(e) calls <<- sys.calls(),
         warning = function(w) {
           seen <<- union(seen, conditionMessage(w))
@@ -741,7 +761,8 @@ main <- function() {
         if (!second) {
           return(failed)
         }
-        c(list(version = SECOND), failed, list(settings = list(ranges = setting, smoke = smoke)))
+        settings <- c(list(ranges = setting), if (ts_validation) list(ts_validation = TRUE))
+        c(list(version = SECOND), failed, list(settings = c(settings, list(smoke = smoke))))
       }
     )
     record$warnings <- seen
