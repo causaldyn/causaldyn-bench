@@ -88,12 +88,35 @@ allots to the cells as the status quo splits them (``GeoQuarter.allot``). ``gain
 ``gain_interval`` are the optimiser's, over every geo. ``response`` is not mapped: the mapping reads
 one response of the market's spend, where a geo model's is each geo's own curve.
 
+**A configuration** (:class:`Configuration`) other than the default fits a version-2 export as
+above with three of Meridian's own settings moved, as a practitioner tunes them:
+
+* ``--media-prior-type``: the prior type of the media coefficients, ``roi`` (the default),
+  ``mroi`` or ``contribution``, each at Meridian's default prior for that type. Meridian takes an
+  experiment through the ROI prior alone, so an export whose lift rows calibrate a channel is
+  fitted at ``roi``, calibrated as above, whatever the type asked for; the record names the type
+  asked for and the type fitted;
+* ``--knot-weeks W``: automatic knot selection off, and ``ceil((T - 1) / W) + 1`` knots equally
+  spaced over the ``T`` weeks, so no two knots lie more than ``W`` weeks apart;
+* ``--holdout SHARE``: that share of the history's last weeks, at least one, left out of the
+  likelihood (``HoldoutSpec`` of a ``DateRange`` from the first held week on), as Meridian's
+  documentation holds data out to read a model's fit out of sample; the health card's
+  goodness-of-fit check then reads the held weeks apart (``r_squared_test``, ``mape_test``,
+  ``wmape_test``). CHOICE: the last weeks, not Meridian's ``RandomHoldoutSpec``: weeks drawn at
+  random from the whole history sit between weeks the fit reads, and an autocorrelated series
+  leaks through them to the time effects, so a random holdout favours the most knots; the last
+  weeks are a forecast, as the PyMC-Marketing arm's time-slice cross-validation reads one. A tuning
+  fit, not a plan to score; the record names the weeks held.
+
+Each record of a configuration other than the default carries it under ``settings.configuration``.
+
 ``--smoke`` samples 100 prior draws and 2 chains of 100 adaptation, 50 burn-in and 100 kept draws
 to check the plumbing; its records say they are a smoke run, not a result. A version-1 export is
-fitted as before, by the same code, in full.
+fitted as before, by the same code, in full, and only at the default configuration.
 
     uv run --no-project --python 3.12 --with-requirements scripts/meridian_arm.txt \\
-        python scripts/meridian_arm.py --worlds DIR --out DIR [--smoke]
+        python scripts/meridian_arm.py --worlds DIR --out DIR [--media-prior-type TYPE] \\
+        [--knot-weeks W] [--holdout SHARE] [--smoke]
 
 ``scripts/meridian_arm.txt`` pins the whole environment, and each record names the versions it ran
 on and echoes the world's digest, so the bench scores a plan only on the data it was fitted to.
@@ -102,6 +125,7 @@ on and echoes the world's digest, so the bench scores a plan only on the data it
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import enum
 import importlib.metadata
 import json
@@ -154,6 +178,7 @@ GEO_PLAN = (
     "one quarter's spend a channel, Meridian's optimiser scaling every geo's media by one ratio; "
     "the harness allots it to the cells as the status quo splits it"
 )
+PRIOR_TYPES = ("roi", "mroi", "contribution")  # the media prior types a configuration takes
 PACKAGES = (
     "google-meridian",
     "jax",
@@ -165,6 +190,53 @@ PACKAGES = (
     "pandas",
     "xarray",
 )
+
+
+@dataclasses.dataclass(frozen=True)
+class Configuration:
+    """The settings a tuned arm moves (see the module): the media prior type asked for, the most
+    weeks between two knots (None for automatic knot selection) and the share of weeks held out of
+    the likelihood (None for none). The default is the arm's recommended settings."""
+
+    media_prior_type: str = "roi"
+    knot_weeks: int | None = None
+    holdout: float | None = None
+
+    def __post_init__(self) -> None:
+        if self.media_prior_type not in PRIOR_TYPES:
+            raise ValueError(
+                f"a media prior type is one of {PRIOR_TYPES}, not {self.media_prior_type}"
+            )
+        if self.knot_weeks is not None and self.knot_weeks < 1:
+            raise ValueError(f"knots lie at least a week apart, not {self.knot_weeks}")
+        if self.holdout is not None and not 0.0 < self.holdout < 1.0:
+            raise ValueError(
+                f"a holdout is a share of the weeks above 0 and below 1, not {self.holdout}"
+            )
+
+    @property
+    def default(self) -> bool:
+        return self == RECOMMENDED
+
+
+RECOMMENDED = Configuration()
+
+
+def knots(weeks: int, knot_weeks: int) -> int:
+    """How many knots, equally spaced over ``weeks`` weeks, lie at most ``knot_weeks`` apart."""
+    return math.ceil((weeks - 1) / knot_weeks) + 1
+
+
+def held_out(mmm: Any) -> list[int] | list[list[int]] | None:
+    """The weeks Meridian held out of the likelihood, as it resolved its holdout: a list of weeks
+    for a national model, one a geo for a geo model; None where none was held."""
+    mask = mmm.model_context.compiled_holdout_id
+    if mask is None:
+        return None
+    mask = np.asarray(mask, dtype=bool)
+    if mask.ndim == 1:
+        return np.flatnonzero(mask).tolist()
+    return [np.flatnonzero(row).tolist() for row in mask]
 
 
 def roi_prior(world: Any, channels: list[str]) -> tuple[Any, dict[str, Any]]:
@@ -483,8 +555,10 @@ def _input(world: Any, channels: list[str], controls: list[str], days: list[str]
     return data
 
 
-def plan_second(path: Path, smoke: bool) -> dict[str, Any]:
-    """A version-2 export's plan, with what the scorecard reads beside it."""
+def plan_second(
+    path: Path, smoke: bool, configuration: Configuration = RECOMMENDED
+) -> dict[str, Any]:
+    """A version-2 export's plan, with what the scorecard reads beside it, at ``configuration``."""
     world = np.load(path)
     channels = [str(c) for c in world["channels"]]
     controls = [str(c) for c in world["control_names"]]
@@ -494,11 +568,24 @@ def plan_second(path: Path, smoke: bool) -> dict[str, Any]:
     days = [d.strftime("%Y-%m-%d") for d in dates]
     data = _input(world, channels, controls, days)
     prior, calibration = roi_prior(world, channels)
+    calibrated = len(calibration["default"]) < len(channels)  # a test calibrates some channel
+    prior_type = "roi" if calibrated else configuration.media_prior_type
+    moved: dict[str, Any] = {}
+    if prior_type != "roi":
+        moved["media_prior_type"] = prior_type
+    if configuration.knot_weeks is not None:
+        moved["knots"] = knots(weeks, configuration.knot_weeks)
+    if configuration.holdout is not None:
+        tail = max(1, round(configuration.holdout * weeks))
+        moved["holdout"] = spec.HoldoutSpec(spec=[spec.DateRange(days[weeks - tail], None)])
     model_spec = spec.ModelSpec(
-        prior=prior_distribution.PriorDistribution(roi_m=prior),
+        prior=prior_distribution.PriorDistribution(roi_m=prior)
+        if prior_type == "roi"
+        else prior_distribution.PriorDistribution(),
         # Meridian's window is max_lag + 1 weeks, so this one is the world's kernel
         max_lag=int(world["kernel_length"]) - 1,
-        enable_aks=True,
+        enable_aks=configuration.knot_weeks is None,
+        **moved,
     )
     mmm = model.Meridian(input_data=data, model_spec=model_spec)
     seed = int(world["seed"])
@@ -581,7 +668,7 @@ def plan_second(path: Path, smoke: bool) -> dict[str, Any]:
         ),
         "settings": {
             "max_lag": int(mmm.model_spec.max_lag),
-            "enable_aks": True,
+            "enable_aks": configuration.knot_weeks is None,
             "prior_draws": SMOKE_PRIOR_DRAWS if smoke else PRIOR_DRAWS,
             "sampling": sampling,
             "roi_prior": calibration,
@@ -591,6 +678,20 @@ def plan_second(path: Path, smoke: bool) -> dict[str, Any]:
             "gain_window": "the quarter's weeks alone, as Meridian's optimiser counts them",
             "gain_level": LEVEL,
             "smoke": smoke,
+            **(
+                {}
+                if configuration.default
+                else {
+                    "configuration": {
+                        **dataclasses.asdict(configuration),
+                        "media_prior_type_fitted": prior_type,
+                        "why": "a test calibrates a channel through the ROI prior alone"
+                        if prior_type != configuration.media_prior_type
+                        else None,
+                        "held_weeks": held_out(mmm),
+                    }
+                }
+            ),
             **(
                 {
                     "geo": {
@@ -627,7 +728,15 @@ def main() -> None:
         action="store_true",
         help="a reduced sampler on version-2 exports, to check the plumbing: not a result",
     )
+    parser.add_argument("--media-prior-type", choices=PRIOR_TYPES, default="roi")
+    parser.add_argument(
+        "--knot-weeks", type=int, help="knots at most this many weeks apart, AKS off"
+    )
+    parser.add_argument(
+        "--holdout", type=float, help="the share of the history's last weeks left out of the fit"
+    )
     args = parser.parse_args()
+    configuration = Configuration(args.media_prior_type, args.knot_weeks, args.holdout)
     first, step = map(int, args.shard.split("/"))
     args.out.mkdir(parents=True, exist_ok=True)
     warnings.filterwarnings("ignore", category=FutureWarning)
@@ -637,12 +746,12 @@ def main() -> None:
             continue
         with np.load(path) as saved:
             second = "version" in saved.files
-        if not second and args.smoke:
+        if not second and (args.smoke or not configuration.default):
             raise SystemExit(f"{path} is a version-1 export, fitted as version 1 fitted it")
         began, spent = time.perf_counter(), _cpu()
         record: dict[str, Any]
         try:
-            record = plan_second(path, args.smoke) if second else plan(path)
+            record = plan_second(path, args.smoke, configuration) if second else plan(path)
         except Exception as error:  # a world that breaks the arm is recorded, not fatal
             world = np.load(path)
             record = {
@@ -653,6 +762,8 @@ def main() -> None:
             }
             if second:
                 record = {"version": SECOND, **record}
+                if not configuration.default:
+                    record["settings"] = {"configuration": dataclasses.asdict(configuration)}
         if second:
             record["cost"] = {
                 "wall_seconds": time.perf_counter() - began,

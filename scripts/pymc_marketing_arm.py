@@ -109,13 +109,28 @@ spend a cell. ``forecast``, ``gain`` and ``gain_interval`` are the market's, sum
 ``response`` is not mapped: the mapping reads one response of the market's spend, where a geo
 model's is each geo's own curve.
 
+**A spec** (:class:`Spec`) other than the default fits a version-2 export, national or geo, as
+above with two of the model's own components moved, as a practitioner chooses among them:
+
+* ``--saturation``: ``logistic``, the default's ``LogisticSaturation``, or ``hill``,
+  ``HillSaturation`` at its default priors, ``beta x^s / (x^s + kappa^s)`` on the channel's
+  max-scaled adstock; its ``response`` maps onto ``Hill`` at ``kappa`` times the channel's scale
+  with the slope ``s``, the coefficient ``beta`` times the target's scale;
+* ``--intercept``: ``static``, the default's, or ``varying``, ``time_varying_intercept=True``:
+  the intercept a latent process over the weeks, an HSGP at the default's hyperparameters.
+
+Each record of a spec other than the default carries it under ``settings.spec``. Which spec a
+tuned arm runs is chosen before any scored world by the time-slice cross-validation of
+``scripts/pymc_marketing_cv.py``.
+
 ``--smoke`` samples 2 chains of 100 tuning and 100 kept draws to check the plumbing; its records
 say they are a smoke run, not a result. A version-1 export is fitted as before, by the same code,
-statically and in full.
+statically, at the default spec and in full.
 
     uv run --no-project --python 3.12 --with-requirements scripts/pymc_marketing_arm.txt \\
         python scripts/pymc_marketing_arm.py --worlds DIR --out DIR \\
-        [--setting static|shared|channel] [--smoke]
+        [--setting static|shared|channel] [--saturation logistic|hill] \\
+        [--intercept static|varying] [--smoke]
 
 ``scripts/pymc_marketing_arm.txt`` pins the whole environment, and each record names the versions
 it ran on and echoes the world's digest, so the bench scores a plan only on the data it was fitted
@@ -132,6 +147,7 @@ process.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import importlib.metadata
 import json
 import platform
@@ -153,6 +169,7 @@ from pymc_marketing.hsgp_kwargs import HSGPKwargs  # ty: ignore[unresolved-impor
 from pymc_marketing.mmm import (  # ty: ignore[unresolved-import]
     MMM,
     GeometricAdstock,
+    HillSaturation,
     LogisticSaturation,
 )
 from pymc_marketing.mmm.constraints import (  # ty: ignore[unresolved-import]
@@ -189,6 +206,35 @@ GEO_UNMAPPED = (
     "a geo model's response is each geo's own curve of its own spend, where the mapping reads one "
     "response of the market's spend"
 )
+SATURATIONS = {"logistic": LogisticSaturation, "hill": HillSaturation}
+INTERCEPTS = ("static", "varying")
+
+
+@dataclasses.dataclass(frozen=True)
+class Spec:
+    """The components a tuned arm moves (see the module): the saturation and the intercept. The
+    default is the arm's recommended spec."""
+
+    saturation: str = "logistic"
+    intercept: str = "static"
+
+    def __post_init__(self) -> None:
+        if self.saturation not in SATURATIONS:
+            raise ValueError(f"a saturation is one of {sorted(SATURATIONS)}, not {self.saturation}")
+        if self.intercept not in INTERCEPTS:
+            raise ValueError(f"an intercept is one of {INTERCEPTS}, not {self.intercept}")
+
+    @property
+    def default(self) -> bool:
+        return self == RECOMMENDED
+
+    def components(self) -> dict[str, Any]:
+        """The model's saturation, and its intercept where it moves, as ``MMM`` takes them."""
+        moved = {"time_varying_intercept": True} if self.intercept == "varying" else {}
+        return {"saturation": SATURATIONS[self.saturation](), **moved}
+
+
+RECOMMENDED = Spec()
 
 
 def plan(path: Path) -> dict[str, Any]:
@@ -317,17 +363,32 @@ def _response(model: Any, trace: Any, channels: list[str]) -> dict[str, Any]:
     target = float(model.scalers["_target"])
     contribution = posterior["channel_contribution"].transpose("sample", "date", "channel")
     process = posterior.get("media_temporal_latent_multiplier")
+    hill = isinstance(model.saturation, HillSaturation)
     parameters, total, weekly = {}, {}, {}
     for name in channels:
-        lam = posterior["saturation_lam"].sel(channel=name).values[kept]
-        coefficient = posterior["saturation_beta"].sel(channel=name).values[kept] * target
+
+        def drawn(variable: str, at: str = name) -> np.ndarray:
+            return posterior[variable].sel(channel=at).values[kept]
+
+        channel_scale = float(model.scalers["_channel"].sel(channel=name))
+        coefficient = drawn("saturation_beta") * target
         if process is not None:  # one process for every channel, or one a channel
             at = process.sel(channel=name) if "channel" in process.dims else process
             coefficient = coefficient[:, None] * at.transpose("sample", "date").values[kept]
         series = contribution.sel(channel=name).values[kept] * target
+        # the logistic curve (1 - e^-lam x) / (1 + e^-lam x) is tanh(lam x / 2); Hill's half-
+        # saturation kappa is on the max-scaled media, as its slope is on any scale
+        curve = (
+            {
+                "scale": (drawn("saturation_kappa") * channel_scale).tolist(),
+                "slope": drawn("saturation_slope").tolist(),
+            }
+            if hill
+            else {"scale": (2.0 * channel_scale / drawn("saturation_lam")).tolist()}
+        )
         parameters[name] = {
-            "retention": posterior["adstock_alpha"].sel(channel=name).values[kept].tolist(),
-            "scale": (2.0 * float(model.scalers["_channel"].sel(channel=name)) / lam).tolist(),
+            "retention": drawn("adstock_alpha").tolist(),
+            **curve,
             "coefficient": coefficient.tolist(),
         }
         total[name] = series.sum(axis=1).tolist()
@@ -336,7 +397,7 @@ def _response(model: Any, trace: Any, channels: list[str]) -> dict[str, Any]:
         "kernel": "GeometricAdstock",
         "length": int(model.adstock.l_max),
         "normalized": bool(model.adstock.normalize),
-        "curve": "Tanh",
+        "curve": "Hill" if hill else "Tanh",
         "draws": int(kept.size),
         "parameters": parameters,
         "decomposition": {"total": total, "held": held.tolist(), "weekly": weekly},
@@ -386,8 +447,8 @@ def _multiplier(
     return {"weeks": int(dates.size), "lengthscale": lengthscale, "channels": summary}
 
 
-def plan_second(path: Path, setting: str, smoke: bool) -> dict[str, Any]:
-    """A version-2 export's plan, with what the scorecard reads beside it."""
+def plan_second(path: Path, setting: str, smoke: bool, spec: Spec = RECOMMENDED) -> dict[str, Any]:
+    """A version-2 export's plan, with what the scorecard reads beside it, at ``spec``."""
     world = np.load(path)
     channels = [str(c) for c in world["channels"]]
     controls = [str(c) for c in world["control_names"]]
@@ -407,9 +468,9 @@ def plan_second(path: Path, setting: str, smoke: bool) -> dict[str, Any]:
         control_columns=controls or None,
         target_column="sales",
         adstock=GeometricAdstock(l_max=int(world["kernel_length"])),
-        saturation=LogisticSaturation(),
         yearly_seasonality=HARMONICS,
         time_varying_media=_media(setting, weeks),
+        **spec.components(),
     )
     model.build_model(frame, sales)
     keep, dropped = taken(world)
@@ -494,6 +555,7 @@ def plan_second(path: Path, setting: str, smoke: bool) -> dict[str, Any]:
             "lift_dated": setting != "static",
             "gain_level": LEVEL,
             "smoke": smoke,
+            **({} if spec.default else {"spec": dataclasses.asdict(spec)}),
         },
         "n/a": {},
         "lift_rows": rows,
@@ -550,9 +612,9 @@ def _national(world: Any) -> list[Constraint]:
     return out
 
 
-def plan_geo(path: Path, smoke: bool) -> dict[str, Any]:
-    """A geo export's plan: the geo model, its tests as its likelihood takes them, and its own
-    optimiser over every geo's cells."""
+def plan_geo(path: Path, smoke: bool, spec: Spec = RECOMMENDED) -> dict[str, Any]:
+    """A geo export's plan at ``spec``: the geo model, its tests as its likelihood takes them, and
+    its own optimiser over every geo's cells."""
     world = np.load(path)
     channels = [str(c) for c in world["channels"]]
     weeks, planned = world["sales"].shape[0], int(world["planned"])
@@ -565,9 +627,9 @@ def plan_geo(path: Path, smoke: bool) -> dict[str, Any]:
         channel_columns=channels,
         target_column="sales",
         adstock=GeometricAdstock(l_max=int(world["kernel_length"])),
-        saturation=LogisticSaturation(),
         yearly_seasonality=HARMONICS,
         dims=("geo",),
+        **spec.components(),
     )
     model.build_model(frame, sales)
     split, keep = apportioned(world)
@@ -663,6 +725,7 @@ def plan_geo(path: Path, smoke: bool) -> dict[str, Any]:
             "lift": GEO_LIFT,
             "gain_level": LEVEL,
             "smoke": smoke,
+            **({} if spec.default else {"spec": dataclasses.asdict(spec)}),
         },
         "n/a": {},
         "lift_rows": rows,
@@ -696,7 +759,10 @@ def main() -> None:
         action="store_true",
         help="a reduced sampler on version-2 exports, to check the plumbing: not a result",
     )
+    parser.add_argument("--saturation", choices=sorted(SATURATIONS), default="logistic")
+    parser.add_argument("--intercept", choices=INTERCEPTS, default="static")
     args = parser.parse_args()
+    spec = Spec(args.saturation, args.intercept)
     first, step = map(int, args.shard.split("/"))
     args.out.mkdir(parents=True, exist_ok=True)
     warnings.filterwarnings("ignore", category=FutureWarning)
@@ -707,7 +773,7 @@ def main() -> None:
         with np.load(path) as saved:
             second = "version" in saved.files
             on_geos = geo(saved)
-        if not second and (args.setting != "static" or args.smoke):
+        if not second and (args.setting != "static" or args.smoke or not spec.default):
             raise SystemExit(f"{path} is a version-1 export, fitted as version 1 fitted it")
         if on_geos and args.setting != "static":
             raise SystemExit(f"{path} is a geo export, which the arm fits with static media alone")
@@ -715,9 +781,9 @@ def main() -> None:
         record: dict[str, Any]
         try:
             if on_geos:
-                record = plan_geo(path, args.smoke)
+                record = plan_geo(path, args.smoke, spec)
             elif second:
-                record = plan_second(path, args.setting, args.smoke)
+                record = plan_second(path, args.setting, args.smoke, spec)
             else:
                 record = plan(path)
         except Exception as error:  # a world that breaks the arm is recorded, not fatal
@@ -729,7 +795,10 @@ def main() -> None:
                 "traceback": traceback.format_exc(),
             }
             if second:
-                record = {"version": SECOND, **record, "settings": {"setting": args.setting}}
+                settings = {"setting": args.setting}
+                if not spec.default:
+                    settings["spec"] = dataclasses.asdict(spec)
+                record = {"version": SECOND, **record, "settings": settings}
         if second:
             record["cost"] = {
                 "wall_seconds": time.perf_counter() - began,
