@@ -25,8 +25,14 @@ numpy pads a seed's words with zeros to four before it hashes them, so ``(a, b, 
 ``(a, b, c, 0)`` seed one stream, and an int seed ``s`` is ``(s, 0, 0, 0)``: a further index, where
 a role needs several streams, starts at 1 (:func:`rng` refuses 0), and no world seed is 0.
 
-:data:`USED_SEEDS` and :data:`USED_STREAMS` list what the committed runs drew from; a test holds
-every family's block apart from them.
+A confirmatory run draws worlds no scored run read: environment ``e``'s from the family's scored
+block :data:`CONFIRMATORY` environments on, ``200 000 + 20 000 f + 1 000 (e + 10)``, no family
+holding more environments than that; family 0's from blocks of their own past its extensions
+(:data:`TRACK_M2_CONFIRMATORY`).
+
+:data:`USED_SEEDS` and :data:`USED_STREAMS` list what the committed runs drew from, the scorecard's
+scored run among them (:data:`SCORECARD_RUNS`); a test holds every family's block apart from the
+runs before the scorecard's and every confirmatory block apart from them all.
 """
 
 from __future__ import annotations
@@ -46,6 +52,13 @@ TRACK_M2 = 100  # Track M v2's stream: its worlds' continuation, whichever famil
 TRACK_M2_EXTENSIONS: dict[str, range] = {
     "drawn": range(11_000, 11_060),
     "reference": range(21_000, 21_160),
+}
+
+
+CONFIRMATORY = 9  # a confirmatory environment's block is its scored one's this many blocks on
+TRACK_M2_CONFIRMATORY: dict[str, range] = {
+    "drawn": range(12_000, 13_000),
+    "reference": range(22_000, 23_000),
 }
 
 
@@ -87,6 +100,14 @@ def scored(family: int, environment: int) -> range:
     return range(first, first + WORLDS)
 
 
+def confirmatory(family: int, environment: int) -> range:
+    """The confirmatory worlds of the family's environment ``environment``, counted from 0, in
+    order: its scored block :data:`CONFIRMATORY` environments on, which no scored run reads."""
+    if not 0 <= environment < CONFIRMATORY:
+        raise ValueError(f"a family's confirmatory blocks hold {CONFIRMATORY} environments")
+    return scored(family, environment + CONFIRMATORY)
+
+
 def rng(family: int, role: Role, seed: int, *index: int) -> np.random.Generator:
     """The generator of the family's variates for ``role`` in world ``seed``; ``index``, each 1 or
     more, picks one of several streams a role needs."""
@@ -94,6 +115,45 @@ def rng(family: int, role: Role, seed: int, *index: int) -> np.random.Generator:
         raise ValueError(f"a further index starts at 1, since numpy pads seeds with zeros: {index}")
     return np.random.default_rng((stream(family), int(role), seed, *index))
 
+
+# the scorecard's scored run's worlds: the first of each environment's scored block it read, by
+# family, environment and count, and every pilot block of those environments, whole
+_SCORECARD_SCORED = {
+    1: ((0, 1, 2, 3, 4, 5), 40),
+    2: ((0, 1, 2), 137),
+    3: ((0, 1, 2), 127),
+    4: ((0, 1, 2), 80),
+    5: ((0, 1, 2), 114),
+    6: ((0, 1, 2), 80),
+    7: ((0, 1, 2), 107),
+    8: ((0, 1), 120),
+    10: ((0, 1, 2), 80),
+    14: ((0,), 240),
+    15: ((0,), 100),
+}
+SCORECARD_RUNS: dict[str, tuple[range, ...]] = {
+    "the scorecard's scored run": (
+        TRACK_M2_EXTENSIONS["drawn"][:20],
+        TRACK_M2_EXTENSIONS["reference"][:120],
+        *(
+            scored(f, e)[:n]
+            for f, (environments, n) in _SCORECARD_SCORED.items()
+            for e in environments
+        ),
+    ),
+    "the scorecard's pilots": tuple(
+        pilot(f, e) for f, (environments, _) in _SCORECARD_SCORED.items() for e in environments
+    ),
+}
+SCORECARD_STREAMS: dict[str, tuple[tuple[int, ...], ...]] = {
+    "the scorecard's scored run's drawn worlds' channels": tuple(
+        (7, s) for s in TRACK_M2_EXTENSIONS["drawn"][:20]
+    ),
+}
+"""What the scorecard's runs drew beyond the committed runs before them: its scored run's worlds,
+family 0's past the budgets run's, and its pilots'; and the channels of its drawn worlds of family
+0 past the budgets run's. Their tests' noise is drawn from ``1000 s + c``,
+apart from every block's tests where each block's seeds and their thousands are apart."""
 
 # every int seed a committed run drew a world, a test's noise or a resample from
 USED_SEEDS: dict[str, tuple[range, ...]] = {
@@ -122,6 +182,7 @@ USED_SEEDS: dict[str, tuple[range, ...]] = {
         )
         for s in block
     ),
+    **SCORECARD_RUNS,
 }
 # the tuple seeds committed runs drew from, each (first word, the seeds it was paired with): a drawn
 # world's channels (7, s); the geo run's panel, pool and prior (11, s), (12, s), (12, s, 1) and
@@ -145,4 +206,5 @@ USED_STREAMS: dict[str, tuple[tuple[int, ...], ...]] = {
     "the library's geo run": tuple(
         (s, 1) for block in (range(0, 20), range(20_261_002, 20_261_102)) for s in block
     ),
+    **SCORECARD_STREAMS,
 }

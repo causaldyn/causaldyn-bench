@@ -1,6 +1,8 @@
 """The scorecard's seeds: every family's block and stream apart from one another and from every seed
-and stream a committed run drew from, numpy's padding included; family 0's scored blocks extended
-past the budgets run's without moving one of its worlds."""
+and stream a committed run before the scorecard drew from, numpy's padding included; family 0's
+scored blocks extended past the budgets run's without moving one of its worlds; and every
+confirmatory block apart from every block and every seed a committed run drew, the scorecard's
+scored run's included."""
 
 from collections import Counter
 
@@ -8,23 +10,48 @@ import numpy as np
 import pytest
 
 from causaldyn_bench.budget_regret import ENVIRONMENTS
+from causaldyn_bench.scorecard.collinear import COLLINEAR
+from causaldyn_bench.scorecard.confounded import CONFOUNDED
+from causaldyn_bench.scorecard.drift import DRIFT
+from causaldyn_bench.scorecard.family import confirmatory as confirmatory_of
+from causaldyn_bench.scorecard.family import index, number
+from causaldyn_bench.scorecard.few_geos import FEW_GEOS
+from causaldyn_bench.scorecard.flat import FLAT
+from causaldyn_bench.scorecard.geo import GEO
+from causaldyn_bench.scorecard.long_term import LONG_TERM
+from causaldyn_bench.scorecard.meridian import MERIDIAN
+from causaldyn_bench.scorecard.outside import OUTSIDE
+from causaldyn_bench.scorecard.performance import PERFORMANCE
+from causaldyn_bench.scorecard.promotions import PROMOTIONS
+from causaldyn_bench.scorecard.pymc_marketing import PYMC_MARKETING
+from causaldyn_bench.scorecard.robyn import ROBYN
+from causaldyn_bench.scorecard.s_curves import S_CURVES
 from causaldyn_bench.scorecard.seeds import (
     BLOCK,
+    CONFIRMATORY,
     FAMILIES,
     FIRST,
     PILOTS,
+    SCORECARD_RUNS,
+    SCORECARD_STREAMS,
     TRACK_M2,
+    TRACK_M2_CONFIRMATORY,
     TRACK_M2_EXTENSIONS,
     USED_SEEDS,
     USED_STREAMS,
     WORLDS,
     Role,
+    confirmatory,
     pilot,
     rng,
     scored,
     stream,
 )
+from causaldyn_bench.scorecard.short import SHORT
+from causaldyn_bench.scorecard.simmmulator import Simmmulator
+from causaldyn_bench.scorecard.spillover import SPILLOVER
 from causaldyn_bench.scorecard.track_m2 import TRACK_M2 as FAMILY_0
+from causaldyn_bench.scorecard.twins import TWINS
 
 CHANNELS = 3  # a Track M v2 world's channels, each with tests of its own noise
 
@@ -36,9 +63,13 @@ def _canonical(seed: int | tuple[int, ...]) -> tuple[int, ...]:
     return words + (0,) * (4 - len(words))
 
 
-def _used() -> set[tuple[int, ...]]:
-    ints = {s for ranges in USED_SEEDS.values() for r in ranges for s in r}
-    streams = {seed for seeds in USED_STREAMS.values() for seed in seeds}
+def _used(*, scorecard: bool = False) -> set[tuple[int, ...]]:
+    """Every seed a committed run drew, as numpy hashes it: the runs before the scorecard's, and
+    with ``scorecard`` the scorecard's runs' too."""
+    held = {k: v for k, v in USED_SEEDS.items() if scorecard or k not in SCORECARD_RUNS}
+    drawn = {k: v for k, v in USED_STREAMS.items() if scorecard or k not in SCORECARD_STREAMS}
+    ints = {s for ranges in held.values() for r in ranges for s in r}
+    streams = {seed for seeds in drawn.values() for seed in seeds}
     return {_canonical(s) for s in ints} | {_canonical(s) for s in streams}
 
 
@@ -196,3 +227,87 @@ def test_family_noughts_old_worlds_export_as_before_and_its_new_ones_as_drawn(ot
         ("reference", 919, "6edb91a3f961e24a"),
     ):
         assert FAMILY_0.observe(FAMILY_0.world(environment, seed), 4).digest() == digest
+
+
+FAMILY_OBJECTS = (
+    FAMILY_0, DRIFT, CONFOUNDED, COLLINEAR, S_CURVES, PERFORMANCE, OUTSIDE, SHORT, GEO, SPILLOVER,
+    FEW_GEOS, MERIDIAN, PYMC_MARKETING, ROBYN, TWINS, LONG_TERM, FLAT, PROMOTIONS,
+)  # fmt: skip
+"""Every family that draws its worlds; family 15 reads its worlds from files, its one environment
+drawn from its first scored block."""
+
+
+def _confirmatory_blocks() -> list[range]:
+    out = [confirmatory(f, e) for f in range(1, FAMILIES + 1) for e in range(CONFIRMATORY)]
+    return [*out, *TRACK_M2_CONFIRMATORY.values()]
+
+
+def test_every_family_s_scored_environments_are_below_its_confirmatory_blocks():
+    """No family holds more environments than its confirmatory blocks are placed past: each
+    environment's scored block is one of its first :data:`CONFIRMATORY`, its confirmatory block
+    that one moved on, and family 0's are its own."""
+    for family in FAMILY_OBJECTS:
+        f = number(family)
+        held = confirmatory_of(family)
+        assert tuple(held) == tuple(family.scored)
+        for environment, block in family.scored.items():
+            if f == 0:
+                assert held[environment] == TRACK_M2_CONFIRMATORY[environment]
+                continue
+            e = (block[0] - FIRST - BLOCK * f) // WORLDS - 1
+            assert 0 <= e < CONFIRMATORY
+            assert block == scored(f, e)
+            assert held[environment] == confirmatory(f, e) == scored(f, e + CONFIRMATORY)
+    assert dict(Simmmulator.scored) == {"demo": scored(15, 0)}
+    assert confirmatory(1, 0) == range(230_000, 231_000)
+    assert dict(TRACK_M2_CONFIRMATORY) == {
+        "drawn": range(12_000, 13_000),
+        "reference": range(22_000, 23_000),
+    }
+
+
+def test_the_confirmatory_blocks_are_apart_from_every_block_and_every_committed_seed():
+    """No confirmatory world is a world of another block, pilot, scored or confirmatory, or a
+    seed any committed run drew, the scorecard's scored run's and pilots' included; nor is its
+    tests' noise, 1000 s + c, any committed seed's; and family 0's draw their channels from no
+    committed stream."""
+    blocks = _confirmatory_blocks()
+    seeds = [s for block in blocks for s in block]
+    assert len(seeds) == len(set(seeds)) == FAMILIES * CONFIRMATORY * WORLDS + 2 * WORLDS
+    others = [*_blocks(), *FAMILY_0.pilots.values(), *FAMILY_0.scored.values()]
+    others = [b for b in others if b not in blocks]
+    assert not set(seeds) & {s for block in others for s in block}
+    used = _used(scorecard=True)
+    ints = {words[0] for words in used if words[1:] == (0, 0, 0)}
+    assert not set(seeds) & ints
+    assert not {s // 1000 for s in ints} & set(seeds)
+    for seed in TRACK_M2_CONFIRMATORY["drawn"]:
+        assert _canonical((7, seed)) not in used, seed
+
+
+def test_the_scorecard_s_runs_are_listed_as_drawn_each_the_first_worlds_of_a_block():
+    """The scorecard's scored run's worlds are listed as drawn, each environment's the first of
+    its scored block, family 0's the first of its extensions, and its pilots' each a pilot block
+    whole."""
+    held = SCORECARD_RUNS["the scorecard's scored run"]
+    assert held[:2] == (range(11_000, 11_020), range(21_000, 21_120))
+    assert scored(2, 1)[:137] in held
+    assert len(held) == 2 + 6 + 3 * 7 + 2 + 1 + 1
+    blocks = _blocks()
+    for r in held[2:]:
+        assert (r.start - FIRST) % WORLDS == 0
+        assert any(r.start == b.start and len(r) <= len(b) == WORLDS for b in blocks)
+    assert all(b in blocks and len(b) == PILOTS for b in SCORECARD_RUNS["the scorecard's pilots"])
+
+
+def test_a_confirmatory_world_is_found_in_its_own_order_and_a_world_of_no_block_is_refused():
+    block = confirmatory_of(DRIFT)["walk"]
+    assert index(DRIFT, "walk", block[0]) == 0
+    assert index(DRIFT, "walk", block[17]) == 17
+    assert index(FAMILY_0, "drawn", 12_003) == 3
+    with pytest.raises(ValueError, match="draws no pilot world"):
+        index(DRIFT, "walk", block[0], pilot=True)
+    with pytest.raises(ValueError, match="draws no scored world"):
+        index(DRIFT, "trend", block[0])
+    with pytest.raises(ValueError, match="confirmatory blocks hold"):
+        confirmatory(1, CONFIRMATORY)
