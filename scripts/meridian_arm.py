@@ -105,8 +105,11 @@ above with three of Meridian's own settings moved, as a practitioner tunes them:
   ``wmape_test``). CHOICE: the last weeks, not Meridian's ``RandomHoldoutSpec``: weeks drawn at
   random from the whole history sit between weeks the fit reads, and an autocorrelated series
   leaks through them to the time effects, so a random holdout favours the most knots; the last
-  weeks are a forecast, as the PyMC-Marketing arm's time-slice cross-validation reads one. A tuning
-  fit, not a plan to score; the record names the weeks held.
+  weeks are a forecast, as the PyMC-Marketing arm's time-slice cross-validation reads one. With
+  automatic knot selection on, the selection runs on the weeks the fit reads alone and its knots
+  are handed to the model: Meridian's selection reads the outcome of every week of its input, the
+  held weeks too, which would place knots by the weeks the check reads. A tuning fit, not a plan
+  to score; the record names the weeks held and the knots.
 
 Each record of a configuration other than the default carries it under ``settings.configuration``.
 
@@ -147,6 +150,7 @@ from meridian import backend, constants  # ty: ignore[unresolved-import]
 from meridian.analysis import analyzer, optimizer, tensors  # ty: ignore[unresolved-import]
 from meridian.analysis.review import reviewer  # ty: ignore[unresolved-import]
 from meridian.data import data_frame_input_data_builder  # ty: ignore[unresolved-import]
+from meridian.model import knots as knot_selection  # ty: ignore[unresolved-import]
 from meridian.model import model, prior_distribution, spec  # ty: ignore[unresolved-import]
 from meridian_roi import defaulted, pooled
 
@@ -578,13 +582,19 @@ def plan_second(
     if configuration.holdout is not None:
         tail = max(1, round(configuration.holdout * weeks))
         moved["holdout"] = spec.HoldoutSpec(spec=[spec.DateRange(days[weeks - tail], None)])
+        if configuration.knot_weeks is None:
+            fitted = {name: world[name] for name in world.files} | {
+                name: world[name][: weeks - tail] for name in ("sales", "spend", "controls")
+            }
+            selection = knot_selection.AKS(_input(fitted, channels, controls, days))
+            moved["knots"] = [int(k) for k in selection.automatic_knot_selection().knots]
     model_spec = spec.ModelSpec(
         prior=prior_distribution.PriorDistribution(roi_m=prior)
         if prior_type == "roi"
         else prior_distribution.PriorDistribution(),
         # Meridian's window is max_lag + 1 weeks, so this one is the world's kernel
         max_lag=int(world["kernel_length"]) - 1,
-        enable_aks=configuration.knot_weeks is None,
+        enable_aks="knots" not in moved,
         **moved,
     )
     mmm = model.Meridian(input_data=data, model_spec=model_spec)
@@ -668,7 +678,7 @@ def plan_second(
         ),
         "settings": {
             "max_lag": int(mmm.model_spec.max_lag),
-            "enable_aks": configuration.knot_weeks is None,
+            "enable_aks": configuration.knot_weeks is None,  # on the fitted weeks if held out
             "prior_draws": SMOKE_PRIOR_DRAWS if smoke else PRIOR_DRAWS,
             "sampling": sampling,
             "roi_prior": calibration,
