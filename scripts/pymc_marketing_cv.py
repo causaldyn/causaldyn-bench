@@ -21,6 +21,10 @@ record of it is ever scored: the tuning reads the forecasts alone, never the wor
 * **The score.** ``cv.summary.crps()``, the library's mean CRPS of each fold's test weeks and of its
   training weeks, in the outcome's units; the record also carries each in units of the history's
   mean weekly sales, as the bench reads a forecast's CRPS, so worlds of different size pool.
+* **The mixing.** Each fold's sampler flags as the arm reads its fit's
+  (``pymc_marketing_arm._flags``: the divergences, the draws at the largest tree depth, the largest
+  R-hat and the smallest bulk ESS over the free variables), beside the fold's kept draws, so that
+  the tuning can hold a spec whose sampler does not mix apart from one that forecasts badly.
 
 A fold whose fit raised fails the world's record, as the arm records a world that breaks it.
 
@@ -61,6 +65,7 @@ from pymc_marketing_arm import (
     SECOND,
     Spec,
     _cpu,
+    _flags,
 )
 
 HORIZON = 13  # a fold's test weeks: the quarter the arm plans
@@ -114,11 +119,15 @@ def validate(path: Path, spec: Spec, smoke: bool) -> dict[str, Any]:
     cv = TimeSliceCrossValidator(
         n_init=first, forecast_horizon=HORIZON, date_column="date", step_size=HORIZON
     )
-    cv.run(frame, sales, sampler_config=sampler, mmm=template)
+    _, models = cv.run(frame, sales, sampler_config=sampler, mmm=template, return_models=True)
     table = cv.summary.crps()
     unit = float(np.mean(world["sales"]))
+    labels = list(table["cv"].drop_duplicates())
+    if len(labels) != len(models):
+        raise RuntimeError(f"the cross-validation scored {len(labels)} folds of {len(models)}")
+    kept = sampler["chains"] * sampler["draws"]
     folds, tested = [], []
-    for i, label in enumerate(table["cv"].drop_duplicates()):
+    for i, (label, fitted) in enumerate(zip(labels, models, strict=True)):
         rows = table[table["cv"] == label].set_index("split")["mean_crps"]
         tested.append(float(rows["test"]) / unit)
         folds.append(
@@ -128,6 +137,7 @@ def validate(path: Path, spec: Spec, smoke: bool) -> dict[str, Any]:
                 "test_crps": float(rows["test"]),
                 "train_crps": float(rows["train"]),
                 "test_crps_scaled": tested[-1],
+                "flags": _flags(fitted.idata, fitted) | {"kept_draws": kept},
             }
         )
     return {
