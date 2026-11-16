@@ -5,7 +5,8 @@ Families differ in the shape of their worlds, a market's history, a geo panel or
 each is an object of its own behind one protocol rather than one generator grown by flags. A family
 names its environments, each a setting of its mechanism, and for each the worlds its pilots and its
 scored runs draw, in their seeded order (:mod:`.seeds`): a run's sample, and every look at it, is
-a prefix of that order. Its labels say, in plain words, what its worlds hand some arm by
+a prefix of that order. A confirmatory run draws each environment's worlds no scored run read
+(:func:`confirmatory`). Its labels say, in plain words, what its worlds hand some arm by
 construction.
 """
 
@@ -19,7 +20,14 @@ from causaldyn_bench.endogenous_mmm import Series, Vector
 from causaldyn_bench.mmm_decision import Plan, Quarter
 from causaldyn_bench.scorecard.observe import Observation
 from causaldyn_bench.scorecard.returns import Returns
-from causaldyn_bench.scorecard.seeds import TRACK_M2
+from causaldyn_bench.scorecard.seeds import (
+    BLOCK,
+    FIRST,
+    TRACK_M2,
+    TRACK_M2_CONFIRMATORY,
+    WORLDS,
+)
+from causaldyn_bench.scorecard.seeds import confirmatory as _confirmatory
 from causaldyn_bench.scorecard.truth import Cell
 
 W = TypeVar("W")
@@ -99,10 +107,27 @@ def number(family: Family[W]) -> int:  # noqa: UP047 -- CI runs 3.11
     return family.stream - TRACK_M2
 
 
+def confirmatory(family: Family[W]) -> dict[str, range]:  # noqa: UP047 -- CI runs 3.11
+    """Each environment's confirmatory worlds, in their seeded order: its scored block's
+    confirmatory block (:func:`.seeds.confirmatory`), family 0's its own
+    (:data:`.seeds.TRACK_M2_CONFIRMATORY`)."""
+    f = number(family)
+    if f == 0:
+        return dict(TRACK_M2_CONFIRMATORY)
+    out = {}
+    for environment, held in family.scored.items():
+        at, left = divmod(held[0] - FIRST - BLOCK * f, WORLDS)
+        if left or len(held) != WORLDS:
+            raise ValueError(f"{family.name}'s {environment} is not one of its scored blocks")
+        out[environment] = _confirmatory(f, at - 1)
+    return out
+
+
 def index(  # noqa: UP047 -- CI runs 3.11
     family: Family[W], environment: str, seed: int, *, pilot: bool = False
 ) -> int:
-    """The world's place in its environment's seeded order, from 0.
+    """The world's place in its environment's seeded order, from 0: a scored world's in its
+    scored order, a confirmatory world's in its confirmatory order (:func:`confirmatory`).
 
     Raises:
         ValueError: the family draws no such world.
@@ -110,7 +135,9 @@ def index(  # noqa: UP047 -- CI runs 3.11
     samples = family.pilots if pilot else family.scored
     if environment not in samples:
         raise ValueError(f"{family.name} has no environment {environment!r}")
-    if seed not in samples[environment]:
-        kind = "pilot" if pilot else "scored"
-        raise ValueError(f"{family.name}'s {environment} draws no {kind} world {seed}")
-    return samples[environment].index(seed)
+    if seed in samples[environment]:
+        return samples[environment].index(seed)
+    if not pilot and seed in (held := confirmatory(family)[environment]):
+        return held.index(seed)
+    kind = "pilot" if pilot else "scored"
+    raise ValueError(f"{family.name}'s {environment} draws no {kind} world {seed}")
