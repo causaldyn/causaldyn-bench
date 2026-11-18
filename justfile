@@ -87,7 +87,8 @@ paper-2-smoke:
         --draws 12 --boot 500 --clusters 2 --nodes 3 4 \
         --out results/paper2-smoke
 
-# Minutes, not hours -- everything but Table 5 is closed form, and Table 5 is five seeds.
+# Minutes, not hours -- everything but Table 5 is closed form, and Table 5 is five seeds. Table 4
+# reads its T = 1e8 rungs off the library, which holds about 7 GB while it builds each one.
 paper-3 seeds="11 12 13 14 15":
     uv run python -u -m causaldyn_bench.paper_three \
         --seeds {{seeds}} \

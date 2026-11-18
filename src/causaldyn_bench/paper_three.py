@@ -32,10 +32,13 @@ Three decisions a manuscript needs and a leaderboard does not, each falsifiable:
    does expose -- ``c_causal = 2 sqrt(A K/c)`` and ``uncapped_floor = c_causal sqrt(T) - A I0/c`` --
    and :func:`plant_constants` raises if either misses. Both hold to machine zero today; a change to
    either formula on the library side fails this module rather than silently re-scaling Table 4.
-4. **Table 4 compares the library against an INDEPENDENT root.** ``predicted_mass`` is a fixed point
-   of an integer map; the column beside it is the closed-form positive root of the same balance.
-   Comparing the fixed point against itself would test nothing, so the gate is stated in the units
-   that bound it -- the mass one round delivers, i.e. one cap.
+4. **Table 4 sets the library's optimum beside an INDEPENDENT root.** ``exploration_mass`` is the
+   minimum of the discrete program, which charges the INTEGER round that delivers a mass; the
+   column beside it is the closed-form root of the constant-cap relaxation, which reads that round
+   as ``mass/cap``. They are different numbers, and how they differ is itself the claim -- the
+   optimum is the root at a horizon shorter by ``rho_T`` in ``[0, 1]``, below it by less than one
+   cap -- so the table gates two independent computations against a bracket rather than one
+   against itself. ``scripts/paper_three_mass.gp`` recomputes Table 4 at 77 digits.
 """
 
 from __future__ import annotations
@@ -49,6 +52,7 @@ from typing import TypedDict
 import numpy as np
 from chc.regret import capped_exploration_policy, minimax_exploration_certificate
 from chc.research.regret import multivariate_van_trees_certificate
+from scipy.special import digamma
 
 # The knobs the capped-exploration certificates share. These are the defaults of every certificate
 # below; naming them once here is what lets `plant_constants` check itself against the library.
@@ -88,12 +92,16 @@ def plant_constants(*, horizon: int = 10**5, cap: float = 0.03) -> PlantConstant
     return PlantConstants(curvature, numerator, info_rate, _I0, float(first), float(second))
 
 
-def exact_mass(horizon: float, cap: float, k: PlantConstants) -> float:
-    """The positive root of ``A w^2 + (K/cap) w = K c T + K I0/cap``, ``w = I0 + c S``.
+def smooth_mass(horizon: float, cap: float, k: PlantConstants) -> float:
+    """The constant-cap RELAXATION's stopping mass: the positive root of
+    ``A w^2 + (K/cap) w = K c T + K I0/cap``, ``w = I0 + c S``.
 
-    Under a constant cap the stopping round is ``S/cap``, so the remaining horizon in the balance
-    is a function of the mass and the root is a quadratic rather than a square root. This is the
-    balance's closed form; the library reaches the same number as a fixed point.
+    The round that delivers a mass ``S`` is the integer ``ceil(S/cap)``. Reading it as ``S/cap``
+    makes the remaining horizon a function of the mass and the balance a quadratic, whose root this
+    is. That is a relaxation, so the root is not the optimum: the optimum is the library's
+    ``exploration_mass``, which is this root at a horizon shorter by :func:`rounding`'s ``rho_T``
+    and lies below it by less than one cap. ``horizon`` is real so that the shorter horizon can be
+    evaluated too.
     """
     q = k.numerator / cap
     w = (
@@ -103,6 +111,54 @@ def exact_mass(horizon: float, cap: float, k: PlantConstants) -> float:
         )
     ) / (2.0 * k.curvature)
     return float((w - k.prior_info) / k.info_rate)
+
+
+def rounding(horizon: int, cap: float, mass: float, k: PlantConstants) -> float:
+    """``rho_T``: how much shorter a horizon :func:`smooth_mass` needs to land on ``mass``.
+
+    The relaxation's quadratic solved for its horizon reads ``T - rho_T = S/cap + A w^2/(K c)``.
+    At the exact optimum ``rho_T`` lies in ``[0, 1]``. Inside a round the optimum meets
+    ``A w^2 = K c (T - n)`` for the round ``n = ceil(S/cap)`` that delivers it, so
+    ``rho_T = n - S/cap``, the part of that round left unfilled. On a round boundary ``S = n cap``
+    the cost's slope changes sign across the boundary, ``K c (T - n - 1) <= A w^2 <= K c (T - n)``,
+    which is the same bracket. Subtracting the two quadratics gives the gap to the smooth root,
+    ``S_c - S_d = K rho_T/(A (w_c + w_d) + K/cap)``, which is below one cap.
+    """
+    w = k.prior_info + k.info_rate * mass
+    return float(horizon - mass / cap - k.curvature * w * w / (k.numerator * k.info_rate))
+
+
+def cap_constant(cap: float, k: PlantConstants) -> float:
+    """``C_cap``, the constant term of the optimal cost under a constant cap,
+    ``F*_T = c_causal sqrt(T) + (K/(2 c cap)) ln T + C_cap + O(T^(-1/2))``:
+
+        ``C_cap = -A I0/c + (K/(c cap)) [ln(sqrt(K/(A c))/cap) - psi(I0/(c cap)) - 1]``.
+
+    The digamma is what the block's harmonic sum ``sum_t 1/(I0 + c cap t)`` leaves once its
+    logarithm is taken out at the block's leading length.
+    """
+    rate = k.info_rate * cap
+    leading_rounds = np.sqrt(k.numerator / (k.curvature * k.info_rate)) / cap
+    return float(
+        -k.curvature * k.prior_info / k.info_rate
+        + (k.numerator / rate)
+        * (np.log(leading_rounds) - float(digamma(k.prior_info / rate)) - 1.0)
+    )
+
+
+def cap_constant_slope(cap: float, k: PlantConstants) -> float:
+    """The cost's ``T^(-1/2)`` coefficient after :func:`cap_constant`,
+    ``(K I0/(c cap) - K/2 - K^2/(4 A c cap^2)) sqrt(A/(K c))``. The rounding of the block's last
+    round cancels at this order, so the optimum's scaled residual approaches it."""
+    rate = k.info_rate * cap
+    return float(
+        (
+            k.numerator * k.prior_info / rate
+            - k.numerator / 2.0
+            - k.numerator**2 / (4.0 * k.curvature * rate * cap)
+        )
+        * np.sqrt(k.curvature / (k.numerator * k.info_rate))
+    )
 
 
 def leading_mass(horizon: float, k: PlantConstants) -> float:
@@ -132,14 +188,24 @@ class TableTwo(TypedDict):
     rows: dict[str, dict[int, dict[str, float]]]
 
 
+class CapConstantRow(TypedDict):
+    cap: float
+    constant: float
+    slope: float
+    scaled_residuals: list[float]
+
+
 class TableFour(TypedDict):
     cap: float
     cap_horizon: int
     ceiling: float
     coefficient: float
+    info_per_cap: float
+    band: list[float]
     ladder: list[dict[str, float]]
     by_cap: list[dict[str, float]]
     agreement: list[dict[str, float]]
+    constant: list[CapConstantRow]
 
 
 class SeedSpread(TypedDict):
@@ -276,11 +342,23 @@ def table_four(
 ) -> TableFour:
     """What the leading closed form drops is a CONSTANT, and the cap decides how big it is.
 
-    Panel (a) is the horizon ladder at one cap: the gap to the closed form rises to the ceiling
-    ``K/(2 A c cap)`` and stops, and the residual after subtracting it decays exactly as the
-    expansion says. Panel (b) is the cap ladder at one horizon, which is the operational reading --
-    a constant that never vanishes is invisible at a loose cap and dominant at a tight one. It takes
-    its own ladder, wider than the three caps Table 2 shares with panel (a).
+    Two masses stand beside the leading form ``sqrt(K T/(A c)) - I0/c``. The EXACT mass is the
+    library's optimum of the discrete program, ``exploration_mass``; the SMOOTH mass is
+    :func:`smooth_mass`, the root of the relaxation that reads the stopping round as ``S/cap``.
+    Panel (a) is the horizon ladder at one cap: the smooth gap rises to the ceiling
+    ``K/(2 A c cap)`` and stops, and its residual after subtracting the ceiling decays exactly as
+    the expansion says. The exact mass is the smooth root at a horizon shorter by ``rho_T`` in
+    ``[0, 1]``, so its residual moves with ``rho_T`` inside a band instead of converging.
+    Panel (b) is the cap ladder at one horizon, which is the operational reading -- a constant
+    that never vanishes is invisible at a loose cap and dominant at a tight one. It takes its own
+    ladder, wider than the caps Table 2 shares with panels (a) and (d). Panel (c) sets the
+    library's two routes to the exact mass, the program's optimum and the first-order condition's
+    fixed point, beside each other and beside the smooth root. Panel (d) asks the cost the same
+    question: what ``c_causal sqrt(T) + (K/(2 c cap)) ln T`` drops is :func:`cap_constant`, and the
+    optimum's residual after it, times ``sqrt(T)``, approaches :func:`cap_constant_slope`.
+
+    Every exact number is read off :func:`capped_exploration_policy`, which holds several arrays
+    of length ``T`` at once: the ``T = 1e8`` rungs need several gigabytes while they run.
     """
     cap = caps[len(caps) // 2]
     ceiling = k.numerator / (2.0 * k.curvature * k.info_rate * cap)
@@ -289,41 +367,82 @@ def table_four(
         * np.sqrt(k.numerator / (k.curvature * k.info_rate))
         / (8.0 * k.curvature * k.info_rate * cap**2)
     )
+    # rho_T moves the exact mass's T^(-1/2) coefficient by rho_T times this
+    shift = 0.5 * np.sqrt(k.numerator / (k.curvature * k.info_rate))
+    policies = {
+        (horizon, level): capped_exploration_policy(horizon=horizon, cap=level)
+        for level in caps
+        for horizon in horizons
+    }
     ladder: list[dict[str, float]] = []
     for horizon in horizons:
-        exact = exact_mass(horizon, cap, k)
-        gap = leading_mass(horizon, k) - exact
+        smooth = smooth_mass(horizon, cap, k)
+        exact = policies[horizon, cap].exploration_mass
+        leading = leading_mass(horizon, k)
+        rho = rounding(horizon, cap, exact, k)
         ladder.append(
             {
                 "horizon": int(horizon),
+                "smooth": smooth,
                 "exact": exact,
-                "gap": gap,
-                "gap_over_ceiling": gap / ceiling,
-                "scaled_residual": (gap - ceiling) * np.sqrt(horizon),
+                "smooth_minus_exact": smooth - exact,
+                "rounding": rho,
+                "smooth_over_ceiling": (leading - smooth) / ceiling,
+                "exact_over_ceiling": (leading - exact) / ceiling,
+                "smooth_residual": (leading - smooth - ceiling) * np.sqrt(horizon),
+                "exact_residual": (leading - exact - ceiling) * np.sqrt(horizon),
+                "exact_residual_predicted": -(coefficient - rho * shift),
             }
         )
     by_cap: list[dict[str, float]] = []
     for level in ladder_caps:
-        exact = exact_mass(cap_horizon, level, k)
-        gap = leading_mass(cap_horizon, k) - exact
+        exact = capped_exploration_policy(horizon=cap_horizon, cap=level).exploration_mass
+        smooth = smooth_mass(cap_horizon, level, k)
+        leading = leading_mass(cap_horizon, k)
         by_cap.append(
             {
                 "cap": float(level),
                 "exact": exact,
-                "gap": gap,
+                "smooth": smooth,
+                "gap": leading - exact,
                 "ceiling": k.numerator / (2.0 * k.curvature * k.info_rate * level),
-                "relative": gap / exact,
+                "relative": (leading - exact) / exact,
+                "smooth_relative": (leading - smooth) / smooth,
             }
         )
     agreement: list[dict[str, float]] = []
-    for horizon in (h for h in horizons if h <= 10**6):
-        policy = capped_exploration_policy(horizon=horizon, cap=cap)
+    for horizon in horizons:
+        policy = policies[horizon, cap]
         agreement.append(
             {
                 "horizon": int(horizon),
+                "optimum": policy.exploration_mass,
                 "fixed_point": policy.predicted_mass,
-                "root": exact_mass(horizon, cap, k),
-                "gap_in_caps": abs(policy.predicted_mass - exact_mass(horizon, cap, k)) / cap,
+                "smooth_lead_in_caps": (smooth_mass(horizon, cap, k) - policy.exploration_mass)
+                / cap,
+            }
+        )
+    c_causal = 2.0 * np.sqrt(k.curvature * k.numerator / k.info_rate)
+    constant: list[CapConstantRow] = []
+    for level in caps:
+        offset = cap_constant(level, k)
+        constant.append(
+            {
+                "cap": float(level),
+                "constant": offset,
+                "slope": cap_constant_slope(level, k),
+                "scaled_residuals": [
+                    float(
+                        (
+                            policies[horizon, level].cost
+                            - c_causal * np.sqrt(horizon)
+                            - k.numerator * np.log(horizon) / (2.0 * k.info_rate * level)
+                            - offset
+                        )
+                        * np.sqrt(horizon)
+                    )
+                    for horizon in horizons
+                ],
             }
         )
     return {
@@ -331,9 +450,12 @@ def table_four(
         "cap_horizon": int(cap_horizon),
         "ceiling": float(ceiling),
         "coefficient": float(coefficient),
+        "info_per_cap": float(k.info_rate * cap),
+        "band": [float(-coefficient), float(-(coefficient - shift))],
         "ladder": ladder,
         "by_cap": by_cap,
         "agreement": agreement,
+        "constant": constant,
     }
 
 
@@ -629,43 +751,92 @@ def _markdown(
         "",
         f"## Table 4 -- what the closed form drops is a constant, `K/(2 A c cap) = {ceiling:.6g}`",
         "",
+        "Two masses against the leading form `sqrt(K T/(A c)) - I0/c`. The exact mass is the "
+        "library's optimum of the discrete program; the smooth mass is the root of the relaxation "
+        "that reads the stopping round as `S/cap` instead of the round that delivers `S`. The "
+        "exact mass is the smooth root at a horizon shorter by `rho_T`, which lies in `[0, 1]`, so "
+        "it sits below the smooth mass by less than one cap.",
+        "",
         f"(a) horizon ladder at `cap = {four['cap']}`:",
         "",
-        "| T | exact mass | leading form - exact | over the ceiling | residual x sqrt(T) |",
-        "|---|---|---|---|---|",
+        "| T | smooth mass | exact mass | smooth - exact | rho_T | over the ceiling, smooth | "
+        "over the ceiling, exact | residual x sqrt(T), smooth | residual x sqrt(T), exact |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     for row in ladder:
         lines.append(
-            f"| {row['horizon']:,} | {row['exact']:.4f} | {row['gap']:.6f} | "
-            f"{row['gap_over_ceiling']:.6f} | {row['scaled_residual']:.4f} |"
+            f"| {row['horizon']:,} | {row['smooth']:.4f} | {row['exact']:.4f} | "
+            f"{row['smooth_minus_exact']:.1e} | {row['rounding']:.3f} | "
+            f"{row['smooth_over_ceiling']:.6f} | {row['exact_over_ceiling']:.6f} | "
+            f"{row['smooth_residual']:.4f} | {row['exact_residual']:.4f} |"
         )
+    low, high = four["band"]
+    last = ladder[-1]
     lines += [
         "",
-        f"The gap rises to the ceiling and stops -- it never reaches it, and never exceeds it. The "
-        f"last column converges to `-{coefficient:.6g}`, the coefficient the expansion predicts.",
+        "The smooth gap rises to the ceiling and stops -- it never reaches it, and never exceeds "
+        f"it -- and its scaled residual converges to `-{coefficient:.6g}`, the coefficient the "
+        "expansion predicts. The exact gap stays below the ceiling too wherever `c cap <= I0` "
+        f"(here `c cap = {four['info_per_cap']:.4f}`). Its scaled residual does not converge: it "
+        "follows `-(B - rho_T sqrt(K/(A c))/2)`, which `rho_T` in `[0, 1]` confines to "
+        f"`[{low:.4f}, {high:.4f}]`, and is within "
+        f"`{abs(last['exact_residual'] - last['exact_residual_predicted']):.1e}` of it at "
+        f"`T = {last['horizon']:,}`.",
         "",
         f"(b) cap ladder at `T = {four['cap_horizon']:,}`:",
         "",
-        "| cap | exact mass | leading form - exact | ceiling | as a share of the mass |",
-        "|---|---|---|---|---|",
+        "| cap | exact mass | smooth mass | leading form - exact | ceiling | "
+        "over-statement of the exact mass | of the smooth mass |",
+        "|---|---|---|---|---|---|---|",
     ]
     for row in by_cap:
         lines.append(
-            f"| {row['cap']:g} | {row['exact']:.4f} | {row['gap']:.4f} | {row['ceiling']:.4f} | "
-            f"{100.0 * row['relative']:.2f}% |"
+            f"| {row['cap']:g} | {row['exact']:.4f} | {row['smooth']:.4f} | {row['gap']:.4f} | "
+            f"{row['ceiling']:.4f} | {100.0 * row['relative']:.2f}% | "
+            f"{100.0 * row['smooth_relative']:.2f}% |"
         )
     lines += [
         "",
-        "(c) the library's fixed point against the closed-form root, in units of the cap:",
+        "(c) the library's two routes to the exact mass, and the smooth root's lead over them in "
+        "units of the cap:",
         "",
-        "| T | fixed point | root | gap, in caps |",
+        "| T | program's optimum | fixed point | smooth - optimum, in caps |",
         "|---|---|---|---|",
     ]
     for row in agreement:
         lines.append(
-            f"| {row['horizon']:,} | {row['fixed_point']:.6f} | {row['root']:.6f} | "
-            f"{row['gap_in_caps']:.4f} |"
+            f"| {row['horizon']:,} | {row['optimum']:.6f} | {row['fixed_point']:.6f} | "
+            f"{row['smooth_lead_in_caps']:.4f} |"
         )
+    constant = four["constant"]
+    lines += [
+        "",
+        "The convex program's optimum and the first-order condition's fixed point are found "
+        "independently. The smooth root leads them by less than one cap at every horizon, as "
+        "`0 <= S_c - S_d < cap` says.",
+        "",
+        "(d) the cost drops a constant too, "
+        "`F*_T = c_causal sqrt(T) + (K/(2 c cap)) ln T + C_cap + O(T^(-1/2))`; each cell is the "
+        "library's optimal cost less the three terms, times `sqrt(T)`:",
+        "",
+        "| cap | C_cap | "
+        + " | ".join(f"T = {row['horizon']:,}" for row in ladder)
+        + " | next coefficient |",
+        "|---|---|" + "---|" * (len(ladder) + 1),
+    ]
+    for row in constant:
+        lines.append(
+            f"| {row['cap']:g} | {row['constant']:.6f} | "
+            + " | ".join(f"{value:.4f}" for value in row["scaled_residuals"])
+            + f" | {row['slope']:.6f} |"
+        )
+    lines += [
+        "",
+        "`C_cap = -A I0/c + (K/(c cap)) [ln(sqrt(K/(A c))/cap) - psi(I0/(c cap)) - 1]` is a "
+        "digamma closed form. Each row approaches the next coefficient, "
+        "`(K I0/(c cap) - K/2 - K^2/(4 A c cap^2)) sqrt(A/(K c))`, so the constant is the "
+        "optimum's own and not a fitted offset.",
+    ]
     spread = five["spread"]
     seeds = five["seeds"]
     lines += [

@@ -43,36 +43,52 @@ The block lengths span nearly an order of magnitude and every delivered mass is 
 
 ## Table 4 -- what the closed form drops is a constant, `K/(2 A c cap) = 0.672154`
 
+Two masses against the leading form `sqrt(K T/(A c)) - I0/c`. The exact mass is the library's optimum of the discrete program; the smooth mass is the root of the relaxation that reads the stopping round as `S/cap` instead of the round that delivers `S`. The exact mass is the smooth root at a horizon shorter by `rho_T`, which lies in `[0, 1]`, so it sits below the smooth mass by less than one cap.
+
 (a) horizon ladder at `cap = 0.03`:
 
-| T | exact mass | leading form - exact | over the ceiling | residual x sqrt(T) |
-|---|---|---|---|---|
-| 10,000 | 18.6319 | 0.633608 | 0.942654 | -3.8546 |
-| 100,000 | 62.0287 | 0.659954 | 0.981850 | -3.8579 |
-| 1,000,000 | 199.3364 | 0.668295 | 0.994260 | -3.8582 |
-| 10,000,000 | 633.5653 | 0.670934 | 0.998185 | -3.8583 |
-| 100,000,000 | 2006.7252 | 0.671768 | 0.999426 | -3.8583 |
+| T | smooth mass | exact mass | smooth - exact | rho_T | over the ceiling, smooth | over the ceiling, exact | residual x sqrt(T), smooth | residual x sqrt(T), exact |
+|---|---|---|---|---|---|---|---|---|
+| 10,000 | 18.6319 | 18.6309 | 9.7e-04 | 0.970 | 0.942654 | 0.944100 | -3.8546 | -3.7573 |
+| 100,000 | 62.0287 | 62.0285 | 1.2e-04 | 0.382 | 0.981850 | 0.982030 | -3.8579 | -3.8196 |
+| 1,000,000 | 199.3364 | 199.3364 | 4.6e-05 | 0.455 | 0.994260 | 0.994328 | -3.8582 | -3.8125 |
+| 10,000,000 | 633.5653 | 633.5653 | 5.0e-06 | 0.157 | 0.998185 | 0.998192 | -3.8583 | -3.8425 |
+| 100,000,000 | 2006.7252 | 2006.7252 | 1.6e-06 | 0.162 | 0.999426 | 0.999428 | -3.8583 | -3.8420 |
 
-The gap rises to the ceiling and stops -- it never reaches it, and never exceeds it. The last column converges to `-3.85826`, the coefficient the expansion predicts.
+The smooth gap rises to the ceiling and stops -- it never reaches it, and never exceeds it -- and its scaled residual converges to `-3.85826`, the coefficient the expansion predicts. The exact gap stays below the ceiling too wherever `c cap <= I0` (here `c cap = 0.0367`). Its scaled residual does not converge: it follows `-(B - rho_T sqrt(K/(A c))/2)`, which `rho_T` in `[0, 1]` confines to `[-3.8583, -3.7578]`, and is within `3.7e-07` of it at `T = 100,000,000`.
 
 (b) cap ladder at `T = 4,000`:
 
-| cap | exact mass | leading form - exact | ceiling | as a share of the mass |
-|---|---|---|---|---|
-| 0.316228 | 11.8249 | 0.0595 | 0.0638 | 0.50% |
-| 0.1 | 11.6973 | 0.1871 | 0.2016 | 1.60% |
-| 0.0316228 | 11.3036 | 0.5808 | 0.6377 | 5.14% |
-| 0.01 | 10.1544 | 1.7300 | 2.0165 | 17.04% |
-| 0.00316228 | 7.3804 | 4.5040 | 6.3766 | 61.03% |
-| 0.001 | 3.5312 | 8.3531 | 20.1646 | 236.55% |
+| cap | exact mass | smooth mass | leading form - exact | ceiling | over-statement of the exact mass | of the smooth mass |
+|---|---|---|---|---|---|---|
+| 0.316228 | 11.8239 | 11.8249 | 0.0605 | 0.0638 | 0.51% | 0.50% |
+| 0.1 | 11.6973 | 11.6973 | 0.1871 | 0.2016 | 1.60% | 1.60% |
+| 0.0316228 | 11.3027 | 11.3036 | 0.5817 | 0.6377 | 5.15% | 5.14% |
+| 0.01 | 10.1534 | 10.1544 | 1.7310 | 2.0165 | 17.05% | 17.04% |
+| 0.00316228 | 7.3802 | 7.3804 | 4.5042 | 6.3766 | 61.03% | 61.03% |
+| 0.001 | 3.5310 | 3.5312 | 8.3534 | 20.1646 | 236.57% | 236.55% |
 
-(c) the library's fixed point against the closed-form root, in units of the cap:
+(c) the library's two routes to the exact mass, and the smooth root's lead over them in units of the cap:
 
-| T | fixed point | root | gap, in caps |
+| T | program's optimum | fixed point | smooth - optimum, in caps |
 |---|---|---|---|
-| 10,000 | 18.630889 | 18.631861 | 0.0324 |
-| 100,000 | 62.028548 | 62.028669 | 0.0040 |
-| 1,000,000 | 199.336351 | 199.336397 | 0.0015 |
+| 10,000 | 18.630889 | 18.630889 | 0.0324 |
+| 100,000 | 62.028548 | 62.028548 | 0.0040 |
+| 1,000,000 | 199.336351 | 199.336351 | 0.0015 |
+| 10,000,000 | 633.565291 | 633.565291 | 0.0002 |
+| 100,000,000 | 2006.725151 | 2006.725151 | 0.0001 |
+
+The convex program's optimum and the first-order condition's fixed point are found independently. The smooth root leads them by less than one cap at every horizon, as `0 <= S_c - S_d < cap` says.
+
+(d) the cost drops a constant too, `F*_T = c_causal sqrt(T) + (K/(2 c cap)) ln T + C_cap + O(T^(-1/2))`; each cell is the library's optimal cost less the three terms, times `sqrt(T)`:
+
+| cap | C_cap | T = 10,000 | T = 100,000 | T = 1,000,000 | T = 10,000,000 | T = 100,000,000 | next coefficient |
+|---|---|---|---|---|---|---|---|
+| 0.1 | -2.640763 | 2.0286 | 2.0130 | 2.0080 | 2.0065 | 2.0060 | 2.005734 |
+| 0.03 | -6.032919 | 4.9435 | 4.7602 | 4.7020 | 4.6835 | 4.6777 | 4.675019 |
+| 0.01 | -15.723437 | -3.3778 | -5.1352 | -5.6746 | -5.8434 | -5.8966 | -5.921131 |
+
+`C_cap = -A I0/c + (K/(c cap)) [ln(sqrt(K/(A c))/cap) - psi(I0/(c cap)) - 1]` is a digamma closed form. Each row approaches the next coefficient, `(K I0/(c cap) - K/2 - K^2/(4 A c cap^2)) sqrt(A/(K c))`, so the constant is the optimum's own and not a fitted offset.
 
 ## Table 5 -- the matrix floor is a trace, so confounding is priced by ALIGNMENT
 
