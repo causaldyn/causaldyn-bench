@@ -29,7 +29,7 @@ Cost over the uncapped floor. Every row decreases: unlike the taper's `sqrt(2)` 
 | 0.03 | 166 | 622 | 2,068 | 6,645 |
 | 0.01 | 407 | 1,744 | 6,073 | 19,801 |
 
-## Table 3 -- the stopping MASS is the invariant, not the block length
+## Table 3 -- the stopping condition is cap-free; the mass and the block length are not
 
 | schedule | block rounds | delivered mass | fixed point | gap, in caps | leading form / delivered |
 |---|---|---|---|---|---|
@@ -39,7 +39,7 @@ Cost over the uncapped floor. Every row decreases: unlike the taper's `sqrt(2)` 
 | dead first third | 1,632 | 8.9557 | 8.9557 | 0.000 | 1.327 |
 | uniform noise U(0, 0.06) | 353 | 11.3110 | 11.3110 | 0.000 | 1.051 |
 
-The block lengths span nearly an order of magnitude and every delivered mass is the same fixed point. The exact optimum fills its last round partly, by the same balance the fixed point solves, so the gap reads zero in caps: what agrees is the stopping round, which the convex program and the fixed point find independently. The last column is why the leading form was replaced: it does not know when the caps open.
+The block lengths span nearly an order of magnitude and the delivered masses move with them, yet each is its own schedule's fixed point: the stopping condition is cap-free, the round that meets it is not. The exact optimum fills its last round partly, by the same balance the fixed point solves, so the gap reads zero in caps: what agrees is the stopping round, which the convex program and the fixed point find independently. The last column is why the leading form was replaced: it does not know when the caps open.
 
 ## Table 4 -- what the closed form drops is a constant, `K/(2 A c cap) = 0.672154`
 

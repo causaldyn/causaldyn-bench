@@ -309,13 +309,15 @@ def _schedules(horizon: int) -> dict[str, np.ndarray]:
 
 
 def table_three(horizon: int, k: PlantConstants) -> dict[str, dict[str, float]]:
-    """The stopping MASS is the invariant; the stopping ROUND is whatever prefix sum reaches it.
+    """The stopping CONDITION is cap-free; the mass and the round that meets it are not.
 
-    Five schedules, one horizon. The block lengths differ by ``6.9x`` and every delivered mass is
-    the same fixed point -- while the leading closed form, which does not know when the caps open,
-    is far outside on the schedules that open late. The exact optimum fills its last round partly,
-    by the same balance the fixed point solves, so the gap reads zero in caps: what the agreement
-    tests is the stopping round, which the convex program and the fixed point find independently.
+    Five schedules, one horizon. Each exact optimum meets ``A (I0 + c S)^2 = K c (T - n)`` on the
+    round ``n`` it names, so each delivered mass is its own schedule's fixed point; but ``n`` sits
+    inside the condition, so the block lengths differ by ``6.9x`` and the masses move with them,
+    while the leading closed form, which does not know when the caps open, is far outside on the
+    schedules that open late. The exact optimum fills its last round partly, by the same balance the
+    fixed point solves, so the gap reads zero in caps: what the agreement tests is the stopping
+    round, which the convex program and the fixed point find independently.
     """
     leading = leading_mass(horizon, k)
     out: dict[str, dict[str, float]] = {}
@@ -724,7 +726,7 @@ def _markdown(
         )
     lines += [
         "",
-        "## Table 3 -- the stopping MASS is the invariant, not the block length",
+        "## Table 3 -- the stopping condition is cap-free; the mass and the block length are not",
         "",
         "| schedule | block rounds | delivered mass | fixed point | gap, in caps | "
         "leading form / delivered |",
@@ -743,11 +745,12 @@ def _markdown(
     agreement = four["agreement"]
     lines += [
         "",
-        "The block lengths span nearly an order of magnitude and every delivered mass is the same "
-        "fixed point. The exact optimum fills its last round partly, by the same balance the fixed "
-        "point solves, so the gap reads zero in caps: what agrees is the stopping round, which the "
-        "convex program and the fixed point find independently. The last column is why the "
-        "leading form was replaced: it does not know when the caps open.",
+        "The block lengths span nearly an order of magnitude and the delivered masses move with "
+        "them, yet each is its own schedule's fixed point: the stopping condition is cap-free, "
+        "the round that meets it is not. The exact optimum fills its last round partly, by the "
+        "same balance the fixed point solves, so the gap reads zero in caps: what agrees is the "
+        "stopping round, which the convex program and the fixed point find independently. The "
+        "last column is why the leading form was replaced: it does not know when the caps open.",
         "",
         f"## Table 4 -- what the closed form drops is a constant, `K/(2 A c cap) = {ceiling:.6g}`",
         "",
