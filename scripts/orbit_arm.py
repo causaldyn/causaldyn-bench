@@ -393,21 +393,25 @@ class Worth:
 
 def _plan(worth: Worth, world: Any) -> tuple[np.ndarray, bool]:
     """The weekly plan with the largest posterior mean in the box at the budget: the grid's best
-    points, refined by SLSQP. Three channels, as the bench's searched plan takes."""
+    points, refined by SLSQP. Two or three channels: the grid spans every channel but the last,
+    which spends the rest of the week's budget."""
     lower = np.asarray(world["lower"], dtype=float)
     upper = np.asarray(world["upper"], dtype=float)
     weekly = float(world["budget"]) / int(world["planned"])
-    if lower.size != 3:
-        raise ValueError(f"the arm's grid plans three channels, not {lower.size}")
-    first = np.linspace(lower[0], upper[0], SIDE)
-    second = np.linspace(lower[1], upper[1], SIDE)
-    i, j = np.meshgrid(np.arange(SIDE), np.arange(SIDE), indexing="ij")
-    third = weekly - first[i] - second[j]
-    inside = (third >= lower[2]) & (third <= upper[2])
+    if lower.size not in (2, 3):
+        raise ValueError(f"the arm's grid plans two or three channels, not {lower.size}")
+    axes = [np.linspace(lower[c], upper[c], SIDE) for c in range(lower.size - 1)]
+    steps_each = np.meshgrid(*[np.arange(SIDE)] * len(axes), indexing="ij")
+    rest = np.full(steps_each[0].shape, weekly)
+    for axis, step in zip(axes, steps_each, strict=True):
+        rest = rest - axis[step]
+    inside = (rest >= lower[-1]) & (rest <= upper[-1])
     if not inside.any():
         raise ValueError("no point of the grid spends the budget inside the box")
-    points = np.column_stack([first[i[inside]], second[j[inside]], third[inside]])
-    steps = np.column_stack([i[inside], j[inside]])
+    points = np.column_stack(
+        [*(axis[step[inside]] for axis, step in zip(axes, steps_each, strict=True)), rest[inside]]
+    )
+    steps = np.column_stack([step[inside] for step in steps_each])
     values = worth.mean(points)
     reference = float(worth.mean(np.asarray(world["status_quo"], dtype=float)[None])[0])
     starts: list[int] = []
