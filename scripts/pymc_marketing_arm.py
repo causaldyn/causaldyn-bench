@@ -16,7 +16,9 @@ Each world is fitted as a practitioner fits PyMC-Marketing 1.3.0's media-mix mod
   refuse (``lift_dropped``, :mod:`pymc_marketing_lift`), none in an export the bench writes. The
   budgets run's export (version 1) left out the tests whose sales rose, for 1.2.0, and its digests
   pin it; a version-1 record's ``lift_dropped`` adds those;
-* NUTS at PyMC's defaults: 4 chains of 1000 tuning and 1000 kept draws, ``target_accept`` 0.8;
+* NUTS at PyMC's defaults, 1000 tuning and 1000 kept draws, ``target_accept`` 0.8, on 4 chains
+  named explicitly (:data:`SAMPLER`): PyMC 6.3's own default is half the CPUs it counts, from 2
+  to 4, so a world's draws would depend on the machine it was fitted on;
 * the quarter planned by its own optimiser, ``budget_optimizer(start, end).allocate_budget``, at
   the bench's weekly budget and box, starting the week after the history so the history's
   carryover runs into the plan.
@@ -192,6 +194,7 @@ SETTINGS = {  # each --setting, as a record names it
 }
 # the default's own HSGP hyperparameters for time-varying media (MMM.default_model_config)
 MEDIA_HSGP = HSGPKwargs(m=200, L=None, eta_lam=1, ls_mu=5, ls_sigma=10, cov_func=None)
+SAMPLER = {"chains": 4}  # what PyMC chooses on a machine of eight CPUs or more
 SMOKE = {"chains": 2, "tune": 100, "draws": 100}
 DRAWS = 400  # the most draws of the forecast and the response a record keeps
 HELD = 4  # draws whose weekly decomposition a record keeps
@@ -276,7 +279,7 @@ def plan(path: Path) -> dict[str, Any]:
         )
     seed = int(world["seed"])
     started = time.perf_counter()
-    trace = model.fit(frame, sales, random_seed=seed, progressbar=False)
+    trace = model.fit(frame, sales, random_seed=seed, progressbar=False, **SAMPLER)
     fitted = time.perf_counter() - started
     planned = int(world["planned"])
     start = dates[-1] + pd.Timedelta(weeks=1)
@@ -489,7 +492,9 @@ def plan_second(path: Path, setting: str, smoke: bool, spec: Spec = RECOMMENDED)
             lift["date"] = dates[world["lift_start"][keep] - 1]
         model.add_lift_test_measurements(lift)
     seed = int(world["seed"])
-    trace = model.fit(frame, sales, random_seed=seed, progressbar=False, **(SMOKE if smoke else {}))
+    trace = model.fit(
+        frame, sales, random_seed=seed, progressbar=False, **(SMOKE if smoke else SAMPLER)
+    )
 
     optimiser = model.budget_optimizer(start_date=dates[weeks], end_date=dates[-1])
     bounds = {
@@ -647,7 +652,9 @@ def plan_geo(path: Path, smoke: bool, spec: Spec = RECOMMENDED) -> dict[str, Any
     tests = int(np.asarray(world["lift_channel"]).size)
     taken_tests = int(np.unique(split["test"][keep]).size)
     seed = int(world["seed"])
-    trace = model.fit(frame, sales, random_seed=seed, progressbar=False, **(SMOKE if smoke else {}))
+    trace = model.fit(
+        frame, sales, random_seed=seed, progressbar=False, **(SMOKE if smoke else SAMPLER)
+    )
 
     status_quo = _cell_grid(world, world["status_quo"])
     bounds = xr.concat(
