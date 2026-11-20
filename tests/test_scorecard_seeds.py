@@ -2,7 +2,7 @@
 and stream a committed run before the scorecard drew from, numpy's padding included; family 0's
 scored blocks extended past the budgets run's without moving one of its worlds; and every
 confirmatory block apart from every block and every seed a committed run drew, the scorecard's
-scored run's included."""
+scored run's included, and shared by two confirmatory runs that read no world of each other's."""
 
 from collections import Counter
 
@@ -34,6 +34,7 @@ from causaldyn_bench.scorecard.seeds import (
     PILOTS,
     SCORECARD_RUNS,
     SCORECARD_STREAMS,
+    SECOND_RUN,
     TRACK_M2,
     TRACK_M2_CONFIRMATORY,
     TRACK_M2_EXTENSIONS,
@@ -252,12 +253,13 @@ def test_every_family_s_scored_environments_are_below_its_confirmatory_blocks():
         assert tuple(held) == tuple(family.scored)
         for environment, block in family.scored.items():
             if f == 0:
-                assert held[environment] == TRACK_M2_CONFIRMATORY[environment]
+                assert held[environment] == TRACK_M2_CONFIRMATORY[environment][:SECOND_RUN]
                 continue
             e = (block[0] - FIRST - BLOCK * f) // WORLDS - 1
             assert 0 <= e < CONFIRMATORY
             assert block == scored(f, e)
-            assert held[environment] == confirmatory(f, e) == scored(f, e + CONFIRMATORY)
+            assert confirmatory(f, e) == scored(f, e + CONFIRMATORY)
+            assert held[environment] == confirmatory(f, e)[:SECOND_RUN]
     assert dict(Simmmulator.scored) == {"demo": scored(15, 0)}
     assert confirmatory(1, 0) == range(230_000, 231_000)
     assert dict(TRACK_M2_CONFIRMATORY) == {
@@ -311,3 +313,56 @@ def test_a_confirmatory_world_is_found_in_its_own_order_and_a_world_of_no_block_
         index(DRIFT, "trend", block[0])
     with pytest.raises(ValueError, match="confirmatory blocks hold"):
         confirmatory(1, CONFIRMATORY)
+
+
+DEVELOPMENT = range(700_000, 900_000)
+"""The seeds development runs outside the bench drew their worlds from."""
+
+
+def test_two_confirmatory_runs_share_each_block_and_read_no_world_of_the_other():
+    """The first confirmatory run's worlds are each block's first :data:`SECOND_RUN`, the second's
+    the rest, in order: together the block whole, apart from each other, each long enough for the
+    largest run the claim declares (520 worlds a family, all of them in one environment)."""
+    for family in FAMILY_OBJECTS:
+        first, second = confirmatory_of(family), confirmatory_of(family, second=True)
+        assert tuple(first) == tuple(second) == tuple(family.scored)
+        for environment, block in first.items():
+            rest = second[environment]
+            assert (len(block), len(rest)) == (SECOND_RUN, WORLDS - SECOND_RUN)
+            assert block.stop == rest.start and rest.step == block.step == 1
+            assert len(rest) >= 520
+    assert confirmatory_of(DRIFT, second=True)["walk"] == range(230_300, 231_000)
+    assert confirmatory_of(FAMILY_0, second=True) == {
+        "drawn": range(12_300, 13_000),
+        "reference": range(22_300, 23_000),
+    }
+
+
+def test_no_world_of_the_second_confirmatory_run_was_drawn_before():
+    """No world of the second confirmatory run is a world of another block, pilot or scored, or of
+    the first confirmatory run, which read at most 240 worlds an environment; nor a seed a committed
+    run drew, nor one development runs drew from; nor is its tests' noise, 1000 s + c, a committed
+    seed's."""
+    # family 17's two environments are twins of one world, drawn from one block
+    blocks = {b for family in FAMILY_OBJECTS for b in confirmatory_of(family, second=True).values()}
+    seconds = [s for block in blocks for s in block]
+    assert len(seconds) == len(set(seconds)) == len(blocks) * (WORLDS - SECOND_RUN)
+    firsts = [s for family in FAMILY_OBJECTS for b in confirmatory_of(family).values() for s in b]
+    assert SECOND_RUN > 240
+    others = [*_blocks(), *FAMILY_0.pilots.values(), *FAMILY_0.scored.values()]
+    others = [b for b in others if b not in _confirmatory_blocks()]
+    drawn = {s for block in others for s in block} | set(firsts)
+    used = _used(scorecard=True)
+    ints = {words[0] for words in used if words[1:] == (0, 0, 0)}
+    assert not set(seconds) & (drawn | ints | set(DEVELOPMENT))
+    assert not {s // 1000 for s in ints} & set(seconds)
+
+
+def test_a_second_confirmatory_world_is_found_in_its_own_order():
+    block = confirmatory_of(DRIFT, second=True)["walk"]
+    assert index(DRIFT, "walk", block[0]) == 0
+    assert index(DRIFT, "walk", block[17]) == 17
+    assert index(FAMILY_0, "drawn", 12_300) == 0
+    assert index(FAMILY_0, "drawn", 12_299) == 299
+    with pytest.raises(ValueError, match="draws no pilot world"):
+        index(DRIFT, "walk", block[0], pilot=True)

@@ -28,7 +28,9 @@ a role needs several streams, starts at 1 (:func:`rng` refuses 0), and no world 
 A confirmatory run draws worlds no scored run read: environment ``e``'s from the family's scored
 block :data:`CONFIRMATORY` environments on, ``200 000 + 20 000 f + 1 000 (e + 10)``, no family
 holding more environments than that; family 0's from blocks of their own past its extensions
-(:data:`TRACK_M2_CONFIRMATORY`).
+(:data:`TRACK_M2_CONFIRMATORY`). Two confirmatory runs share each block: the first draws its worlds
+from the block's first :data:`SECOND_RUN`, the second from the rest, so that neither reads a world
+of the other's (:func:`~causaldyn_bench.scorecard.family.confirmatory`).
 
 :data:`USED_SEEDS` and :data:`USED_STREAMS` list what the committed runs drew from, the scorecard's
 scored run among them (:data:`SCORECARD_RUNS`); a test holds every family's block apart from the
@@ -56,6 +58,9 @@ TRACK_M2_EXTENSIONS: dict[str, range] = {
 
 
 CONFIRMATORY = 9  # a confirmatory environment's block is its scored one's this many blocks on
+# the second confirmatory run draws each confirmatory block from this world on; the first, which
+# read at most 240 worlds an environment, stays below it
+SECOND_RUN = 300
 TRACK_M2_CONFIRMATORY: dict[str, range] = {
     "drawn": range(12_000, 13_000),
     "reference": range(22_000, 23_000),
