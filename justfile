@@ -205,6 +205,18 @@ track-q-v2 *args:
 track-q-v3 *args:
     JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.graph_errors_v3 --out results {{args}}
 
+# Track Q v3's caveat -> results/dither_persistence/<label>--<settings>.json: one run of the
+# installed library, the dither contrast's size on the true graph at each persistence of the
+# promotion and its power where version 3's gate passed, on panels the same in every run. Pass
+# `--settings` to run some.
+dither-persistence label *args:
+    JAX_ENABLE_X64=1 uv run python -u -m causaldyn_bench.dither_persistence run --label {{label}} {{args}}
+
+# results/dither_persistence.md from every run's record under results/dither_persistence/, one
+# column a label.
+dither-persistence-report:
+    uv run python -m causaldyn_bench.dither_persistence report results/dither_persistence/*.json
+
 # Track M v2, lift tests -> results/track_m2_lift.{md,json}. 500 histories of Heusch's world for each
 # of six settings, one chc.lift fit on each, dealt to `--workers` processes. At 64-bit, so the fit
 # reads the readouts at the precision the NumPy world draws them in.
