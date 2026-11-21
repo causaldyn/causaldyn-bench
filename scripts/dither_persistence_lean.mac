@@ -1,0 +1,43 @@
+/* The dither persistence study: what a drift on the states alone reads of the promotion's push,
+   beside a drift that holds it, over a Track Q panel's 11 transitions. The generator draws the
+   promotion z_t before transition t reads it: z_t = rho z_{t-1} + sqrt(1 - rho^2) eta, the
+   incentive fresh_t + read z_t, and (supply, wait) moves by STEP x_t + DIRECT incentive_t +
+   (0.15 demand_t + push z_t, 0) + 0.01 noise. From x_0 ~ N(0, 0.2^2 I) apart from z_0 ~ N(0, 1),
+   the covariance of v_t = (x_t, z_t) runs v_{t+1} = M v_t + noise. A drift regression on (1, x)
+   reads the slope beta = (sum_t Var x_t)^-1 sum_t Cov(x_t, z_t) of z on x into its supply row,
+   push/dt beta, where a regression that holds z reads none. causaldyn_bench.dither_persistence.lean
+   computes the same in floats; tests/test_dither_persistence.py holds it to these. */
+display2d : false$
+fpprintprec : 8$
+ratprint : false$
+
+lean(rho, rd, pu) := block([stp, direct, g, m, q, c, sxx, sxz],
+  stp : matrix([94/100, 3/100], [0, 1025/1000]),
+  direct : matrix([8/100], [-4/100]),
+  g : rd*direct + pu*matrix([1], [0]),
+  m : matrix([stp[1,1], stp[1,2], g[1,1]], [stp[2,1], stp[2,2], g[2,1]], [0, 0, rho]),
+  q : matrix([direct[1,1]^2*9/4 + (15/100)^2 + (1/100)^2, direct[1,1]*direct[2,1]*9/4, 0],
+             [direct[1,1]*direct[2,1]*9/4, direct[2,1]^2*9/4 + (1/100)^2, 0],
+             [0, 0, 1 - rho^2]),
+  c : matrix([4/100, 0, 0], [0, 4/100, 0], [0, 0, 1]),
+  sxx : zeromatrix(2, 2), sxz : zeromatrix(2, 1),
+  for t : 0 thru 10 do (
+    sxx : sxx + matrix([c[1,1], c[1,2]], [c[2,1], c[2,2]]),
+    sxz : sxz + matrix([c[1,3]], [c[2,3]]),
+    c : m . c . transpose(m) + q),
+  (pu*10) * (invert(sxx) . sxz))$
+
+/* STEP 1. Nothing where the promotion is drawn afresh, or pushes nothing. */
+for zero in [[0, 1, 1/5], [4/5, 1, 0]] do (
+  if apply(lean, zero) # zeromatrix(2, 1) then error("STEP 1: the lean is not nothing at", zero),
+  print("STEP 1 the lean at", zero, "is 0"))$
+
+/* STEP 2. The study's settings: persistence 0.5, 0.8, 0.95, read 1, push 0.2; and 0.8 unread. */
+expected : [[[1/2, 1, 1/5], [0.58689516, 0.15906993]],
+            [[4/5, 1, 1/5], [0.95575184, 0.26096138]],
+            [[19/20, 1, 1/5], [1.1531368, 0.19152301]],
+            [[4/5, 0, 1/5], [1.1343265, 0.37186365]]]$
+for case in expected do block([got : float(apply(lean, case[1]))],
+  print("STEP 2 the lean at", case[1], "on (supply, wait):", [got[1,1], got[2,1]]),
+  if abs(got[1,1] - case[2][1]) > 1e-7 or abs(got[2,1] - case[2][2]) > 1e-7 then
+    error("STEP 2: the lean moved at", case[1]))$

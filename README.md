@@ -194,6 +194,20 @@ a criterion, and not in the pooled size: under the persistent confounder the tru
 rejects 0.155 [0.108, 0.213] of its panels at 0.05. The logger check's flag, read on the same
 panels, passes in no world. See `results/track_q_v3.md`.
 
+**Dither persistence** (`causaldyn_bench.dither_persistence`, `just dither-persistence`) measures
+that caveat. It reads the true graph's contrast in the persistent-confounder world with the
+promotion's persistence set to 0, 0.5, 0.8 and 0.95, 200 panels each, and the wrong graph's
+contrast where version 3's gate passed, 50 panels a world. The panels are 400 units by 12 periods
+under `rk4` at 64-bit, on a new seed, and the same for each library. It was not pre-registered,
+and version 3's records do not move. Up to causal-hybrid-control 1.3.1 the check's instrumented
+drift held none of the adjustment set's push, so a promotion that persists, and so leans on the
+state, made the two fits estimate two drifts (`scripts/dither_persistence_lean.mac`). On 1.3.1
+(`6ceb884`) the true graph's contrast rejects 0.000, 0.000, 0.085 [0.050, 0.133] and
+0.265 [0.205, 0.332] at 0.05 at the four persistences. With that push held (`0cc1407`, not yet
+released) it rejects 0.035, 0.010, 0.040 and 0.030, at most the level, and 0.06 to 0.09 at 0.1.
+The power stays 1.000 on the mediator and the collider and rises from 0.80 to 0.92 on the omitted
+promotion. See `results/dither_persistence.md`.
+
 **Track N** (`causaldyn_bench.fold_design`) is the only track that varies nothing but the
 cross-fitting split, and its result is an ordering whose useful half is negative. On `C_12` with two
 clusters, over 120 draws: the variance-optimal design **ties** the graph-blind split that keeps units
@@ -397,6 +411,7 @@ just track-o                             # Track O, OPE coverage -> results/trac
 just track-p                             # Track P, drift false alarms -> results/track_p_v2.{md,json}
 just track-q                             # Track Q, graph errors -> results/track_q.{md,json}
 just track-q-v3                          # Track Q v3, the dither stop -> results/track_q_v3.{md,json}
+just dither-persistence fixed            # the dither contrast under persistence -> results/dither_persistence/
 just track-m2-lift                       # Track M v2, lift intervals -> results/track_m2_lift.{md,json}
 just track-m2-budgets-pilot              # Track M v2, budgets, the pilot -> results/track_m2_budgets_pilot.{md,json}
 just track-m2-budgets                    # Track M v2, budgets, pre-registered -> results/track_m2_budgets.{md,json}
