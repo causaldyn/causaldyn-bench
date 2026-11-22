@@ -6,8 +6,8 @@ each is an object of its own behind one protocol rather than one generator grown
 names its environments, each a setting of its mechanism, and for each the worlds its pilots and its
 scored runs draw, in their seeded order (:mod:`.seeds`): a run's sample, and every look at it, is
 a prefix of that order. A confirmatory run draws each environment's worlds no scored run read
-(:func:`confirmatory`). Its labels say, in plain words, what its worlds hand some arm by
-construction.
+(:func:`confirmatory`), the first such run and the second each from a part of the block of its own.
+Its labels say, in plain words, what its worlds hand some arm by construction.
 """
 
 from __future__ import annotations
@@ -23,6 +23,7 @@ from causaldyn_bench.scorecard.returns import Returns
 from causaldyn_bench.scorecard.seeds import (
     BLOCK,
     FIRST,
+    SECOND_RUN,
     TRACK_M2,
     TRACK_M2_CONFIRMATORY,
     WORLDS,
@@ -107,27 +108,31 @@ def number(family: Family[W]) -> int:  # noqa: UP047 -- CI runs 3.11
     return family.stream - TRACK_M2
 
 
-def confirmatory(family: Family[W]) -> dict[str, range]:  # noqa: UP047 -- CI runs 3.11
-    """Each environment's confirmatory worlds, in their seeded order: its scored block's
-    confirmatory block (:func:`.seeds.confirmatory`), family 0's its own
-    (:data:`.seeds.TRACK_M2_CONFIRMATORY`)."""
+def confirmatory(  # noqa: UP047 -- CI runs 3.11
+    family: Family[W], *, second: bool = False
+) -> dict[str, range]:
+    """Each environment's confirmatory worlds, in their seeded order: the first
+    :data:`.seeds.SECOND_RUN` of its scored block's confirmatory block
+    (:func:`.seeds.confirmatory`), family 0's of its own (:data:`.seeds.TRACK_M2_CONFIRMATORY`);
+    with ``second``, the second confirmatory run's, the rest of that block."""
     f = number(family)
     if f == 0:
-        return dict(TRACK_M2_CONFIRMATORY)
-    out = {}
-    for environment, held in family.scored.items():
-        at, left = divmod(held[0] - FIRST - BLOCK * f, WORLDS)
-        if left or len(held) != WORLDS:
-            raise ValueError(f"{family.name}'s {environment} is not one of its scored blocks")
-        out[environment] = _confirmatory(f, at - 1)
-    return out
+        blocks = dict(TRACK_M2_CONFIRMATORY)
+    else:
+        blocks = {}
+        for environment, held in family.scored.items():
+            at, left = divmod(held[0] - FIRST - BLOCK * f, WORLDS)
+            if left or len(held) != WORLDS:
+                raise ValueError(f"{family.name}'s {environment} is not one of its scored blocks")
+            blocks[environment] = _confirmatory(f, at - 1)
+    return {e: b[SECOND_RUN:] if second else b[:SECOND_RUN] for e, b in blocks.items()}
 
 
 def index(  # noqa: UP047 -- CI runs 3.11
     family: Family[W], environment: str, seed: int, *, pilot: bool = False
 ) -> int:
     """The world's place in its environment's seeded order, from 0: a scored world's in its
-    scored order, a confirmatory world's in its confirmatory order (:func:`confirmatory`).
+    scored order, a confirmatory world's in its confirmatory run's order (:func:`confirmatory`).
 
     Raises:
         ValueError: the family draws no such world.
@@ -137,7 +142,9 @@ def index(  # noqa: UP047 -- CI runs 3.11
         raise ValueError(f"{family.name} has no environment {environment!r}")
     if seed in samples[environment]:
         return samples[environment].index(seed)
-    if not pilot and seed in (held := confirmatory(family)[environment]):
-        return held.index(seed)
+    if not pilot:
+        for second in (False, True):
+            if seed in (held := confirmatory(family, second=second)[environment]):
+                return held.index(seed)
     kind = "pilot" if pilot else "scored"
     raise ValueError(f"{family.name}'s {environment} draws no {kind} world {seed}")
