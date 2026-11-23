@@ -1,8 +1,9 @@
 """The scorecard's seeds: every family's block and stream apart from one another and from every seed
 and stream a committed run before the scorecard drew from, numpy's padding included; family 0's
-scored blocks extended past the budgets run's without moving one of its worlds; and every
+scored blocks extended past the budgets run's without moving one of its worlds; every
 confirmatory block apart from every block and every seed a committed run drew, the scorecard's
-scored run's included, and shared by two confirmatory runs that read no world of each other's."""
+scored run's included, and shared by two confirmatory runs that read no world of each other's;
+and a third confirmatory run's region apart from all of them, a block an environment."""
 
 from collections import Counter
 
@@ -35,6 +36,7 @@ from causaldyn_bench.scorecard.seeds import (
     SCORECARD_RUNS,
     SCORECARD_STREAMS,
     SECOND_RUN,
+    THIRD_RUN,
     TRACK_M2,
     TRACK_M2_CONFIRMATORY,
     TRACK_M2_EXTENSIONS,
@@ -47,6 +49,7 @@ from causaldyn_bench.scorecard.seeds import (
     rng,
     scored,
     stream,
+    third_confirmatory,
 )
 from causaldyn_bench.scorecard.short import SHORT
 from causaldyn_bench.scorecard.simmmulator import Simmmulator
@@ -366,3 +369,70 @@ def test_a_second_confirmatory_world_is_found_in_its_own_order():
     assert index(FAMILY_0, "drawn", 12_299) == 299
     with pytest.raises(ValueError, match="draws no pilot world"):
         index(DRIFT, "walk", block[0], pilot=True)
+
+
+def test_a_third_confirmatory_run_gives_each_environment_a_block_of_its_own():
+    """The third confirmatory run's worlds: each environment of each family, family 0's included,
+    a block of its own in the region :data:`THIRD_RUN`, in the order the family names its
+    environments, each long enough for the largest run the claim declares; family 17's twins
+    apart, where the first two runs read one block for both."""
+    for family in FAMILY_OBJECTS:
+        f = number(family)
+        held = confirmatory_of(family, third=True)
+        assert tuple(held) == tuple(family.scored)
+        for e, block in enumerate(held.values()):
+            first = THIRD_RUN + BLOCK * f + WORLDS * e
+            assert block == third_confirmatory(f, e) == range(first, first + WORLDS)
+            assert len(block) >= 520
+    assert (
+        confirmatory_of(TWINS, second=True)["curve"] == confirmatory_of(TWINS, second=True)["line"]
+    )
+    assert confirmatory_of(TWINS, third=True) == {
+        "curve": range(1_340_000, 1_341_000),
+        "line": range(1_341_000, 1_342_000),
+    }
+    assert confirmatory_of(FAMILY_0, third=True) == {
+        "drawn": range(1_000_000, 1_001_000),
+        "reference": range(1_001_000, 1_002_000),
+    }
+    with pytest.raises(ValueError, match="second or the third"):
+        confirmatory_of(DRIFT, second=True, third=True)
+    with pytest.raises(ValueError, match="third confirmatory blocks hold"):
+        third_confirmatory(1, BLOCK // WORLDS)
+    with pytest.raises(ValueError, match="is not one of 0 to"):
+        third_confirmatory(FAMILIES + 1, 0)
+
+
+def test_no_world_of_the_third_confirmatory_run_was_drawn_before():
+    """No world of the third confirmatory run is a world of another block, pilot, scored or
+    confirmatory (both earlier runs' parts), nor one of family 15's files' blocks, nor a seed a
+    committed run drew, nor one development runs drew from; nor is its tests' noise, 1000 s + c,
+    a committed seed's; and no two environments share one."""
+    blocks = [third_confirmatory(f, e) for f in range(FAMILIES + 1) for e in range(BLOCK // WORLDS)]
+    thirds = [s for block in blocks for s in block]
+    assert len(thirds) == len(set(thirds)) == (FAMILIES + 1) * BLOCK
+    others = [
+        *_blocks(),
+        *_confirmatory_blocks(),
+        *FAMILY_0.pilots.values(),
+        *FAMILY_0.scored.values(),
+        *Simmmulator.pilots.values(),
+        *Simmmulator.scored.values(),
+    ]
+    drawn = {s for block in others for s in block}
+    used = _used(scorecard=True)
+    ints = {words[0] for words in used if words[1:] == (0, 0, 0)}
+    assert not set(thirds) & (drawn | ints | set(DEVELOPMENT))
+    assert not {s // 1000 for s in ints} & set(thirds)
+    assert min(thirds) * 1000 > max(ints | drawn | set(DEVELOPMENT))
+
+
+def test_a_third_confirmatory_world_is_found_in_its_own_order():
+    trend = confirmatory_of(DRIFT, third=True)["trend"]
+    assert trend[0] == THIRD_RUN + BLOCK + WORLDS
+    assert index(DRIFT, "trend", trend[0]) == 0
+    assert index(DRIFT, "trend", trend[17]) == 17
+    assert index(TWINS, "line", 1_341_017) == 17
+    assert index(FAMILY_0, "reference", 1_001_005) == 5
+    with pytest.raises(ValueError, match="draws no scored world"):
+        index(TWINS, "curve", 1_341_017)

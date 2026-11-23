@@ -30,7 +30,12 @@ block :data:`CONFIRMATORY` environments on, ``200 000 + 20 000 f + 1 000 (e + 10
 holding more environments than that; family 0's from blocks of their own past its extensions
 (:data:`TRACK_M2_CONFIRMATORY`). Two confirmatory runs share each block: the first draws its worlds
 from the block's first :data:`SECOND_RUN`, the second from the rest, so that neither reads a world
-of the other's (:func:`~causaldyn_bench.scorecard.family.confirmatory`).
+of the other's (:func:`~causaldyn_bench.scorecard.family.confirmatory`). The second read up to 520
+worlds of a block's 700, so a third confirmatory run draws from a region of its own,
+:func:`third_confirmatory`: family ``f``'s ``e``-th environment, family 0's included, from
+``1 000 000 + 20 000 f + 1 000 e``, past every block above and every range development runs drew
+from. Each environment has a block of its own there, the twins of family 17 too, which the first
+two runs read from one shared block.
 
 :data:`USED_SEEDS` and :data:`USED_STREAMS` list what the committed runs drew from, the scorecard's
 scored run among them (:data:`SCORECARD_RUNS`); a test holds every family's block apart from the
@@ -65,6 +70,8 @@ TRACK_M2_CONFIRMATORY: dict[str, range] = {
     "drawn": range(12_000, 13_000),
     "reference": range(22_000, 23_000),
 }
+# the third confirmatory run's region: family f's environment e from THIRD_RUN + BLOCK f + WORLDS e
+THIRD_RUN = 1_000_000
 
 
 class Role(IntEnum):
@@ -111,6 +118,20 @@ def confirmatory(family: int, environment: int) -> range:
     if not 0 <= environment < CONFIRMATORY:
         raise ValueError(f"a family's confirmatory blocks hold {CONFIRMATORY} environments")
     return scored(family, environment + CONFIRMATORY)
+
+
+def third_confirmatory(family: int, environment: int) -> range:
+    """The third confirmatory run's worlds of the family's environment ``environment``, counted
+    from 0 in the order the family names its environments, in order: a block of the region
+    :data:`THIRD_RUN` that no other environment, run or block holds."""
+    if not 0 <= family <= FAMILIES:
+        raise ValueError(f"family {family} is not one of 0 to {FAMILIES}")
+    if not 0 <= environment < BLOCK // WORLDS:
+        raise ValueError(
+            f"a family's third confirmatory blocks hold {BLOCK // WORLDS} environments"
+        )
+    first = THIRD_RUN + BLOCK * family + WORLDS * environment
+    return range(first, first + WORLDS)
 
 
 def rng(family: int, role: Role, seed: int, *index: int) -> np.random.Generator:

@@ -6,7 +6,8 @@ each is an object of its own behind one protocol rather than one generator grown
 names its environments, each a setting of its mechanism, and for each the worlds its pilots and its
 scored runs draw, in their seeded order (:mod:`.seeds`): a run's sample, and every look at it, is
 a prefix of that order. A confirmatory run draws each environment's worlds no scored run read
-(:func:`confirmatory`), the first such run and the second each from a part of the block of its own.
+(:func:`confirmatory`), the first such run and the second each from a part of the block of its own,
+the third from a region of its own.
 Its labels say, in plain words, what its worlds hand some arm by construction.
 """
 
@@ -29,6 +30,7 @@ from causaldyn_bench.scorecard.seeds import (
     WORLDS,
 )
 from causaldyn_bench.scorecard.seeds import confirmatory as _confirmatory
+from causaldyn_bench.scorecard.seeds import third_confirmatory as _third
 from causaldyn_bench.scorecard.truth import Cell
 
 W = TypeVar("W")
@@ -109,13 +111,23 @@ def number(family: Family[W]) -> int:  # noqa: UP047 -- CI runs 3.11
 
 
 def confirmatory(  # noqa: UP047 -- CI runs 3.11
-    family: Family[W], *, second: bool = False
+    family: Family[W], *, second: bool = False, third: bool = False
 ) -> dict[str, range]:
     """Each environment's confirmatory worlds, in their seeded order: the first
     :data:`.seeds.SECOND_RUN` of its scored block's confirmatory block
     (:func:`.seeds.confirmatory`), family 0's of its own (:data:`.seeds.TRACK_M2_CONFIRMATORY`);
-    with ``second``, the second confirmatory run's, the rest of that block."""
+    with ``second``, the second confirmatory run's, the rest of that block; with ``third``, the
+    third confirmatory run's, the ``e``-th environment's block of its own
+    (:func:`.seeds.third_confirmatory`), ``e`` counted in the order the family names them.
+
+    Raises:
+        ValueError: on ``second`` and ``third`` together, or a scored block out of its place.
+    """
     f = number(family)
+    if second and third:
+        raise ValueError("a confirmatory run is the second or the third, not both")
+    if third:
+        return {environment: _third(f, e) for e, environment in enumerate(family.scored)}
     if f == 0:
         blocks = dict(TRACK_M2_CONFIRMATORY)
     else:
@@ -143,8 +155,8 @@ def index(  # noqa: UP047 -- CI runs 3.11
     if seed in samples[environment]:
         return samples[environment].index(seed)
     if not pilot:
-        for second in (False, True):
-            if seed in (held := confirmatory(family, second=second)[environment]):
+        for run in ({}, {"second": True}, {"third": True}):
+            if seed in (held := confirmatory(family, **run)[environment]):
                 return held.index(seed)
     kind = "pilot" if pilot else "scored"
     raise ValueError(f"{family.name}'s {environment} draws no {kind} world {seed}")
