@@ -3,7 +3,8 @@ once it parses as the family's demo, by its SHA-256 in the table the family read
 ``src/causaldyn_bench/scorecard/simmmulator_worlds.json``.
 
 A world is recorded once: a record whose seed the table holds with another digest is refused, and
-the table is left as it was. Seeds outside the family's pilot and scored blocks are refused too.
+the table is left as it was. Seeds outside the family's pilot, scored and third confirmatory
+blocks are refused too.
 
     uv run python scripts/simmmulator_register.py DIR
 """
@@ -16,6 +17,7 @@ import json
 from pathlib import Path
 
 from causaldyn_bench.scorecard import simmmulator
+from causaldyn_bench.scorecard.family import confirmatory
 from causaldyn_bench.scorecard.simmmulator import COMMIT, SIMMMULATOR, Record, Simmmulator
 
 TABLE = Path(simmmulator.__file__).with_name(simmmulator.TABLE)
@@ -27,7 +29,11 @@ def main() -> None:
     args = parser.parse_args()
     table = json.loads(TABLE.read_text())
     worlds = {int(seed): digest for seed, digest in table["worlds"].items()}
-    blocks = [*Simmmulator.pilots.values(), *Simmmulator.scored.values()]
+    blocks = [
+        *Simmmulator.pilots.values(),
+        *Simmmulator.scored.values(),
+        *confirmatory(Simmmulator, third=True).values(),
+    ]
     added = 0
     for path in sorted(args.directory.glob("*.json"), key=lambda p: int(p.stem)):
         seed = int(path.stem)
