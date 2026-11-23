@@ -32,7 +32,7 @@ def main() -> None:
     blocks = [
         *Simmmulator.pilots.values(),
         *Simmmulator.scored.values(),
-        *confirmatory(Simmmulator, third=True).values(),
+        *confirmatory(Simmmulator(args.directory), third=True).values(),
     ]
     added = 0
     for path in sorted(args.directory.glob("*.json"), key=lambda p: int(p.stem)):
