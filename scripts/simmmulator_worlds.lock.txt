@@ -66,3 +66,11 @@ S vctrs 0.7.3 ROBYN
 S lattice 0.22-9 R
 S Matrix 1.7-5 R
 S survival 3.8-6 R
+#
+# The third confirmatory run's block, seeds 1300000 to 1300239 (environment demo), written on
+# 2026-11-23 by the same script, siMMMulator commit and scratch library as above, under R 4.6.2
+# (2026-10-29): Fedora R-core-4.6.2-1.fc44, whose own lattice 0.23-1, Matrix 1.7-6 and
+# survival 3.8-12 differ from the R lines above (0.22-9, 1.7-5, 3.8-6); every other package is at
+# its locked version. World 500000, rerun under R 4.6.2, equals its record but for the "r" field,
+# which names the R version; two runs of a seed gave byte-identical files. A world took 0.8-3.3
+# minutes on one core, 1.2 on average, six at a time; the 240 records hold 116 MB.
