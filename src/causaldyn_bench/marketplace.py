@@ -8,22 +8,25 @@ arXiv:2504.08836, pessimism-as-DR-MDP); this track scores it.
 
 The leaderboard scores one market, ``SharedStateMarket(seed=0)``. ``python -m
 causaldyn_bench.marketplace`` (``just track-h``) scores it with seeds 1-29 into
-``results/track_h_markets_v3.{md,json}``, and again under ``JAX_ENABLE_X64=1``, where each seed
-draws another market, into ``results/track_h_markets_v3_x64.{md,json}``, against the exact oracle.
-Version 3 adds a fourth planner, equilibrium-CHC expected: the same planner through the same fitted
-equilibrium with ``objective="expected"``, which maximises the fit's expected completions under its
-own uncertainty. It has the least regret on all 60 markets and wins 0.92-1.00 of the oracle's lift
-over doing nothing, a median of 0.997 and 0.971 at the two precisions. The tilted planner,
-equilibrium-CHC, has less regret than both SUTVA planners on 59 of the 60 and wins 0.69-1.00, a
-median of 0.92 at both; on float32 market 18 its ascent stops short on the fitted equilibrium, at
-0.735 of the lift, below the naive-causal plan's 0.805, where the expected planner wins 0.978. The
+``results/track_h_markets_v4.{md,json}``, and again under ``JAX_ENABLE_X64=1``, where each seed
+draws another market, into ``results/track_h_markets_v4_x64.{md,json}``, against the exact oracle.
+Version 4 scores version 3's four planners on causal-hybrid-control 1.5.0. Equilibrium-CHC expected,
+the same planner as equilibrium-CHC through the same fitted equilibrium with
+``objective="expected"``, which maximises the fit's expected completions under its own uncertainty,
+has the least regret on all 60 markets and wins 0.92-1.00 of the oracle's lift over doing nothing, a
+median of 0.997 and 0.971 at the two precisions. The tilted planner, equilibrium-CHC, has less
+regret than both SUTVA planners on all 60 too and wins 0.69-1.00, a median of 0.951 and 0.955. The
 predictive (MOPO) and naive-causal planners assume SUTVA and leave large regret: the naive one wins
 a median of 0.28 and 0.35 of the lift at the two precisions, at most 0.80, and the predictive one
 0.04 and 0.00, at most 0.35; the naive one realises less than doing nothing on 8 and 7 of the 30
 markets, the predictive one on 13 and 15. :func:`marketplace_report` reads what the logs'
-confounding does to the responses the two plan on. Version 2,
+confounding does to the responses the two plan on. Version 3,
+``results/track_h_markets_v3{,_x64}.{md,json}``, scored the same planners on
+causal-hybrid-control 0.23.0, whose tilted ascent started from the even split alone: it won a median
+of 0.92 at both precisions, and on float32 market 18 it stopped short on the fitted equilibrium at
+0.735 of the lift, below the naive-causal plan's 0.805. Version 2,
 ``results/track_h_markets_v2{,_x64}.{md,json}``, scored the three other planners on
-causal-hybrid-control 0.22.0, and every reading the two versions share is identical. Version 1,
+causal-hybrid-control 0.22.0, and every reading it shares with version 3 is identical. Version 1,
 ``results/track_h_markets{,_x64}.{md,json}``, scored them on 0.21.0 against a 2500-step ascent of
 the oracle's, which fell short of the exact optimum on 30 of the 60.
 """
@@ -56,9 +59,11 @@ from causaldyn_bench.tracks import TrackResult
 TRACK = "H-marketplace"
 SEEDS = tuple(range(30))
 BLOCKS = 400
-VERSION = 3
-# a run's file name, by x64: version 3's, which adds the expected-completions planner
-NAMES = {False: "track_h_markets_v3", True: "track_h_markets_v3_x64"}
+VERSION = 4
+# a run's file name, by x64: version 4's, version 3's planners on causal-hybrid-control 1.5.0
+NAMES = {False: "track_h_markets_v4", True: "track_h_markets_v4_x64"}
+# version 3's, which added the expected-completions planner, on causal-hybrid-control 0.23.0
+V3_NAMES = {False: "track_h_markets_v3", True: "track_h_markets_v3_x64"}
 # version 2's, scored on causal-hybrid-control 0.22.0 against the exact oracle
 V2_NAMES = {False: "track_h_markets_v2", True: "track_h_markets_v2_x64"}
 # version 1's, scored on causal-hybrid-control 0.21.0 against a 2500-step ascent of the oracle's
@@ -355,11 +360,28 @@ def _markdown(result: dict[str, Any]) -> str:
         "",
         "The two equilibrium-CHC planners plan through the same equilibrium, fitted to the logs. "
         "Equilibrium-CHC maximises the fit's completions plus the shared-state response's "
-        "pessimism tilt (`pessimistic_equilibrium_allocation`'s default, "
-        '`objective="tilted"`), in a 600-step ascent from the even split. Equilibrium-CHC '
-        'expected (`objective="expected"`) maximises the fit\'s expected completions under its own '
-        "uncertainty, the fit's sandwich covariance and its planning demand's, ascended from the "
-        "even split and from the fitted game's exact optimum; it reads no response.",
+        'pessimism tilt (`objective="tilted"`, `pessimistic_equilibrium_allocation`\'s default '
+        'before the library\'s 1.3.0). Equilibrium-CHC expected (`objective="expected"`) '
+        "maximises the fit's expected completions under its own uncertainty, the fit's sandwich "
+        "covariance and its planning demand's; it reads no response. Each objective is ascended "
+        "600 steps from the even split and from the fitted game's exact optimum, and the plan "
+        "better on it is kept.",
+        "",
+        f"Version 3, `{V3_NAMES[result['x64']]}.md`, scored the same planners on the same markets "
+        "on causal-hybrid-control 0.23.0. Every reading no ascent ends is version 3's: to the bit "
+        "in float32, and in float64 to 3.2e-14, by which the library's 0.24.1 moved the exact "
+        "oracle when it bisected the level without the budget in its scale. From the library's "
+        "1.2.0 the tilted objective is ascended from the fitted game's exact optimum too, where "
+        "version 3 ascended it from the even split alone, so equilibrium-CHC's plans moved: its "
+        "mean share of the oracle's lift rose from 0.907 to 0.941 in float32 and from 0.900 to "
+        "0.948 in float64. By more than 5e-4 of the lift it rose on 11 and 17 markets and fell on "
+        "2 and 3, by up to 0.058 and 0.079, each time to a plan better on its own objective, and "
+        "on float32 market 18, where the ascent had stopped at 0.735 below the naive-causal "
+        "plan's 0.805, it wins 0.978. "
+        "Equilibrium-CHC expected's plans moved by at most 2e-4 rides, 8e-5 of the oracle's "
+        "lift, since the library's 1.3.0 reads the drivers' Jacobians at the best response's "
+        "shares. Version 3 is reproducible from this repository at `f386767` beside the library "
+        "at `v0.23.0`.",
         "",
         f"Version 2, `{V2_NAMES[result['x64']]}.md`, scored the same markets on "
         "causal-hybrid-control 0.22.0 against the exact oracle, without the expected planner, "

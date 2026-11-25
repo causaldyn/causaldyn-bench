@@ -156,8 +156,8 @@ paper-4-smoke:
 
 # ── Tracks with their own report ──────────────────────────────────────────────
 
-# Track H over 30 markets, version 3 -> results/track_h_markets_v3.{md,json} in float32, the
-# leaderboard's precision, then results/track_h_markets_v3_x64.{md,json}: a seed draws another
+# Track H over 30 markets, version 4 -> results/track_h_markets_v4.{md,json} in float32, the
+# leaderboard's precision, then results/track_h_markets_v4_x64.{md,json}: a seed draws another
 # market at 64-bit, so the two runs are 60 markets, not 30 read twice. Each market runs the exact
 # oracle, the four planners and 13 reruns of its logged blocks.
 track-h:

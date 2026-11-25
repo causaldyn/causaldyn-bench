@@ -255,14 +255,14 @@
     "track": "H-marketplace",
     "method": "equilibrium-CHC",
     "metric": "regret",
-    "value": 0.10151195526123047,
+    "value": 0.10204410552978516,
     "lower_is_better": true
   },
   {
     "track": "H-marketplace",
     "method": "equilibrium-CHC expected",
     "metric": "regret",
-    "value": 0.10310554504394531,
+    "value": 0.10291290283203125,
     "lower_is_better": true
   },
   {

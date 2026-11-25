@@ -36,17 +36,15 @@ closed-loop decision. Built on
 **Track H** (`causaldyn_bench.marketplace`, `just track-h`) learns where to spend an incentive
 budget from logs whose operator chased demand, in a market whose drivers move between zones. The
 leaderboard scores one market; the track scores 30, and 30 more under `JAX_ENABLE_X64=1`, where each
-seed draws another market. Version 3 of the track, on causal-hybrid-control 0.23.0, scores them
-against the exact oracle and adds a fourth planner, equilibrium-CHC expected: the same planner,
-through the same equilibrium fitted to the logs, maximising its expected completions under the fit's
-own uncertainty (`objective="expected"`) instead of its completions plus a pessimism tilt. It has
-the least regret on all 60 markets and wins 0.92–1.00 of the oracle's lift over doing nothing
-(medians 0.997 and 0.971 at the two precisions, means 0.984 and 0.971), against the tilted
-planner's 0.69–1.00 (medians 0.92, means 0.907 and 0.900); it leaves less regret than the tilted
-one on 28 and 27 markets and more on one at each precision, by at most 0.017 rides. The tilted
-planner has the least regret on 59 of the 60: on float32 market 18 its ascent stops short on the
-equilibrium it fitted (9.83 against the 10.58 its fit reads at the oracle's allocation) and wins
-0.735 of the lift, below the naive-causal plan's 0.805, where the expected planner wins 0.978.
+seed draws another market. Version 4 of the track, on causal-hybrid-control 1.5.0, scores them
+against the exact oracle with four planners. Equilibrium-CHC plans through the equilibrium it fits
+to the logs, on its completions plus a pessimism tilt (`objective="tilted"`); equilibrium-CHC
+expected, through the same fitted equilibrium, maximises its expected completions under the fit's
+own uncertainty (`objective="expected"`). The expected planner has the least regret on all 60
+markets and wins 0.92–1.00 of the oracle's lift over doing nothing (medians 0.997 and 0.971 at the
+two precisions, means 0.984 and 0.971), against the tilted planner's 0.69–1.00 (medians 0.951 and
+0.955, means 0.941 and 0.948); it leaves less regret than the tilted one on 21 and 16 markets and
+more on 2 and 1, by at most 0.052 rides. The tilted planner has the least regret on all 60 too.
 The SUTVA planners win a median of 0.28 and 0.35 of the lift at the two precisions (naive causal, at most 0.80) and 0.04 and 0.00 (predictive, at most
 0.35), and less than doing nothing on 8 and 7 markets and on 13 and 15. The leaderboard's market is the one of the 30 on which both leave their largest
 regret. Against a rerun of the logs whose incentives no longer follow demand, the predictive
@@ -63,10 +61,23 @@ tests none of this, since the response follows demand once the confounding is go
 were recorded on x86 without AVX-512, under jax 0.11.2. The CHC plan ends a nonconvex ascent, and
 on a CPU with AVX-512 or under another jax, where the same programs round otherwise, a rerun can
 end it at another local optimum: under version 1, market 0's float32 plan read 2.328 of lift on
-AVX-512, against the committed 2.340. See `results/track_h_markets_v3.md` and
-`results/track_h_markets_v3_x64.md`. Version 2, `results/track_h_markets_v2.md` and
+AVX-512, against the committed 2.340. See `results/track_h_markets_v4.md` and
+`results/track_h_markets_v4_x64.md`. Version 3, `results/track_h_markets_v3.md` and
+`results/track_h_markets_v3_x64.md`, scored the same planners on causal-hybrid-control 0.23.0.
+Every reading no ascent ends is the same in version 4: to the bit in float32, and in float64 to
+3.2e-14, by which the library's 0.24.1 moved the exact oracle. The tilted planner's plans moved:
+from the library's 1.2.0 its objective is ascended from the fitted game's exact optimum as well as
+from the even split, and its mean share rose from 0.907 to 0.941 in float32 and from 0.900 to 0.948
+in float64, its median from 0.92 at both. In version 3 it had the least regret on 59 of the 60: on
+float32 market 18 its ascent stopped short on the equilibrium it fitted (9.83 against the 10.58 its
+fit reads at the oracle's allocation) and won 0.735 of the lift, below the naive-causal plan's
+0.805; it now wins 0.978 there, as the expected planner does. The expected planner's plans moved by
+at most 2e-4 rides, since the library's 1.3.0 reads the drivers' Jacobians at the best response's
+shares. The leaderboard's market reads 0.1020 and 0.1029 for the two, where version 3 read 0.1015
+and 0.1031. Version 3 is reproducible from this repository at `f386767` with the library at
+`v0.23.0` beside it. Version 2, `results/track_h_markets_v2.md` and
 `results/track_h_markets_v2_x64.md`, scored the three other planners on causal-hybrid-control 0.22.0;
-every reading the two versions share is identical. It is reproducible from this repository at
+every reading it shares with version 3 is identical. It is reproducible from this repository at
 `c2dce11` with the library at `v0.22.0` beside it. Version 1, `results/track_h_markets.md` and
 `results/track_h_markets_x64.md`, scored the same 60 markets on causal-hybrid-control 0.21.0
 against a 2500-step ascent of the oracle's, which fell short of the exact optimum on 30 of them, by
@@ -405,7 +416,7 @@ uv run python -m causaldyn_bench         # print the leaderboard
 uv run python -m causaldyn_bench --save  # also write results/leaderboard.{md,json}
 uv run pytest                            # smoke tests
 just check                               # the ladder ci.yml runs: format, lint, tests
-just track-h                             # Track H over 30 markets -> results/track_h_markets_v3{,_x64}.{md,json}
+just track-h                             # Track H over 30 markets -> results/track_h_markets_v4{,_x64}.{md,json}
 just track-l                             # Track L against DCBO -> results/track_l.{md,json}
 just track-o                             # Track O, OPE coverage -> results/track_o_v2.{md,json}
 just track-p                             # Track P, drift false alarms -> results/track_p_v2.{md,json}
