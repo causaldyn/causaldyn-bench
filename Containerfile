@@ -4,7 +4,7 @@
 # path dependency reads them, the library at the tag of the version uv.lock names:
 #
 #   git clone https://github.com/causaldyn/causaldyn-bench
-#   git clone --branch v0.23.0 https://github.com/causaldyn/causal-hybrid-control
+#   git clone --branch v1.5.0 https://github.com/causaldyn/causal-hybrid-control
 #   podman build -f causaldyn-bench/Containerfile -t causaldyn-bench-reproduce .
 #   podman run --rm causaldyn-bench-reproduce            # scripts/reproduce.sh
 #
