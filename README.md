@@ -592,7 +592,12 @@ their pinned files under `scripts/`, and Robyn's R library from `scripts/robyn_a
 compiles for hours. `.github/workflows/image.yml` builds the image weekly and on demand, never on a
 push, and publishes nothing.
 
-Image digest: filled at the first published build.
+The image is not published, so there is no digest to quote here. It bundles R and GPL-licensed R
+packages, and to distribute it would carry their licences' duty to offer the sources; the
+`Containerfile` and `image.yml` already let anyone build the same image. A digest is a build's own:
+`image.yml`'s Digest step prints each weekly build's image ID and digest in its log, and
+`podman image inspect --format '{{.Id}} {{.Digest}}' causaldyn-bench-reproduce` prints those of a
+build of one's own.
 
 **An open invitation.** We invite anyone outside this project to rerun a cell from the image and
 report what they find, in an issue, or in a pull request that adds their machine class's digests
