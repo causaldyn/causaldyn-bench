@@ -459,7 +459,7 @@ reading are scored against.
 | 13 | `pymc_marketing` | PyMC-Marketing's home ground | priors | |
 | 14 | `robyn` | Robyn's home ground | genre | |
 | 15 | `simmmulator` | siMMMulator's own worlds | demo | |
-| 16 | | reserved: no world is drawn from its block | | |
+| 16 | | withdrawn: no world is drawn from its block | | |
 | 17 | `twins` | a line whose slope drifts and a fixed S-curve over one history: a ridge's held-out score reads them alike on 89 of 100 pilot worlds (93 at a spread of 0.02), a go-dark test on each of 20, and each twin's best plan costs the other more than 0.05 a euro | curve, line | |
 | 18 | `long_term` | a brand measure every arm reads, through which nothing lasts in sales | unread, unbuilt | each channel's long-term share, 0 |
 | 19 | `flat` | one channel's spend never moves | flat-pla, flat-meta, flat-tv | |

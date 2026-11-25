@@ -4,7 +4,7 @@ their own, apart from every seed and stream a committed run of the bench drew fr
 Family ``f``, 1 to 20, owns the stream ``100 + f`` and the block of world seeds from
 ``200 000 + 20 000 f``: environment ``e``'s pilots from ``200 000 + 20 000 f + 100 e``, in the
 block's first thousand, and its scored worlds from ``200 000 + 20 000 f + 1 000 (e + 1)``. No
-family draws from the blocks of 11, withdrawn, or of 16, reserved. Family 0, Track M v2 itself,
+family draws from the blocks of 11 or 16, both withdrawn. Family 0, Track M v2 itself,
 keeps the committed runs' seeds and owns the stream 100 for the variates the scorecard adds to its
 worlds. Each of its scored blocks goes on past the committed run's in a block of its own
 (:data:`TRACK_M2_EXTENSIONS`), apart from every seed and stream a committed run drew from, so that
