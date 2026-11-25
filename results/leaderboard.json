@@ -4,643 +4,735 @@
     "method": "known-only",
     "metric": "rmse",
     "value": 0.07009708998465476,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "A-onestep",
     "method": "hybrid-CHC",
     "metric": "rmse",
     "value": 0.0020643207465793007,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "A-onestep",
     "method": "dlm",
     "metric": "rmse",
     "value": 0.04468201731066905,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "A-onestep",
     "method": "tree-surrogate",
     "metric": "rmse",
     "value": 0.03345178297288591,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "B-rollout",
     "method": "known-only",
     "metric": "rmse",
     "value": 0.46759846806526184,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "B-rollout",
     "method": "hybrid-CHC",
     "metric": "rmse",
     "value": 0.031684134155511856,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "B-rollout",
     "method": "dlm",
     "metric": "rmse",
     "value": 0.35630271784023776,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "B-rollout",
     "method": "tree-surrogate",
     "metric": "rmse",
     "value": 0.4652357847136507,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "C-effect",
     "method": "naive",
     "metric": "ate_error",
     "value": 1.1998464465141296,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "C-effect",
     "method": "backdoor-CHC",
     "metric": "ate_error",
     "value": 0.0014652013778686523,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "C-effect",
     "method": "double-ml-CHC",
     "metric": "ate_error",
     "value": 0.0014836788177490234,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-control",
     "method": "pricing/oracle",
     "metric": "regret",
     "value": 0.0,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-control",
     "method": "pricing/causal-CHC",
     "metric": "regret",
     "value": -0.002532958984375,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-control",
     "method": "pricing/predictive-omitted",
     "metric": "regret",
     "value": 13735.492685317993,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-control",
     "method": "pricing/predictive-all",
     "metric": "regret",
     "value": -0.002536773681640625,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-control",
     "method": "inventory/oracle",
     "metric": "regret",
     "value": 0.0,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-control",
     "method": "inventory/causal-CHC",
     "metric": "regret",
     "value": 5.4836273193359375e-06,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-control",
     "method": "inventory/predictive-omitted",
     "metric": "regret",
     "value": 1.0976861715316772,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-control",
     "method": "inventory/predictive-all",
     "metric": "regret",
     "value": 5.4836273193359375e-06,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-control",
     "method": "support-shift/oracle",
     "metric": "regret",
     "value": 0.0,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-control",
     "method": "support-shift/pessimistic",
     "metric": "regret",
     "value": 2.4284229278564453,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-control",
     "method": "support-shift/greedy",
     "metric": "regret",
     "value": 7.420591354370117,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-planner",
     "method": "plant/gradient",
     "metric": "regret",
     "value": 0.0,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-planner",
     "method": "plant/cem",
     "metric": "regret",
     "value": 0.0020837783813476562,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-planner",
     "method": "hybrid/gradient",
     "metric": "regret",
     "value": 0.0028638839721679688,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-planner",
     "method": "hybrid/cem",
     "metric": "regret",
     "value": 0.0038394927978515625,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-planner",
     "method": "known_only/gradient",
     "metric": "regret",
     "value": 1.7167577743530273,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-planner",
     "method": "known_only/cem",
     "metric": "regret",
     "value": 1.7178869247436523,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-adaptive-cv",
     "method": "uniform",
     "metric": "regret",
     "value": 330.39239501953125,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-adaptive-cv",
     "method": "myopic",
     "metric": "regret",
     "value": 166.01763916015625,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-adaptive-cv",
     "method": "CHC-MPC",
     "metric": "regret",
     "value": 0.0,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-interference",
     "method": "no-incentive",
     "metric": "regret",
     "value": 1.1451396942138672,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-interference",
     "method": "naive-uplift",
     "metric": "regret",
     "value": 1.9274210929870605,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "D-interference",
     "method": "equilibrium-CHC",
     "metric": "regret",
     "value": 0.0,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "H-marketplace",
     "method": "predictive-MOPO",
     "metric": "regret",
     "value": 3.2436256408691406,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "H-marketplace",
     "method": "naive-causal",
     "metric": "regret",
     "value": 3.4957046508789062,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "H-marketplace",
     "method": "equilibrium-CHC",
     "metric": "regret",
     "value": 0.10204410552978516,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "H-marketplace",
     "method": "equilibrium-CHC expected",
     "metric": "regret",
     "value": 0.10291290283203125,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "I-sensitivity",
     "method": "certainty-equivalence",
     "metric": "worst-case closed-loop cost",
     "value": 18.839863546489514,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "I-sensitivity",
     "method": "robust-CHC (Gamma=1.3, under)",
     "metric": "worst-case closed-loop cost",
     "value": 14.642766381774623,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "I-sensitivity",
     "method": "robust-CHC (Gamma=2.5)",
     "metric": "worst-case closed-loop cost",
     "value": 4.840087086905397,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "I-sensitivity",
     "method": "robust-CHC (Gamma=6.0, over)",
     "metric": "worst-case closed-loop cost",
     "value": 6.6907122679454,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "F-structure",
     "method": "naive-correlation",
     "metric": "edge_f1",
     "value": 0.2745098039215686,
-    "lower_is_better": false
+    "lower_is_better": false,
+    "preregistration": null
   },
   {
     "track": "F-structure",
     "method": "chc-discovery",
     "metric": "edge_f1",
     "value": 0.9333333333333333,
-    "lower_is_better": false
+    "lower_is_better": false,
+    "preregistration": null
   },
   {
     "track": "F-payoff",
     "method": "naive-unadjusted",
     "metric": "ate_error",
     "value": 1.2276463508605957,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "F-payoff",
     "method": "chc-discovery-adjusted",
     "metric": "ate_error",
     "value": 0.00102996826171875,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "G-effect",
     "method": "naive-static",
     "metric": "irf_error",
     "value": 0.6,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "G-effect",
     "method": "local-projections",
     "metric": "irf_error",
     "value": 0.031474177012443524,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "G-effect",
     "method": "structured-toeplitz",
     "metric": "irf_error",
     "value": 0.014468854224400543,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "G-payoff",
     "method": "one-step",
     "metric": "track_error",
     "value": 1.0048710437706818,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "G-payoff",
     "method": "chc-irf",
     "metric": "track_error",
     "value": 0.03257076643008183,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "K-delay",
     "method": "cross-correlation",
     "metric": "|tau_hat - tau|",
     "value": 0.4,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "K-delay",
     "method": "local-projection",
     "metric": "|tau_hat - tau|",
     "value": 0.4,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "K-delay",
     "method": "adjusted-LP",
     "metric": "|tau_hat - tau|",
     "value": 0.10000000000000009,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "K-delay",
     "method": "adjusted-LP-refined",
     "metric": "|tau_hat - tau|",
     "value": 0.0671695362058945,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "K-payoff",
     "method": "cross-correlation",
     "metric": "closed-loop regret",
     "value": 0.6768387795036467,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "K-payoff",
     "method": "local-projection",
     "metric": "closed-loop regret",
     "value": 0.6768387795036467,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "K-payoff",
     "method": "adjusted-LP",
     "metric": "closed-loop regret",
     "value": 0.01620990351881113,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "K-payoff",
     "method": "adjusted-LP-refined",
     "metric": "closed-loop regret",
     "value": 0.0066907339976924884,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "K-payoff",
     "method": "delay-blind",
     "metric": "closed-loop regret",
     "value": 18953.50456987513,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "K-payoff",
     "method": "oracle",
     "metric": "closed-loop regret",
     "value": 0.0,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "N-fold-direct",
     "method": "random rows",
     "metric": "MSE / random unit folds (2 clusters)",
     "value": 0.8395504626206656,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "N-fold-spillover",
     "method": "random rows",
     "metric": "MSE / random unit folds (2 clusters)",
     "value": 0.9232244368832719,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "N-fold-direct",
     "method": "random units",
     "metric": "MSE / random unit folds (2 clusters)",
     "value": 1.0,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "N-fold-spillover",
     "method": "random units",
     "metric": "MSE / random unit folds (2 clusters)",
     "value": 1.0,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "N-fold-direct",
     "method": "contiguous folds",
     "metric": "MSE / random unit folds (2 clusters)",
     "value": 1.2837408756886246,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "N-fold-spillover",
     "method": "contiguous folds",
     "metric": "MSE / random unit folds (2 clusters)",
     "value": 1.33043506789514,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "N-fold-direct",
     "method": "neighbour exclusion",
     "metric": "MSE / random unit folds (2 clusters)",
     "value": 1.607712905471338,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "N-fold-spillover",
     "method": "neighbour exclusion",
     "metric": "MSE / random unit folds (2 clusters)",
     "value": 1.6310376831931717,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "N-fold-direct",
     "method": "designed folds (chc)",
     "metric": "MSE / random unit folds (2 clusters)",
     "value": 0.8832254529979099,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "N-fold-spillover",
     "method": "designed folds (chc)",
     "metric": "MSE / random unit folds (2 clusters)",
     "value": 1.0034100518120257,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "M-allocation",
     "method": "CHC-adjusted",
     "metric": "lift",
     "value": 48.4307861328125,
-    "lower_is_better": false
+    "lower_is_better": false,
+    "preregistration": null
   },
   {
     "track": "M-allocation",
     "method": "myopic-greedy",
     "metric": "lift",
     "value": 47.726715087890625,
-    "lower_is_better": false
+    "lower_is_better": false,
+    "preregistration": null
   },
   {
     "track": "M-allocation",
     "method": "equal-split",
     "metric": "lift",
     "value": 45.37312316894531,
-    "lower_is_better": false
+    "lower_is_better": false,
+    "preregistration": null
   },
   {
     "track": "M-allocation",
     "method": "naive-MMM",
     "metric": "lift",
     "value": 37.14183044433594,
-    "lower_is_better": false
+    "lower_is_better": false,
+    "preregistration": null
   },
   {
     "track": "L-dcbo-stat",
     "method": "DCBO",
     "metric": "regret",
     "value": 0.49745875290832,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "L-dcbo-stat",
     "method": "CBO",
     "metric": "regret",
     "value": 0.3945886850530757,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "L-dcbo-stat",
     "method": "ABO",
     "metric": "regret",
     "value": 0.06350647269637251,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "L-dcbo-stat",
     "method": "BO",
     "metric": "regret",
     "value": 0.26783434665367717,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "L-dcbo-stat",
     "method": "CHC-prescribe",
     "metric": "regret",
     "value": 0.542027279345806,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "L-dcbo-ind",
     "method": "DCBO",
     "metric": "regret",
     "value": 2.5448140958950294,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "L-dcbo-ind",
     "method": "CBO",
     "metric": "regret",
     "value": 2.402552033093607,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "L-dcbo-ind",
     "method": "ABO",
     "metric": "regret",
     "value": 1.173762555310463,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "L-dcbo-ind",
     "method": "BO",
     "metric": "regret",
     "value": 1.9342671679813357,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "L-dcbo-ind",
     "method": "CHC-prescribe",
     "metric": "regret",
     "value": 5.965612050749709,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "L-dcbo-nonstat",
     "method": "DCBO",
     "metric": "regret",
     "value": 1.3944847336942303,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "L-dcbo-nonstat",
     "method": "CBO",
     "metric": "regret",
     "value": 1.5362886788962127,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "L-dcbo-nonstat",
     "method": "ABO",
     "metric": "regret",
     "value": 4.110017231892476,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "L-dcbo-nonstat",
     "method": "BO",
     "metric": "regret",
     "value": 4.159872504815572,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "L-dcbo-nonstat",
     "method": "CHC-prescribe",
     "metric": "regret",
     "value": 8.714987320184134,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "E-systems",
     "method": "known-only",
     "metric": "solve_ms",
     "value": 0.6366369998431765,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   },
   {
     "track": "E-systems",
     "method": "hybrid-CHC",
     "metric": "solve_ms",
     "value": 5.937824000284309,
-    "lower_is_better": true
+    "lower_is_better": true,
+    "preregistration": null
   }
 ]

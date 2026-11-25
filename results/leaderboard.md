@@ -2,6 +2,8 @@
 
 ## A-onestep  (metric: rmse, lower is better)
 
+not pre-registered (exploratory)
+
 | rank | method | value |
 |---|---|---|
 | 1 | hybrid-CHC **(best)** | 0.0021 |
@@ -10,6 +12,8 @@
 | 4 | known-only | 0.0701 |
 
 ## B-rollout  (metric: rmse, lower is better)
+
+not pre-registered (exploratory)
 
 | rank | method | value |
 |---|---|---|
@@ -20,6 +24,8 @@
 
 ## C-effect  (metric: ate_error, lower is better)
 
+not pre-registered (exploratory)
+
 | rank | method | value |
 |---|---|---|
 | 1 | backdoor-CHC **(best)** | 0.0015 |
@@ -27,6 +33,8 @@
 | 3 | naive | 1.1998 |
 
 ## D-control  (metric: regret, lower is better)
+
+not pre-registered (exploratory)
 
 | rank | method | value |
 |---|---|---|
@@ -44,6 +52,8 @@
 
 ## D-planner  (metric: regret, lower is better)
 
+not pre-registered (exploratory)
+
 | rank | method | value |
 |---|---|---|
 | 1 | plant/gradient **(best)** | 0.0000 |
@@ -55,6 +65,8 @@
 
 ## D-adaptive-cv  (metric: regret, lower is better)
 
+not pre-registered (exploratory)
+
 | rank | method | value |
 |---|---|---|
 | 1 | CHC-MPC **(best)** | 0.0000 |
@@ -63,6 +75,8 @@
 
 ## D-interference  (metric: regret, lower is better)
 
+not pre-registered (exploratory)
+
 | rank | method | value |
 |---|---|---|
 | 1 | equilibrium-CHC **(best)** | 0.0000 |
@@ -70,6 +84,8 @@
 | 3 | naive-uplift | 1.9274 |
 
 ## H-marketplace  (metric: regret, lower is better)
+
+not pre-registered (exploratory)
 
 | rank | method | value |
 |---|---|---|
@@ -82,6 +98,8 @@ The market is `SharedStateMarket(seed=0)`, one of the 30 that `results/track_h_m
 
 ## I-sensitivity  (metric: worst-case closed-loop cost, lower is better)
 
+not pre-registered (exploratory)
+
 | rank | method | value |
 |---|---|---|
 | 1 | robust-CHC (Gamma=2.5) **(best)** | 4.8401 |
@@ -91,6 +109,8 @@ The market is `SharedStateMarket(seed=0)`, one of the 30 that `results/track_h_m
 
 ## F-structure  (metric: edge_f1, higher is better)
 
+not pre-registered (exploratory)
+
 | rank | method | value |
 |---|---|---|
 | 1 | chc-discovery **(best)** | 0.9333 |
@@ -98,12 +118,16 @@ The market is `SharedStateMarket(seed=0)`, one of the 30 that `results/track_h_m
 
 ## F-payoff  (metric: ate_error, lower is better)
 
+not pre-registered (exploratory)
+
 | rank | method | value |
 |---|---|---|
 | 1 | chc-discovery-adjusted **(best)** | 0.0010 |
 | 2 | naive-unadjusted | 1.2276 |
 
 ## G-effect  (metric: irf_error, lower is better)
+
+not pre-registered (exploratory)
 
 | rank | method | value |
 |---|---|---|
@@ -113,12 +137,16 @@ The market is `SharedStateMarket(seed=0)`, one of the 30 that `results/track_h_m
 
 ## G-payoff  (metric: track_error, lower is better)
 
+not pre-registered (exploratory)
+
 | rank | method | value |
 |---|---|---|
 | 1 | chc-irf **(best)** | 0.0326 |
 | 2 | one-step | 1.0049 |
 
 ## K-delay  (metric: |tau_hat - tau|, lower is better)
+
+not pre-registered (exploratory)
 
 | rank | method | value |
 |---|---|---|
@@ -128,6 +156,8 @@ The market is `SharedStateMarket(seed=0)`, one of the 30 that `results/track_h_m
 | 4 | local-projection | 0.4000 |
 
 ## K-payoff  (metric: closed-loop regret, lower is better)
+
+not pre-registered (exploratory)
 
 | rank | method | value |
 |---|---|---|
@@ -140,6 +170,8 @@ The market is `SharedStateMarket(seed=0)`, one of the 30 that `results/track_h_m
 
 ## N-fold-direct  (metric: MSE / random unit folds (2 clusters), lower is better)
 
+not pre-registered (exploratory)
+
 | rank | method | value |
 |---|---|---|
 | 1 | random rows **(best)** | 0.8396 |
@@ -149,6 +181,8 @@ The market is `SharedStateMarket(seed=0)`, one of the 30 that `results/track_h_m
 | 5 | neighbour exclusion | 1.6077 |
 
 ## N-fold-spillover  (metric: MSE / random unit folds (2 clusters), lower is better)
+
+not pre-registered (exploratory)
 
 | rank | method | value |
 |---|---|---|
@@ -160,6 +194,8 @@ The market is `SharedStateMarket(seed=0)`, one of the 30 that `results/track_h_m
 
 ## M-allocation  (metric: lift, higher is better)
 
+not pre-registered (exploratory)
+
 | rank | method | value |
 |---|---|---|
 | 1 | CHC-adjusted **(best)** | 48.4308 |
@@ -168,6 +204,8 @@ The market is `SharedStateMarket(seed=0)`, one of the 30 that `results/track_h_m
 | 4 | naive-MMM | 37.1418 |
 
 ## L-dcbo-stat  (metric: regret, lower is better)
+
+not pre-registered (exploratory)
 
 | rank | method | value |
 |---|---|---|
@@ -179,6 +217,8 @@ The market is `SharedStateMarket(seed=0)`, one of the 30 that `results/track_h_m
 
 ## L-dcbo-ind  (metric: regret, lower is better)
 
+not pre-registered (exploratory)
+
 | rank | method | value |
 |---|---|---|
 | 1 | ABO **(best)** | 1.1738 |
@@ -189,6 +229,8 @@ The market is `SharedStateMarket(seed=0)`, one of the 30 that `results/track_h_m
 
 ## L-dcbo-nonstat  (metric: regret, lower is better)
 
+not pre-registered (exploratory)
+
 | rank | method | value |
 |---|---|---|
 | 1 | DCBO **(best)** | 1.3945 |
@@ -198,6 +240,8 @@ The market is `SharedStateMarket(seed=0)`, one of the 30 that `results/track_h_m
 | 5 | CHC-prescribe | 8.7150 |
 
 ## E-systems  (metric: solve_ms, lower is better)
+
+not pre-registered (exploratory)
 
 | rank | method | value |
 |---|---|---|

@@ -676,7 +676,12 @@ D while predictive blows up, and CHC-MPC matches the oracle on the adaptive-CV t
 Its rows were regenerated on 2026-10-27 with the `trees` extra, on causal-hybrid-control 0.23.0,
 except Track E's latency rows, which keep their 2026-08-31 to 2026-09-14 recording: the machine was
 under load and not fit to time on. Track L's rows, which `run_all` runs too, are in it now; its own
-report is [`results/track_l.md`](results/track_l.md).
+report is [`results/track_l.md`](results/track_l.md). Under each track's heading the snapshot states
+the pre-registration its numbers were read under: the file, its SHA-256 as the file stood when the
+page was written, the commit that froze it and its signed tag, where one was pushed
+(`causaldyn_bench.leaderboard.PREREGISTRATIONS`), and `leaderboard.json` holds the same in each
+row's `preregistration`. No track on it was pre-registered, so each reads
+`not pre-registered (exploratory)` and holds `null`.
 
 For the visual version — leaderboard bar charts + the "prediction ≠ decision" figure — see the executed
 notebook [`notebooks/leaderboard.ipynb`](notebooks/leaderboard.ipynb) (renders on GitHub), or run it:

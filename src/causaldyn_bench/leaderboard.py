@@ -1,9 +1,12 @@
-"""Run all tracks and render a per-track leaderboard (each track sorted on its own axis)."""
+"""Run all tracks and render a per-track leaderboard (each track sorted on its own axis), each
+track headed by the pre-registration its numbers were read under, or by the statement that there
+was none."""
 
 from __future__ import annotations
 
 import importlib
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
@@ -17,6 +20,7 @@ from causaldyn_bench.interference import track_interference
 from causaldyn_bench.marketplace import TRACK as MARKETPLACE_TRACK
 from causaldyn_bench.marketplace import leaderboard_note as marketplace_note
 from causaldyn_bench.marketplace import track_marketplace
+from causaldyn_bench.scorecard.preregistration import Stamp, digest
 from causaldyn_bench.sensitivity import track_sensitivity
 from causaldyn_bench.shooting import track_planner
 from causaldyn_bench.structure import track_structure
@@ -31,6 +35,52 @@ from causaldyn_bench.tracks import (
 )
 
 Backend = Literal["pandas", "polars"]
+
+EXPLORATORY = "not pre-registered (exploratory)"
+
+
+@dataclass(frozen=True)
+class Preregistration:
+    """The file that fixed a track's design, sample and reading before its first scored seed was
+    drawn, by its path from the repository's root; the commit that froze it; and the signed tag
+    whose message is the file's line as ``sha256sum`` prints it, where one was pushed."""
+
+    path: str
+    commit: str
+    tag: str | None = None
+
+    def stamp(self) -> Stamp:
+        """The file's stamp as it stands now, so a page written after the file changed shows the
+        new hash.
+
+        Raises:
+            FileNotFoundError: the file is not at its path.
+        """
+        return Stamp(self.path, digest(self.path))
+
+
+# No track on the leaderboard was pre-registered, so every one reads as exploratory: the studies
+# that were pre-registered write reports of their own, outside the leaderboard.
+PREREGISTRATIONS: dict[str, Preregistration] = {}
+
+
+def preregistration(track: str) -> dict[str, str | None] | None:
+    """The pre-registration ``track``'s numbers were read under, as the JSON snapshot holds it, at
+    the file's SHA-256 now; None for a track that was not pre-registered."""
+    entry = PREREGISTRATIONS.get(track)
+    if entry is None:
+        return None
+    return {**entry.stamp().as_json(), "commit": entry.commit, "tag": entry.tag}
+
+
+def preregistration_line(track: str) -> str:
+    """The line the markdown snapshot prints under ``track``'s heading: the scored reports' stamp
+    line, the commit and the tag, or :data:`EXPLORATORY`."""
+    entry = PREREGISTRATIONS.get(track)
+    if entry is None:
+        return EXPLORATORY
+    tag = f"signed tag {entry.tag}" if entry.tag else "no signed tag"
+    return f"{entry.stamp().line}, frozen in {entry.commit}, {tag}"
 
 
 def run_all(seed: int = 0, steps: int = 1500) -> list[TrackResult]:
@@ -57,7 +107,8 @@ def run_all(seed: int = 0, steps: int = 1500) -> list[TrackResult]:
 
 
 def _rows(results: list[TrackResult]) -> list[dict[str, Any]]:
-    """One flat record per result: the tidy shape both frame backends and the JSON snapshot take."""
+    """One flat record per result: the tidy shape both frame backends take, and the JSON snapshot
+    with its track's pre-registration beside it (:func:`_snapshot`)."""
     return [
         {
             "track": r.track,
@@ -68,6 +119,12 @@ def _rows(results: list[TrackResult]) -> list[dict[str, Any]]:
         }
         for r in results
     ]
+
+
+def _snapshot(results: list[TrackResult]) -> list[dict[str, Any]]:
+    """The JSON snapshot's records: :func:`_rows`, each with its track's :func:`preregistration`."""
+    fields = {track: preregistration(track) for track in dict.fromkeys(r.track for r in results)}
+    return [{**row, "preregistration": fields[row["track"]]} for row in _rows(results)]
 
 
 def _by_track(results: list[TrackResult]) -> list[tuple[str, list[TrackResult]]]:
@@ -118,12 +175,14 @@ def format_leaderboard(results: list[TrackResult]) -> str:
 
 def to_markdown(results: list[TrackResult], notes: dict[str, str] | None = None) -> str:
     """Render the leaderboard as grouped markdown tables (a committable results snapshot), each
-    followed by its track's paragraph in ``notes``, if it has one."""
+    headed by its track's :func:`preregistration_line` and followed by its track's paragraph in
+    ``notes``, if it has one."""
     notes = notes or {}
     lines = ["# causaldyn-bench leaderboard", ""]
     for track, rows in _by_track(results):
         direction = "lower" if rows[0].lower_is_better else "higher"
         lines += [f"## {track}  (metric: {rows[0].metric}, {direction} is better)", ""]
+        lines += [preregistration_line(track), ""]
         lines += ["| rank | method | value |", "|---|---|---|"]
         for i, r in enumerate(rows):
             best = " **(best)**" if i == 0 else ""
@@ -146,5 +205,5 @@ def save_results(results: list[TrackResult], out_dir: str = "results") -> Path:
     out = Path(out_dir)
     out.mkdir(exist_ok=True)
     (out / "leaderboard.md").write_text(to_markdown(results, track_notes(out_dir)))
-    (out / "leaderboard.json").write_text(json.dumps(_rows(results), indent=2) + "\n")
+    (out / "leaderboard.json").write_text(json.dumps(_snapshot(results), indent=2) + "\n")
     return out
